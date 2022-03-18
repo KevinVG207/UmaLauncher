@@ -1,4 +1,3 @@
-import datetime
 import pystray
 import asyncio
 import os

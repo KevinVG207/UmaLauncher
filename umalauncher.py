@@ -1,4 +1,3 @@
-import datetime
 import pystray
 import asyncio
 import os
@@ -7,8 +6,14 @@ from PIL import Image
 import time
 import win32api
 import win32gui
+import win32ui
+import win32con
 import pywintypes
+from pypresence import Presence
 from elevate import elevate
+from PIL import Image
+import pyautogui
+import presence_locations
 
 elevate()
 
@@ -25,6 +30,15 @@ first_orientation = True
 was_portrait = True
 
 prev_height = 0
+
+
+client_id = 954453106765225995
+rpc_next = {"details": "Launching game..."}
+last_screen = time.time()
+last_rpc_update = time.time()
+rpc = Presence(client_id)
+rpc.connect()
+
 
 def enumHandler(hwnd, lParam):
     global gaem
@@ -60,7 +74,7 @@ def on_clicked(icon, item):
     global stop_threads
     stop_threads = True
     icon.stop()
-    quit()
+    quit(0)
 
 
 def is_portrait() -> bool:
@@ -113,6 +127,54 @@ def scale_height():
         prev_height = cur_height
     
 
+def get_screenshot():
+    global gaem
+    # win32gui.SetForegroundWindow(gaem)
+    x, y, x1, y1 = win32gui.GetClientRect(gaem)
+    x, y = win32gui.ClientToScreen(gaem, (x, y))
+    x1, y1 = win32gui.ClientToScreen(gaem, (x1 - x, y1 - y))
+    return pyautogui.screenshot(region=(x, y, x1, y1)).convert("RGB")
+
+
+def similar_color(col1, col2) -> bool:
+    total_diff = 0
+    for i in range(3):
+        total_diff += abs(col1[i] - col2[i])
+    return total_diff < 32
+
+
+def do_presence(save: bool = False):
+    global gaem
+    global rpc
+    global rpc_next
+    
+    # Get screenshot
+    img = get_screenshot()
+    if save:
+        img.save("screenshot.png", "PNG")
+
+    presence_state = None
+    presence_details = None
+    
+    for location in presence_locations.locations:
+        sublocations = presence_locations.locations[location]
+        
+        for sublocation, subloc_data in sublocations.items():
+            pos = subloc_data["pos"]
+            col = subloc_data["col"]
+            pixel_pos = (round(img.width * pos[0]), round(img.height * pos[1]))
+            pixel_color = img.getpixel(pixel_pos)
+            if similar_color(pixel_color, col):
+                presence_state = sublocation
+                presence_details = location
+
+    if presence_state:
+        rpc_next = {
+            "state": presence_state,
+            "details": presence_details
+        }
+
+
 def main():
     global gaem
     global gaem_got
@@ -120,6 +182,10 @@ def main():
     global landscape_topleft
     global stop_threads
     global icon
+    global last_screen
+    global rpc
+    global rpc_next
+    global last_rpc_update
 
     while True:
         time.sleep(0.1)
@@ -137,11 +203,20 @@ def main():
                 get_game()
             
         if gaem:
-            # Do stuff
-            # TODO: Catch an error if game is closed within scale_height()
             try:
                 if win32gui.IsWindow(gaem):
+                    # Do stuff
                     scale_height()
+                    if time.time() - last_screen >= 1:
+                        # Take a screenshot every second
+                        last_screen = time.time()
+                        do_presence()
+                    if time.time() - last_rpc_update >= 15:
+                        # Update rich presence every 15 seconds
+                        last_rpc_update = time.time()
+                        rpc_next["large_image"] = "umaicon"
+                        rpc_next["large_text"] = "It's Special Week!"
+                        rpc.update(**rpc_next)
                 else:
                     # Game window closed
                     print("considered closed")
@@ -174,3 +249,6 @@ scaling_thread = threading.Thread(target=main, daemon=True)
 scaling_thread.start()
 
 icon.run()
+
+rpc.clear()
+rpc.close()
