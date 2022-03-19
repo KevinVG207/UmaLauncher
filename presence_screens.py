@@ -1,8 +1,8 @@
-locations = {
+screens = {
     "Main Menu": {
         "Upgrade": {
             "pos": (0.176, 0.978),
-            "col": (254, 82, 138)
+            "col": (254, 82, 138),
         },
         "Story": {
             "pos": (0.328, 0.981),

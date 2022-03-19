@@ -13,7 +13,7 @@ from pypresence import Presence
 from elevate import elevate
 from PIL import Image
 import pyautogui
-import presence_locations
+from screenstate import ScreenState
 
 elevate()
 
@@ -136,43 +136,26 @@ def get_screenshot():
     return pyautogui.screenshot(region=(x, y, x1, y1)).convert("RGB")
 
 
-def similar_color(col1, col2) -> bool:
-    total_diff = 0
-    for i in range(3):
-        total_diff += abs(col1[i] - col2[i])
-    return total_diff < 32
-
-
 def do_presence(save: bool = False):
     global gaem
     global rpc
     global rpc_next
     
     # Get screenshot
-    img = get_screenshot()
+    try:
+        img = get_screenshot()
+    except OSError:
+        print("Couldn't get screenshot")
+        return
+    if not img:
+        return
     if save:
         img.save("screenshot.png", "PNG")
 
-    presence_state = None
-    presence_details = None
-    
-    for location in presence_locations.locations:
-        sublocations = presence_locations.locations[location]
-        
-        for sublocation, subloc_data in sublocations.items():
-            pos = subloc_data["pos"]
-            col = subloc_data["col"]
-            pixel_pos = (round(img.width * pos[0]), round(img.height * pos[1]))
-            pixel_color = img.getpixel(pixel_pos)
-            if similar_color(pixel_color, col):
-                presence_state = sublocation
-                presence_details = location
+    screen_state = ScreenState(img)
 
-    if presence_state:
-        rpc_next = {
-            "state": presence_state,
-            "details": presence_details
-        }
+    if screen_state.has_state():
+        rpc_next = screen_state.get_state()
 
 
 def main():
@@ -189,6 +172,9 @@ def main():
 
     while True:
         time.sleep(0.1)
+
+        if gaem:
+            do_presence(True)
         
         if stop_threads:
             break
@@ -210,7 +196,7 @@ def main():
                     if time.time() - last_screen >= 1:
                         # Take a screenshot every second
                         last_screen = time.time()
-                        do_presence()
+                        do_presence(False)
                     if time.time() - last_rpc_update >= 15:
                         # Update rich presence every 15 seconds
                         last_rpc_update = time.time()
