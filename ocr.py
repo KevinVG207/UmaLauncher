@@ -1,47 +1,34 @@
 import time
 from PIL import Image
 
-numbers_top = 675
+
+def get_pixel_values(img: Image.Image) -> tuple:
+    num_values = list()
+    for x in range(img.width):
+        for y in range(img.height):
+            pixel_value = img.getpixel((x, y))
+            if pixel_value > 125:
+                num_values.append(1)
+            else:
+                num_values.append(0)
+    return tuple(num_values)
+
+
+big_num_ref_path = "_ocr/_ref/_big_num/"
+
+big_number_references = dict()
+for i in range(11):
+    key = i
+    if i == 10:
+        key = ""
+        cur_image = Image.open(f"{big_num_ref_path}None.png").convert("L")
+    else:
+        cur_image = Image.open(f"{big_num_ref_path}{str(i)}.png").convert("L")
+    big_number_references[key] = get_pixel_values(cur_image)
+    cur_image.close()
+
+
 numbers_top_fraction = 0.66964
-
-numbers_left = (
-    (
-        60,
-        75,
-        89
-    ),
-    (
-        151,
-        165,
-        180
-    ),
-    (
-        237,
-        252,
-        266
-    ),
-    (
-        326,
-        340,
-        355
-    ),
-    (
-        414,
-        428,
-        443
-    )
-)
-
-number_width_height = (13, 18)
-screen_width_height = (564, 1008)
-
-right_sides = (
-    102,
-    193,
-    279,
-    368,
-    456
-)
 
 right_sides_fractions = (
     0.18085,
@@ -83,18 +70,35 @@ def get_big_stat_number_bounding_boxes(right, top, img: Image.Image):
     return reversed(bounding_boxes)
 
 
-def get_all_big_number_bounding_boxes_(img: Image.Image, export: bool = False):
+def most_likely_big_number(img: Image.Image) -> int:
+    pixel_values = get_pixel_values(img)
+    scores = list()
+    for number, ref_values in big_number_references.items():
+        correct = 0
+        for i in range(len(pixel_values)):
+            if pixel_values[i] == ref_values[i]:
+                correct += 1
+        scores.append((number, correct))
+    scores.sort(key= lambda x: x[1], reverse=True)
+    return scores[0][0]
+
+
+def get_all_big_numbers(img: Image.Image, export: bool = False):
     if export:
         now = time.time()
         num = 0
+    stats = list()
     for right_side in right_sides_fractions:
+        cur_stat = list()
         bounding_boxes = get_big_stat_number_bounding_boxes(right_side, numbers_top_fraction, img)
         for bb in bounding_boxes:
-            print(img.width, img.height)
-            print(bb)
             num_img = img.crop(bb)
             num_img = num_img.resize((8, 10))
             num_img = preprocess_image(num_img)
             if export:
                 num_img.save(f"_ocr/_ref/_big_num/{str(now)}_{str(num)}.png", "PNG")
                 num += 1
+            cur_stat.append(most_likely_big_number(num_img))
+        # cur_stat.reverse()
+        stats.append(cur_stat)
+    return stats

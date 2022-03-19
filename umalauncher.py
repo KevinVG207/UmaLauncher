@@ -154,7 +154,8 @@ def do_presence(save: bool = False):
         img.save("screenshot.png", "PNG")
         # Test OCR
         # preprocessed = ocr.preprocess_image(img)
-        ocr.get_all_big_numbers(img)
+        stats = ocr.get_all_big_numbers(img)
+        print(stats)
         quit()
 
     screen_state = ScreenState(img)
