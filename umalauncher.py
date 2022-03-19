@@ -14,8 +14,9 @@ from elevate import elevate
 from PIL import Image
 import pyautogui
 from screenstate import ScreenState
+import ocr
 
-elevate()
+# elevate()
 
 global gaem
 gaem = None
@@ -151,6 +152,10 @@ def do_presence(save: bool = False):
         return
     if save:
         img.save("screenshot.png", "PNG")
+        # Test OCR
+        # preprocessed = ocr.preprocess_image(img)
+        ocr.get_all_big_numbers(img)
+        quit()
 
     screen_state = ScreenState(img)
 

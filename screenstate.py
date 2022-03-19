@@ -39,6 +39,8 @@ class ScreenState:
                 count += 1
                 if tab_enabled:
                     tmp_subscr = subscreen
+            else:
+                break
         if count == 5 and tmp_subscr:
             # All menu items found and one is enabled. This must be the home menu.
             self.screen = "Main Menu"
