@@ -14,13 +14,15 @@ from elevate import elevate
 from PIL import Image
 import pyautogui
 from screenstate import ScreenState
-import ocr
+import subprocess
 
-# elevate()
+elevate()
 
-global gaem
 gaem = None
 gaem_got = False
+
+dmm = None
+dmm_got = False
 
 scaling_thread = None
 stop_threads = False
@@ -34,14 +36,29 @@ prev_height = 0
 
 
 client_id = 954453106765225995
-rpc_next = {"details": "Launching game..."}
 last_screen = time.time()
 last_rpc_update = time.time()
 rpc = Presence(client_id)
 rpc.connect()
+screen_state = ScreenState()
+rpc_next = {"details": "Launching game..."}
 
 
-def enumHandler(hwnd, lParam):
+def _get_dmm(hwnd, lParam):
+    global dmm
+    if win32gui.IsWindowVisible(hwnd):
+        if "DMM GAME PLAYER" in win32gui.GetWindowText(hwnd):
+            dmm = hwnd
+
+
+def get_dmm():
+    global dmm_got
+    win32gui.EnumWindows(_get_dmm, None)
+    if dmm:
+        dmm_got = True
+
+
+def _get_game(hwnd, lParam):
     global gaem
     if win32gui.IsWindowVisible(hwnd):
         if win32gui.GetWindowText(hwnd) == "umamusume":
@@ -52,8 +69,8 @@ def get_game():
     global gaem
     global gaem_got
     global prev_height
-    win32gui.EnumWindows(enumHandler, None)
-    if gaem != None:
+    win32gui.EnumWindows(_get_game, None)
+    if gaem:
         gaem_got = True
         cur_gaem_rect = win32gui.GetWindowRect(gaem)
         prev_height = cur_gaem_rect[3] - cur_gaem_rect[1]
@@ -137,10 +154,11 @@ def get_screenshot():
     return pyautogui.screenshot(region=(x, y, x1, y1)).convert("RGB")
 
 
-def do_presence(save: bool = False):
+def do_presence(debug: bool = False):
     global gaem
     global rpc
     global rpc_next
+    global screen_state
     
     # Get screenshot
     try:
@@ -150,21 +168,18 @@ def do_presence(save: bool = False):
         return
     if not img:
         return
-    if save:
+    if debug:
         img.save("screenshot.png", "PNG")
-        # Test OCR
-        # preprocessed = ocr.preprocess_image(img)
-        stats = ocr.get_all_big_numbers(img)
-        print(stats)
-        quit()
 
-    screen_state = ScreenState(img)
+    screen_state.update(img, debug)
 
     if screen_state.has_state():
         rpc_next = screen_state.get_state()
 
 
 def main():
+    global dmm
+    global dmm_got
     global gaem
     global gaem_got
     global portrait_topleft
@@ -175,15 +190,25 @@ def main():
     global rpc
     global rpc_next
     global last_rpc_update
+    
+
+    if gaem:
+        dmm_got = True
+        do_presence(True)
 
     while True:
         time.sleep(0.1)
 
-        if gaem:
-            do_presence(True)
-        
         if stop_threads:
             break
+        
+        if not dmm:
+            # Check if it changed window.
+            get_dmm()
+            if not dmm and dmm_got:
+                # DMM Player was open and is now closed.
+                # TODO: Close VPN
+                pass
 
         if not gaem:
             if gaem_got:
@@ -222,10 +247,15 @@ def main():
     return None
 
 
+get_dmm()
 get_game()
 
-if not gaem:
-    os.startfile("dmmgameplayer://umamusume/cl/general/umamusume")
+if not gaem and not dmm:
+    # TODO: Enable VPN
+    os.system("Start dmmgameplayer://")
+    # subprocess.run("Start dmmgameplayer://", capture_output=True)
+    # os.startfile("dmmgameplayer://", operation="open")
+
 
 icon = pystray.Icon(
     'Uma Launcher',

@@ -83,7 +83,7 @@ def most_likely_big_number(img: Image.Image) -> int:
     return scores[0][0]
 
 
-def get_all_big_numbers(img: Image.Image, export: bool = False):
+def get_all_big_numbers(img: Image.Image, export: bool = False) -> list:
     if export:
         now = time.time()
         num = 0
@@ -96,9 +96,32 @@ def get_all_big_numbers(img: Image.Image, export: bool = False):
             num_img = num_img.resize((8, 10))
             num_img = preprocess_image(num_img)
             if export:
-                num_img.save(f"_ocr/_ref/_big_num/{str(now)}_{str(num)}.png", "PNG")
+                num_img.save(f"_ocr/_tmp/{str(now)}_{str(num)}.png", "PNG")
                 num += 1
             cur_stat.append(most_likely_big_number(num_img))
         # cur_stat.reverse()
         stats.append(cur_stat)
     return stats
+
+
+def get_training_stats(image: Image.Image, export: bool = False) -> dict:
+    stat_types = (
+        "Speed",
+        "Stamina",
+        "Power",
+        "Guts",
+        "Intelligence",
+        "Skill Pt"
+    )
+
+    out = dict()
+
+    raw_stats = get_all_big_numbers(image, export)
+    for i in range(len(raw_stats)):
+        cur_type_stats = raw_stats[i]
+        number_str = str()
+        for number in cur_type_stats:
+            number_str += str(number)
+        out[stat_types[i]] = number_str
+    
+    return out
