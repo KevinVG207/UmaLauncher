@@ -12,14 +12,14 @@ from elevate import elevate
 from PIL import Image
 import pyautogui
 from screenstate import ScreenState
-# import nordvpn_connect as nord
-import psutil
 import settings
 from loguru import logger
 import nord
-import util
 
 elevate()
+
+logger.add("log.log", retention="1 week")
+logger.info("==== Starting Launcher ====")
 
 gaem = None
 gaem_got = False
@@ -221,10 +221,10 @@ def main():
             rpc_on = new_rpc_state
             # Determine what to do now
             if rpc_on:
-                logger.info("Enabling RPC.")
+                logger.info("Enabling Rich Presence.")
                 rpc.connect()
             else:
-                logger.info("Disabling RPC.")
+                logger.info("Disabling Rich Presence.")
                 try:
                     rpc.clear()
                     rpc.close()
@@ -285,7 +285,7 @@ def main():
             except pywintypes.error as e:
                 # Game window probaby closed
                 logger.warning("Game probably closed. Error details:")
-                print(e)
+                logger.info(e)
                 gaem = None
     if icon:
         icon.stop()
@@ -326,6 +326,3 @@ icon.run()
 
 if nord_auto:
     nord.disconnect()
-
-while True:
-    pass

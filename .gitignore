@@ -3,3 +3,4 @@ _release/*
 __pycache__/*
 screenshot.png
 umasettings.json
+log.log
