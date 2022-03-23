@@ -149,7 +149,7 @@ def do_presence(debug: bool = False):
     try:
         img = get_screenshot()
     except OSError:
-        print("Couldn't get screenshot")
+        logger.error("Couldn't get screenshot.")
         return
     if not img:
         return
@@ -158,7 +158,7 @@ def do_presence(debug: bool = False):
 
     screen_state.update(img, debug)
 
-
+nord_auto = False
 def main():
     global dmm
     global dmm_got
@@ -173,10 +173,11 @@ def main():
     global last_rpc_update
     global vpn_settings
     global screen_state
+    global nord_auto
     dmm_closed = False
     dmm_ignored = False
     rpc_on = False
-    nord_auto = settings.get("NordVPN autolaunch")  # We only check this once, to ensure consistency with closing VPN later.
+    nord_auto = settings.get_tray_setting("NordVPN autolaunch")  # We only check this once, to ensure consistency with closing VPN later.
 
     # Rich Presence
     # First, we need to create an async event loop in the thread.
@@ -193,25 +194,17 @@ def main():
     if not gaem:
         # VPN
         if nord_auto:
-            if "NordVPN.exe" in (p.name() for p in psutil.process_iter()):
-                logger.info("Starting VPN")
-                nord.connect("Japan")
-                # vpn_settings = nord.initialize_vpn("Japan")
-                # nord.rotate_VPN(vpn_settings)
-                time.sleep(2)  # Connection jank, so wait a little longer
-            else:
-                nord_auto = False
-                logger.info("NordVPN not running.")
-                util.show_alert_box("NordVPN is not running.", "Ensure NordVPN is running in the background for the auto connect to work.\nYou can disable NordVPN autoconnect in the tray icon.")
+            last_attempt_time = nord.connect("Japan")
+            now = time.time()
+            time_difference = now - last_attempt_time
+            if time_difference < 10:
+                # Connection jank, so wait until at least 10 seconds pass to hopefully avoid a "Network Changed" error in DMM.
+                time.sleep(time_difference) 
     else:
         dmm_ignored = True
         do_presence(True)
 
     if not dmm_ignored:
-        # get_dmm()
-        # if not dmm:
-        #     logger.info("Starting DMMGamePlayer")
-        #     os.system("Start dmmgameplayer://umamusume/cl/general/umamusume")
         logger.info("Sending DMMGamePlayer to umamusume.")
         os.system("Start dmmgameplayer://umamusume/cl/general/umamusume")
 
@@ -222,7 +215,7 @@ def main():
         if stop_threads:
             break
 
-        new_rpc_state = settings.get("Discord rich presence")
+        new_rpc_state = settings.get_tray_setting("Discord rich presence")
         if rpc_on != new_rpc_state:
             # RPC state changed
             rpc_on = new_rpc_state
@@ -232,26 +225,26 @@ def main():
                 rpc.connect()
             else:
                 logger.info("Disabling RPC.")
-                rpc.clear()
-                rpc.close()
-
-        if not dmm and not dmm_ignored:
-            get_dmm()
+                try:
+                    rpc.clear()
+                    rpc.close()
+                except AssertionError:
+                    # Happens when not connected before.
+                    pass
         
+        if not dmm and not dmm_got:
+            get_dmm()
+
         if dmm_got and not dmm_ignored:
             # Check if it changed window.
             if not win32gui.IsWindow(dmm):
                 get_dmm()
                 if not dmm:
                     # DMM Player was open and is now closed.
-                    print("Disconnect VPN because DMM was closed.")
+                    logger.info("Disconnect VPN because DMM was closed.")
                     dmm_closed = True
                     if nord_auto:
                         nord.disconnect()
-        
-        if dmm_got and not dmm and not gaem:
-            print("break here")
-            break
 
         if not gaem:
             if gaem_got:
@@ -272,7 +265,7 @@ def main():
             try:
                 if win32gui.IsWindow(gaem):
                     # Do stuff
-                    if settings.get("Auto-resize"):
+                    if settings.get_tray_setting("Auto-resize"):
                         scale_height()
                     if rpc_on:
                         if time.time() - last_screen >= 1:
@@ -288,10 +281,10 @@ def main():
                             rpc.update(**rpc_next)
                 else:
                     # Game window closed
-                    print("considered closed")
                     gaem = None
             except pywintypes.error as e:
                 # Game window probaby closed
+                logger.warning("Game probably closed. Error details:")
                 print(e)
                 gaem = None
     if icon:
@@ -311,9 +304,9 @@ def close_clicked(icon, item):
     icon.stop()
 
 def setting_clicked(icon, item):
-    settings.set(item.text, not item.checked)
+    settings.set_tray_setting(item.text, not item.checked)
 
-menu_items = [pystray.MenuItem(menu_item, setting_clicked, checked=lambda item: settings.get(item.text)) for menu_item in settings.DEFAULT_SETTINGS["tray_items"]]
+menu_items = [pystray.MenuItem(menu_item, setting_clicked, checked=lambda item: settings.get_tray_setting(item.text)) for menu_item in settings.DEFAULT_SETTINGS["tray_items"]]
 menu_items.append(pystray.Menu.SEPARATOR)
 menu_items.append(pystray.MenuItem("Close", close_clicked))
 
@@ -330,3 +323,9 @@ scaling_thread = threading.Thread(target=main, daemon=True)
 scaling_thread.start()
 
 icon.run()
+
+if nord_auto:
+    nord.disconnect()
+
+while True:
+    pass

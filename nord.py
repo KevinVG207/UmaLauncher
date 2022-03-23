@@ -5,6 +5,7 @@ import settings
 import util
 import os
 import subprocess
+import psutil
 
 
 def _get_nord_path() -> str:
@@ -15,31 +16,44 @@ def _get_nord_path() -> str:
     return None
 
 def _get_ip() -> str:
-    return requests.get("https://api.myip.com/").json()["ip"]
+    ip = None
+    i = 0
+    while i < 5:
+        try:
+            ip = requests.get("https://api.myip.com/").json()["ip"]
+            break
+        except requests.exceptions.ConnectionError:
+            time.sleep(0.1)
+            i += 1
+    return ip
 
 
 def connect(group):
     logger.info(f"Attempting to connect to {group} with NordVPN.")
-    before_ip = _get_ip()
 
-    error = False
+    nord_path = _get_nord_path()
+    if not nord_path:
+        return
+
+    before_ip = _get_ip()
+    if not before_ip:
+        logger.error("Connection Error! Unable to fetch IP address.")
+        return
 
     logger.info("Waiting until IP changes.")
+    last_attempt_time = 0
     while True:
+        logger.info("Trying to start NordVPN.")
+        subprocess.Popen([os.path.join(nord_path + "NordVPN.exe"), "-c", "-g", "Japan"])
+        last_attempt_time = time.time()
+        # subprocess.run("NordVPN.exe -c -g \"Japan\"", cwd=nord_path)
         time.sleep(5)
         after_ip = _get_ip()
         if before_ip != after_ip:
             break
-        nord_path = _get_nord_path()
-        if not nord_path:
-            error = True
-            break
-        subprocess.run("nordvpn -c -g \"Japan\"", shell=True, cwd=nord_path)
-    
-    if error:
-        logger.error("Connecting to Nord failed.")
-    else:
-        logger.info("IP changed, so connected to VPN.")
+
+    logger.info("IP changed, so connected to VPN.")
+    return last_attempt_time
 
 
 def disconnect():
@@ -47,5 +61,7 @@ def disconnect():
     nord_path = _get_nord_path()
     if not nord_path:
         return
-    subprocess.run("nordvpn -d", shell=True, cwd=nord_path)
+    
+    if "NordVPN.exe" in (p.name() for p in psutil.process_iter()):
+        subprocess.run("nordvpn -d", shell=True, cwd=nord_path)
     return
