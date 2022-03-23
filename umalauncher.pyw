@@ -7,13 +7,20 @@ import time
 import win32api
 import win32gui
 import pywintypes
+from pypresence import Presence
 from elevate import elevate
+from PIL import Image
+import pyautogui
+from screenstate import ScreenState
+import nordvpn_connect as nord
 
 elevate()
 
-global gaem
 gaem = None
 gaem_got = False
+
+dmm = None
+dmm_got = False
 
 scaling_thread = None
 stop_threads = False
@@ -25,7 +32,35 @@ was_portrait = True
 
 prev_height = 0
 
-def enumHandler(hwnd, lParam):
+
+client_id = 954453106765225995
+last_screen = time.time()
+last_rpc_update = time.time()
+rpc = Presence(client_id)
+rpc.connect()
+screen_state = ScreenState()
+rpc_next = {"details": "Launching game..."}
+
+
+# VPN
+vpn_settings = nord.initialize_vpn("Japan")
+
+
+def _get_dmm(hwnd, lParam):
+    global dmm
+    if win32gui.IsWindowVisible(hwnd):
+        if "DMM GAME PLAYER" in win32gui.GetWindowText(hwnd):
+            dmm = hwnd
+
+
+def get_dmm():
+    global dmm_got
+    win32gui.EnumWindows(_get_dmm, None)
+    if dmm:
+        dmm_got = True
+
+
+def _get_game(hwnd, lParam):
     global gaem
     if win32gui.IsWindowVisible(hwnd):
         if win32gui.GetWindowText(hwnd) == "umamusume":
@@ -36,8 +71,8 @@ def get_game():
     global gaem
     global gaem_got
     global prev_height
-    win32gui.EnumWindows(enumHandler, None)
-    if gaem != None:
+    win32gui.EnumWindows(_get_game, None)
+    if gaem:
         gaem_got = True
         cur_gaem_rect = win32gui.GetWindowRect(gaem)
         prev_height = cur_gaem_rect[3] - cur_gaem_rect[1]
@@ -59,7 +94,6 @@ def on_clicked(icon, item):
     global stop_threads
     stop_threads = True
     icon.stop()
-    quit()
 
 
 def is_portrait() -> bool:
@@ -112,18 +146,89 @@ def scale_height():
         prev_height = cur_height
     
 
+def get_screenshot():
+    global gaem
+    # win32gui.SetForegroundWindow(gaem)
+    x, y, x1, y1 = win32gui.GetClientRect(gaem)
+    x, y = win32gui.ClientToScreen(gaem, (x, y))
+    x1, y1 = win32gui.ClientToScreen(gaem, (x1 - x, y1 - y))
+    return pyautogui.screenshot(region=(x, y, x1, y1)).convert("RGB")
+
+
+def do_presence(debug: bool = False):
+    global gaem
+    global rpc
+    global rpc_next
+    global screen_state
+    
+    # Get screenshot
+    try:
+        img = get_screenshot()
+    except OSError:
+        print("Couldn't get screenshot")
+        return
+    if not img:
+        return
+    if debug:
+        img.save("screenshot.png", "PNG")
+
+    screen_state.update(img, debug)
+
+    if screen_state.has_state():
+        rpc_next = screen_state.get_state()
+
+
 def main():
+    global dmm
+    global dmm_got
     global gaem
     global gaem_got
     global portrait_topleft
     global landscape_topleft
     global stop_threads
     global icon
+    global last_screen
+    global rpc
+    global rpc_next
+    global last_rpc_update
+    global vpn_settings
+    dmm_closed = False
+    dmm_ignored = False
+
+    get_dmm()
+    get_game()
+
+    if not gaem and not dmm:
+        nord.rotate_VPN(vpn_settings)
+        time.sleep(5)  # Connection jank, so wait a little longer
+        os.system("Start dmmgameplayer://")
+
+    if gaem:
+        dmm_ignored = True
+        do_presence(True)
 
     while True:
         time.sleep(0.1)
-        
+
         if stop_threads:
+            nord.close_vpn_connection(vpn_settings)
+            break
+
+        if not dmm and not dmm_ignored:
+            get_dmm()
+        
+        if dmm_got and not dmm_ignored:
+            # Check if it changed window.
+            if not win32gui.IsWindow(dmm):
+                get_dmm()
+                if not dmm:
+                    # DMM Player was open and is now closed.
+                    print("Disconnect VPN because DMM was closed.")
+                    dmm_closed = True
+                    nord.close_vpn_connection(vpn_settings)
+        
+        if dmm_got and not dmm and not gaem:
+            print("break here")
             break
 
         if not gaem:
@@ -136,11 +241,25 @@ def main():
                 get_game()
             
         if gaem:
-            # Do stuff
-            # TODO: Catch an error if game is closed within scale_height()
+            if not dmm_ignored and dmm_got and not dmm_closed:
+                # Game was launched via DMM.
+                print("Automatically shutting down VPN")
+                dmm_closed = True
+                nord.close_vpn_connection(vpn_settings)
             try:
                 if win32gui.IsWindow(gaem):
+                    # Do stuff
                     scale_height()
+                    if time.time() - last_screen >= 1:
+                        # Take a screenshot every second
+                        last_screen = time.time()
+                        do_presence(False)
+                    if time.time() - last_rpc_update >= 15:
+                        # Update rich presence every 15 seconds
+                        last_rpc_update = time.time()
+                        rpc_next["large_image"] = "umaicon"
+                        rpc_next["large_text"] = "It's Special Week!"
+                        rpc.update(**rpc_next)
                 else:
                     # Game window closed
                     print("considered closed")
@@ -153,11 +272,6 @@ def main():
         icon.stop()
     return None
 
-
-get_game()
-
-if not gaem:
-    os.startfile("dmmgameplayer://umamusume/cl/general/umamusume")
 
 icon = pystray.Icon(
     'Uma Launcher',
@@ -173,3 +287,6 @@ scaling_thread = threading.Thread(target=main, daemon=True)
 scaling_thread.start()
 
 icon.run()
+
+rpc.clear()
+rpc.close()

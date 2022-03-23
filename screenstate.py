@@ -2,23 +2,18 @@ import time
 from PIL import Image
 import presence_screens as scr
 import ocr
+from loguru import logger
 
 class ScreenState:
     def __init__(self):
         self.main = "Launching game..."
-        self.sub = str()
+        self.sub = "Ready your umapyois!"
         self.start_time = time.time()
         self.training_horse = str()
 
 
-    def has_state(self) -> bool:
-        if self.main and self.sub:
-            return True
-        return False
-
-
     def get_state(self) -> dict:
-        print(self.main, self.sub)
+        logger.info(f"Updating Rich Presence state: {self.main}, {self.sub}")
         return {
             "state": self.sub,
             "details": self.main,
@@ -28,6 +23,7 @@ class ScreenState:
 
     def update(self, image: Image.Image, debug = False):
         self.determine_location(image, debug)
+        logger.info(f"Determined state: {self.main}, {self.sub}")
     
     def determine_location(self, image: Image.Image, debug = False) -> str:
         try:

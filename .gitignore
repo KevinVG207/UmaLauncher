@@ -1,3 +1,5 @@
 venv/*
+_release/*
 __pycache__/*
 screenshot.png
+umasettings.json
