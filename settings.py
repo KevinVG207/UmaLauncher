@@ -5,6 +5,8 @@ from loguru import logger
 SETTINGS_FILE = "umasettings.json"
 DEFAULT_SETTINGS = {
     "nordvpn_path": "c:\\Program Files\\NordVPN\\",
+    "autoclose_dmm": True,
+    "autoclose_nord": True,
     "tray_items": {
         "Auto-resize": True,
         "Discord rich presence": True,
@@ -30,8 +32,19 @@ def load_settings():
 
             # Ensure that the default settings keys actually exist.
             for default_setting in DEFAULT_SETTINGS:
-                if default_setting not in loaded_settings:
+                if isinstance(DEFAULT_SETTINGS[default_setting], dict):
+                    if default_setting not in loaded_settings:
+                        logger.warning(f"Adding missing setting: {default_setting}")
+                        loaded_settings[default_setting] = DEFAULT_SETTINGS[default_setting]
+                    else:
+                        for default_subsetting in DEFAULT_SETTINGS[default_setting]:
+                            if default_subsetting not in loaded_settings[default_setting]:
+                                logger.warning(f"Adding missing subsetting: {default_setting}[{default_subsetting}]")
+                                loaded_settings[default_setting][default_subsetting] = DEFAULT_SETTINGS[default_setting][default_subsetting]
+                elif default_setting not in loaded_settings:
+                    logger.warning(f"Adding missing setting: {default_setting}")
                     loaded_settings[default_setting] = DEFAULT_SETTINGS[default_setting]
+            save_settings()
         
         except (json.JSONDecodeError, TypeError):
             logger.info("Failed to load settings file. Loading default settings instead.")
@@ -74,4 +87,4 @@ if not os.path.exists(SETTINGS_FILE):
 else:
     load_settings()
 
-print(loaded_settings)
+logger.info(loaded_settings)

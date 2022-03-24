@@ -1,3 +1,10 @@
+from elevate import elevate
+elevate()
+
+from loguru import logger
+logger.add("log.log", retention="1 week")
+logger.info("==== Starting Launcher ====")
+
 import psutil
 import pystray
 import asyncio
@@ -9,18 +16,11 @@ import win32api
 import win32gui
 import pywintypes
 from pypresence import Presence
-from elevate import elevate
 from PIL import Image
 import pyautogui
 from screenstate import ScreenState
 import settings
-from loguru import logger
 import nord
-
-elevate()
-
-logger.add("log.log", retention="1 week")
-logger.info("==== Starting Launcher ====")
 
 gaem = None
 gaem_got = False
