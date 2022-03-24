@@ -1,3 +1,11 @@
+from elevate import elevate
+elevate()
+
+from loguru import logger
+logger.add("log.log", retention="1 week")
+logger.info("==== Starting Launcher ====")
+
+import psutil
 import pystray
 import asyncio
 import os
@@ -6,20 +14,14 @@ from PIL import Image
 import time
 import win32api
 import win32gui
+import win32con
 import pywintypes
 from pypresence import Presence
-from elevate import elevate
 from PIL import Image
 import pyautogui
 from screenstate import ScreenState
 import settings
-from loguru import logger
 import nord
-
-elevate()
-
-logger.add("log.log", retention="1 week")
-logger.info("==== Starting Launcher ====")
 
 gaem = None
 gaem_got = False
@@ -235,16 +237,21 @@ def main():
         if not dmm and not dmm_got:
             get_dmm()
 
-        if dmm_got and not dmm_ignored:
+        if dmm_got and not dmm_ignored and not dmm_closed:
             # Check if it changed window.
             if not win32gui.IsWindow(dmm):
-                get_dmm()
-                if not dmm:
+                dmm = None
+                if not dmm and "DMMGamePlayer.exe" not in (p.name() for p in psutil.process_iter()):
                     # DMM Player was open and is now closed.
                     logger.info("Disconnect VPN because DMM was closed.")
                     dmm_closed = True
                     if nord_auto:
                         nord.disconnect()
+                    if not gaem:
+                        break
+                else:
+                    time.sleep(0.5)
+                    get_dmm()
 
         if not gaem:
             if gaem_got:
@@ -259,6 +266,10 @@ def main():
             if not dmm_ignored and dmm_got and not dmm_closed:
                 # Game was launched via DMM.
                 logger.info("Automatically shutting down VPN.")
+                if settings.get("autoclose_dmm"):
+                    # Automatically close the DMM window.
+                    logger.info("Closing DMM window.")
+                    win32gui.PostMessage(dmm, win32con.WM_CLOSE, 0, 0)
                 dmm_closed = True
                 if nord_auto:
                     nord.disconnect()

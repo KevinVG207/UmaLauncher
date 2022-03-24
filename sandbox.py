@@ -1,8 +1,16 @@
-import psutil
+import win32gui
+from loguru import logger
 
-for proc in psutil.process_iter():
-    try:
-        if "nordvpn.exe" in proc.name().lower():
-            print(proc.name())
-    except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-        pass
+def _get_nord(hwnd, lParam):
+    global nord_window
+    if win32gui.IsWindowVisible(hwnd):
+        print(win32gui.GetWindowText(hwnd))
+        if win32gui.GetWindowText(hwnd) == "NordVPN":
+            logger.info("Found NordVPN window!")
+            nord_window = hwnd
+
+
+def get_nord():
+    win32gui.EnumWindows(_get_nord, None)
+
+get_nord()

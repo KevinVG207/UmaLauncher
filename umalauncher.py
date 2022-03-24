@@ -14,6 +14,7 @@ from PIL import Image
 import time
 import win32api
 import win32gui
+import win32con
 import pywintypes
 from pypresence import Presence
 from PIL import Image
@@ -236,7 +237,7 @@ def main():
         if not dmm and not dmm_got:
             get_dmm()
 
-        if dmm_got and not dmm_ignored:
+        if dmm_got and not dmm_ignored and not dmm_closed:
             # Check if it changed window.
             if not win32gui.IsWindow(dmm):
                 dmm = None
@@ -246,7 +247,8 @@ def main():
                     dmm_closed = True
                     if nord_auto:
                         nord.disconnect()
-                    break
+                    if not gaem:
+                        break
                 else:
                     time.sleep(0.5)
                     get_dmm()
@@ -264,6 +266,10 @@ def main():
             if not dmm_ignored and dmm_got and not dmm_closed:
                 # Game was launched via DMM.
                 logger.info("Automatically shutting down VPN.")
+                if settings.get("autoclose_dmm"):
+                    # Automatically close the DMM window.
+                    logger.info("Closing DMM window.")
+                    win32gui.PostMessage(dmm, win32con.WM_CLOSE, 0, 0)
                 dmm_closed = True
                 if nord_auto:
                     nord.disconnect()
