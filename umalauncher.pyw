@@ -22,7 +22,9 @@ import pyautogui
 from screenstate import ScreenState
 import settings
 import nord
+import util
 
+# Globals
 gaem = None
 gaem_got = False
 
@@ -40,34 +42,19 @@ was_portrait = True
 prev_height = 0
 
 
-def _get_dmm(hwnd, lParam):
-    global dmm
-    if win32gui.IsWindowVisible(hwnd):
-        if "DMM GAME PLAYER" in win32gui.GetWindowText(hwnd):
-            logger.info("Found DMMGamePlayer!")
-            dmm = hwnd
-
-
 def get_dmm():
+    global dmm
     global dmm_got
-    win32gui.EnumWindows(_get_dmm, None)
+    dmm = util.get_window_handle("DMM GAME PLAYER")
     if dmm:
         dmm_got = True
-
-
-def _get_game(hwnd, lParam):
-    global gaem
-    if win32gui.IsWindowVisible(hwnd):
-        if win32gui.GetWindowText(hwnd) == "umamusume":
-            logger.info("Found uma game!")
-            gaem = hwnd
 
 
 def get_game():
     global gaem
     global gaem_got
     global prev_height
-    win32gui.EnumWindows(_get_game, None)
+    gaem = util.get_window_handle("umamusume", exact=True)
     if gaem:
         gaem_got = True
         cur_gaem_rect = win32gui.GetWindowRect(gaem)
@@ -173,7 +160,6 @@ def main():
     global last_screen
     global rpc
     global last_rpc_update
-    global vpn_settings
     global screen_state
     global nord_auto
     dmm_closed = False

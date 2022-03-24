@@ -9,18 +9,6 @@ import psutil
 import win32gui
 import win32con
 
-nord_window = None
-def _get_nord(hwnd, lParam):
-    global nord_window
-    if win32gui.IsWindowVisible(hwnd):
-        if win32gui.GetWindowText(hwnd).startswith("NordVPN"):
-            logger.info("Found NordVPN window!")
-            nord_window = hwnd
-
-
-def get_nord():
-    win32gui.EnumWindows(_get_nord, None)
-
 
 def _get_nord_path() -> str:
     nord_path = settings.get("nordvpn_path")
@@ -43,8 +31,6 @@ def _get_ip() -> str:
 
 
 def connect(group):
-    global nord_window
-
     logger.info(f"Attempting to connect to {group} with NordVPN.")
 
     nord_path = _get_nord_path()
@@ -72,7 +58,7 @@ def connect(group):
 
     # Automatically close NordVPN window.
     if settings.get("autoclose_nord"):
-        get_nord()
+        nord_window = util.get_window_handle("NordVPN")
         if nord_window:
             logger.info("Closing NordVPN window.")
             win32gui.PostMessage(nord_window, win32con.WM_CLOSE, 0, 0)
