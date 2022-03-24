@@ -1,3 +1,4 @@
+import psutil
 import pystray
 import asyncio
 import os
@@ -238,13 +239,17 @@ def main():
         if dmm_got and not dmm_ignored:
             # Check if it changed window.
             if not win32gui.IsWindow(dmm):
-                get_dmm()
-                if not dmm:
+                dmm = None
+                if not dmm and "DMMGamePlayer.exe" not in (p.name() for p in psutil.process_iter()):
                     # DMM Player was open and is now closed.
                     logger.info("Disconnect VPN because DMM was closed.")
                     dmm_closed = True
                     if nord_auto:
                         nord.disconnect()
+                    break
+                else:
+                    time.sleep(0.5)
+                    get_dmm()
 
         if not gaem:
             if gaem_got:
