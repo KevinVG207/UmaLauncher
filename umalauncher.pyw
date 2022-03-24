@@ -236,8 +236,7 @@ def main():
                     if not gaem:
                         break
                 else:
-                    time.sleep(0.5)
-                    get_dmm()
+                    dmm_got = False
 
         if not gaem:
             if gaem_got:
@@ -293,7 +292,6 @@ def main():
     return None
 
 
-
 # Set up tray icon.
 def close_clicked(icon, item):
     global stop_threads
@@ -303,10 +301,15 @@ def close_clicked(icon, item):
 def setting_clicked(icon, item):
     settings.set_tray_setting(item.text, not item.checked)
 
-menu_items = [pystray.MenuItem(menu_item, setting_clicked, checked=lambda item: settings.get_tray_setting(item.text)) for menu_item in settings.DEFAULT_SETTINGS["tray_items"]]
+menu_items = [
+    pystray.MenuItem(
+        menu_item,
+        setting_clicked,
+        checked=lambda item: settings.get_tray_setting(item.text)
+    ) for menu_item in settings.DEFAULT_SETTINGS["tray_items"]
+]
 menu_items.append(pystray.Menu.SEPARATOR)
 menu_items.append(pystray.MenuItem("Close", close_clicked))
-
 
 icon = pystray.Icon(
     'Uma Launcher',
@@ -315,11 +318,16 @@ icon = pystray.Icon(
     )
 
 
+# Start the main and tray icon threads.
 logger.info("Starting threads.")
 scaling_thread = threading.Thread(target=main, daemon=True)
 scaling_thread.start()
 
 icon.run()
 
+
+# After all threads closed.
 if nord_auto:
     nord.disconnect()
+
+logger.info("===== Launcher Closed =====")
