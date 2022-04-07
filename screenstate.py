@@ -9,7 +9,6 @@ class ScreenState:
         self.main = "Launching game..."
         self.sub = "Ready your umapyois!"
         self.start_time = time.time()
-        self.training_horse = str()
 
 
     def get_state(self) -> dict:
@@ -47,7 +46,6 @@ class ScreenState:
                     break
             if count == 5 and tmp_subscr:
                 # All menu items found and one is enabled. This must be the home menu.
-                self.training_horse = str()
                 self.main = "Main Menu"
                 self.sub = tmp_subscr
             
@@ -66,6 +64,7 @@ class ScreenState:
                     else:
                         self.sub = " ".join(stats_dict.values()[:-1]) + " | " + stats_dict.values()[-1]
                     self.main = "Training"
+            
         except IOError:
             # This may occur if the screen is not visible?
             pass

@@ -63,7 +63,7 @@ def get_tray_setting(key: str) -> bool:
 def set_tray_setting(key: str, value: bool):
     global loaded_settings
     if key in loaded_settings["tray_items"]:
-        logger.info(f"Saving setting. Key: {key}\tValue: {value}")
+        logger.info(f"Saving tray setting. Key: {key}\tValue: {value}")
         loaded_settings["tray_items"][key] = value
         save_settings()
     else:
@@ -77,6 +77,16 @@ def get(key: str):
     else:
         logger.error(f"Unknown key wanted from settings: {key}")
         return None
+
+
+def set(key: str, value):
+    global loaded_settings
+    if key in loaded_settings:
+        logger.info(f"Saving setting. Key: {key}\tValue: {value}")
+        loaded_settings[key] = value
+        save_settings()
+    else:
+        logger.error(f"Unknown key passed to settings. Key: {key}\tValue: {value}")
 
 
 # Load settings on import.

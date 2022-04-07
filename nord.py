@@ -58,7 +58,7 @@ def connect(group):
 
     # Automatically close NordVPN window.
     if settings.get("autoclose_nord"):
-        nord_window = util.get_window_handle("NordVPN")
+        nord_window = util.get_window_handle("NordVPN", type=util.STARTSWITH)
         if nord_window:
             logger.info("Closing NordVPN window.")
             win32gui.PostMessage(nord_window, win32con.WM_CLOSE, 0, 0)
@@ -73,5 +73,6 @@ def disconnect():
         return
     
     if "NordVPN.exe" in (p.name() for p in psutil.process_iter()):
-        subprocess.run("nordvpn -d", shell=True, cwd=nord_path)
+        # subprocess.run("nordvpn -d", shell=True, cwd=nord_path)
+        subprocess.Popen("nordvpn -d", shell=True, cwd=nord_path)
     return
