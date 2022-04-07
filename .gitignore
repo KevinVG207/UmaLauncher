@@ -1,6 +1,8 @@
 venv/*
 _release/*
 __pycache__/*
+_ocr/_tmp/*
+_ocr/_raw/*
 screenshot.png
 umasettings.json
 log.log

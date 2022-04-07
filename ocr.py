@@ -1,4 +1,5 @@
 import time
+import util
 from PIL import Image
 
 
@@ -38,8 +39,11 @@ right_sides_fractions = (
     0.80851
 )
 
-big_number_wh = (0.02305, 0.01786)
-spacing_between_big_numbers = 0.00266
+
+three_number_wh = (0.02305, 0.01786)
+spacing_between_three_numbers = 0.00266
+four_number_wh = (0.02028, 0.01786)
+spacing_between_four_numbers = 0.00220
 
 
 def preprocess_image(img: Image.Image) -> Image:
@@ -48,13 +52,49 @@ def preprocess_image(img: Image.Image) -> Image:
     return preprocessed
 
 
+def has_four_numbers(right, top, img: Image.Image) -> bool:
+    check_coords = (right - 0.079365, top + three_number_wh[1] / 2)
+    check_pxl = util.get_position_rgb(img, check_coords)
+    print(check_pxl)
+    return not util.similar_color(check_pxl, (255, 255, 255))
+
+
 def get_big_stat_number_bounding_boxes(right, top, img: Image.Image):
+    if has_four_numbers(right, top, img):
+        return get_four_numbers_bounding_boxes(right, top, img)
+    else:
+        return get_three_numbers_bounding_boxes(right, top, img)
+
+
+def get_four_numbers_bounding_boxes(right, top, img: Image.Image):
+    # Assumes there are four numbers.
+    top_pxl = top * img.height
+    right_pxl = right * img.width
+    number_width_pxl = four_number_wh[0] * img.width
+    number_height_pxl = four_number_wh[1] * img.height
+    spacing_pxl = spacing_between_four_numbers * img.width
+
+    bounding_boxes = list()
+    
+    for i in range(4):
+        cur_right_pxl = right_pxl - (number_width_pxl + spacing_pxl) * i
+        cur_bb = (
+            round(cur_right_pxl - number_width_pxl),
+            round(top_pxl),
+            round(cur_right_pxl),
+            round(top_pxl + number_height_pxl)
+        )
+        bounding_boxes.append(cur_bb)
+    return reversed(bounding_boxes)
+
+
+def get_three_numbers_bounding_boxes(right, top, img: Image.Image):
     # Assumes there are three numbers.
     top_pxl = top * img.height
     right_pxl = right * img.width
-    number_width_pxl = big_number_wh[0] * img.width
-    number_height_pxl = big_number_wh[1] * img.height
-    spacing_pxl = spacing_between_big_numbers * img.width
+    number_width_pxl = three_number_wh[0] * img.width
+    number_height_pxl = three_number_wh[1] * img.height
+    spacing_pxl = spacing_between_three_numbers * img.width
 
     bounding_boxes = list()
     

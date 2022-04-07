@@ -15,6 +15,7 @@ import time
 import win32api
 import win32gui
 import win32con
+import win32clipboard
 import pywintypes
 import pypresence
 from PIL import Image
@@ -23,6 +24,7 @@ from screenstate import ScreenState
 import settings
 import nord
 import util
+from io import BytesIO
 
 # Globals
 gaem_handle = None
@@ -39,6 +41,8 @@ first_orientation = True
 was_portrait = True
 
 prev_height = 0
+
+screen_state = ScreenState()
 
 
 def get_dmm():
@@ -198,7 +202,6 @@ def main():
     last_screen = time.time()
     last_rpc_update = time.time()
     rpc = None
-    screen_state = ScreenState()
 
 
     while True:
@@ -311,6 +314,22 @@ def close_clicked(icon, item):
     stop_threads = True
     icon.stop()
 
+def tray_take_screenshot(icon, item):
+    try:
+        img = get_screenshot()
+    except OSError:
+        logger.error("Couldn't get screenshot.")
+        util.show_alert_box("Failed to take screenshot.", "Couldn't take screenshot of the game.")
+        return
+    output = BytesIO()
+    img.convert("RGB").save(output, "BMP")
+    image_data = output.getvalue()[14:]
+    output.close()
+    win32clipboard.OpenClipboard()
+    win32clipboard.EmptyClipboard()
+    win32clipboard.SetClipboardData(win32clipboard.CF_DIB, image_data)
+    win32clipboard.CloseClipboard()
+
 def setting_clicked(icon, item):
     settings.set_tray_setting(item.text, not item.checked)
 
@@ -321,6 +340,7 @@ menu_items = [
         checked=lambda item: settings.get_tray_setting(item.text)
     ) for menu_item in settings.DEFAULT_SETTINGS["tray_items"]
 ]
+menu_items.append(pystray.MenuItem("Take screenshot", tray_take_screenshot))
 menu_items.append(pystray.Menu.SEPARATOR)
 menu_items.append(pystray.MenuItem("Close", close_clicked))
 

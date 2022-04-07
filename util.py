@@ -2,6 +2,7 @@ import win32api
 import win32gui
 import threading
 from loguru import logger
+from PIL import Image
 
 window_handle = None
 
@@ -55,3 +56,19 @@ def get_window_handle(query: str, type: int=LAZY) -> str:
     win32gui.EnumWindows(type, query)
     return window_handle
 
+
+def get_position_rgb(image: Image.Image, position: tuple[float,float]) -> tuple[int,int,int]:
+    pixel_color = None
+    pixel_pos = (round(image.width * position[0]), round(image.height * position[1]))
+    try:
+        pixel_color = image.getpixel(pixel_pos)
+    except IndexError:
+        pass
+    return pixel_color
+
+
+def similar_color(col1: tuple[int,int,int], col2: tuple[int,int,int], threshold: int = 32) -> bool:
+    total_diff = 0
+    for i in range(3):
+        total_diff += abs(col1[i] - col2[i])
+    return total_diff < threshold
