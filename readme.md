@@ -1,4 +1,5 @@
 # Uma Launcher
+Script that enhances the Uma Musume (DMM Version) experience.
 
 ## Requirements
 - Python 3
