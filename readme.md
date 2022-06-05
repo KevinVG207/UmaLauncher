@@ -9,8 +9,10 @@
 ## Features
 - Launch Uma Musume simply by running one Python script.
   - `umalauncher.pyw` automatically launches DMMGamePlayer and autostarts the game. No interaction necessary.
-    - (The script will need administrator privileges to interact with open Windows and to patch DMMGamePlayer.)
-- Various options to enable/disable during gameplay by right-clicking the horse shoe icon in the taskbar.
+    - Alternatively, run `umalauncher.py` to keep the console open.
+    - Whichever way you run the script, output will be logged to `log.log`.
+    - The script will ask for administrator privileges to interact with open applications and to patch DMMGamePlayer.
+- Various options to enable/disable during gameplay by right-clicking the horse shoe icon in the taskbar:
   - Better Discord rich presence for Uma Musume.
   - Automatically resizing the game to the largest possible size on your screen.
   - Take screenshots.
