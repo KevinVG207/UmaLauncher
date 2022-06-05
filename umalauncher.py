@@ -32,6 +32,7 @@ gaem_was_open = False
 
 dmm_handle = None
 dmm_was_open = False
+dmm_patched = False
 
 stop_threads = False
 
@@ -169,6 +170,7 @@ def main():
     global rpc
     global last_rpc_update
     global screen_state
+    global dmm_patched
     dmm_closed = False
     dmm_ignored = False
     rpc_on = False
@@ -180,7 +182,10 @@ def main():
 
     if not dmm_ignored:
         logger.info("Sending DMMGamePlayer to umamusume.")
-        dmm.patch_dmm()
+        if settings.get_tray_setting("Auto-launch game"):
+            dmm.patch_dmm()
+        elif settings.get("unpatch_dmm"):
+            dmm.unpatch_dmm()
         os.system("Start dmmgameplayer://umamusume/cl/general/umamusume")
 
 

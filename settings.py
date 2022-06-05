@@ -6,10 +6,12 @@ from loguru import logger
 SETTINGS_FILE = "umasettings.json"
 DEFAULT_SETTINGS = {
     "dmm_path": "c:\\Program Files\\DMMGamePlayer\\",
+    "unpatch_dmm": False,
     "autoclose_dmm": True,
     "tray_items": {
         "Auto-resize": True,
-        "Discord rich presence": True
+        "Discord rich presence": True,
+        "Auto-launch game": True
     }
 }
 
