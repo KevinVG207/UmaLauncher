@@ -17,6 +17,6 @@
 - Or manually change settings after first launch by editing `umasettings.json`.
 
 ## Disclaimer
-UmaLauncher is in no way associated with Uma Musume, Cygames or DMM.
-It is the developer's belief that this tool is harmless to the above companies and brands and merely acts as a tool to improve the user experience.
+UmaLauncher is in no way associated with Uma Musume, Cygames or DMM.  
+It is the developer's belief that this tool is harmless to the above companies and brands and merely acts as a tool to improve the user experience.  
 That being said; **UmaLauncher modifies files of DMMGamePlayer and does not fall under its TOS, so use at your own risk!**
