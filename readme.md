@@ -13,7 +13,10 @@
     - Whichever way you run the script, output will be logged to `log.log`.
     - The script will ask for administrator privileges to interact the DMMGamePlayer and Uma Musume windows and to patch DMMGamePlayer.
 - Various options to enable/disable during gameplay by right-clicking the horse shoe icon in the taskbar:
-  - Better Discord rich presence for Uma Musume.
+  - Better Discord rich presence for Uma Musume. (WIP)
+    - (Still work-in-progress and only works if nothing is above the game window.)
+    - Shows which home screen you're on.
+    - Shows stats during training using OCR.
   - Automatically resizing the game to the largest possible size on your screen.
   - Take screenshots.
 - Or manually change settings after first launch by editing `umasettings.json`.
