@@ -149,7 +149,7 @@ def bounding_boxes_to_stats(bounding_boxes: list, img: Image.Image, export: bool
     cur_stat = list()
     for bb in bounding_boxes:
         num_img = img.crop(bb)
-        num_img = num_img.resize((8, 10))
+        num_img = num_img.resize((12, 18))
         num_img = preprocess_image(num_img)
         if export:
             now = time.time()
