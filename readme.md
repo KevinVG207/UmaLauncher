@@ -2,9 +2,9 @@
 
 ## Requirements
 - Python 3
-  - Make sure to run `pip install -r requirements.txt`
+  - Make sure to run `pip install -r requirements.txt` before first launch.
 - Node.js
-  - Make sure to run `npm install`
+  - Make sure to run `npm install` before first launch.
 
 ## Features
 - Launch Uma Musume simply by running one Python script.
@@ -17,6 +17,7 @@
   - Automatically resizing the game to the largest possible size on your screen.
   - Take screenshots.
 - Or manually change settings after first launch by editing `umasettings.json`.
+  - E.g. to change the path to DMMGamePlayer to a non-default location.
 
 ## Disclaimer
 UmaLauncher is in no way associated with Uma Musume, Cygames or DMM.  
