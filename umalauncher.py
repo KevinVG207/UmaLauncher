@@ -1,4 +1,11 @@
-import datetime
+from elevate import elevate
+elevate()
+
+from loguru import logger
+logger.add("log.log", retention="1 week")
+logger.info("==== Starting Launcher ====")
+
+import psutil
 import pystray
 import asyncio
 import os
@@ -7,72 +14,83 @@ from PIL import Image
 import time
 import win32api
 import win32gui
+import win32con
+import win32clipboard
 import pywintypes
-from elevate import elevate
+import pypresence
+from PIL import Image
+import pyautogui
+from screenstate import ScreenState
+import settings
+import nord
+import util
+import dmm
+from io import BytesIO
 
-elevate()
+# Globals
+gaem_handle = None
+gaem_was_open = False
 
-global gaem
-gaem = None
-gaem_got = False
+dmm_handle = None
+dmm_was_open = False
 
-scaling_thread = None
 stop_threads = False
 
-icon = None
+tray_icon = None
 
 first_orientation = True
 was_portrait = True
 
 prev_height = 0
 
-def enumHandler(hwnd, lParam):
-    global gaem
-    if win32gui.IsWindowVisible(hwnd):
-        if win32gui.GetWindowText(hwnd) == "umamusume":
-            gaem = hwnd
+screen_state = ScreenState()
+
+
+def get_dmm():
+    global dmm_handle
+    global dmm_was_open
+    dmm_handle = util.get_window_handle("DMM GAME PLAYER", type=util.LAZY)
+    if dmm_handle:
+        dmm_was_open = True
+
+
+def close_dmm():
+    if win32gui.IsWindow(dmm_handle):
+        win32gui.PostMessage(dmm_handle, win32con.WM_CLOSE, 0, 0)
 
 
 def get_game():
-    global gaem
-    global gaem_got
+    global gaem_handle
+    global gaem_was_open
     global prev_height
-    win32gui.EnumWindows(enumHandler, None)
-    if gaem != None:
-        gaem_got = True
-        cur_gaem_rect = win32gui.GetWindowRect(gaem)
+    gaem_handle = util.get_window_handle("umamusume", type=util.EXACT)
+    if gaem_handle:
+        gaem_was_open = True
+        cur_gaem_rect = win32gui.GetWindowRect(gaem_handle)
         prev_height = cur_gaem_rect[3] - cur_gaem_rect[1]
 
 
 def get_workspace():
-    global gaem
-    if gaem:
-        monitor = win32api.MonitorFromWindow(gaem)
+    global gaem_handle
+    if gaem_handle:
+        monitor = win32api.MonitorFromWindow(gaem_handle)
         return win32api.GetMonitorInfo(monitor).get("Work") if monitor else None
     else:
         return None
 
-def start_async(icon):
-    asyncio.run(main())
-
-
-def on_clicked(icon, item):
-    global stop_threads
-    stop_threads = True
-    icon.stop()
-    quit()
-
 
 def is_portrait() -> bool:
-    global gaem
-    cur_gaem_rect = win32gui.GetWindowRect(gaem)
-    cur_height = cur_gaem_rect[3] - cur_gaem_rect[1]
-    cur_width = cur_gaem_rect[2] - cur_gaem_rect[0]
-    return cur_height > cur_width
+    global gaem_handle
+    cur_gaem_rect = win32gui.GetWindowRect(gaem_handle)
+    return rectangle_is_portrait(cur_gaem_rect)
+
+
+def rectangle_is_portrait(rect):
+    return rect[3] - rect[1] > rect[2] - rect[0]
 
 
 def scale_height():
-    global gaem
+    global gaem_handle
     global was_portrait
     global first_orientation
     global prev_height
@@ -80,7 +98,7 @@ def scale_height():
     workspace = get_workspace()
     if workspace:
         jank_resize = False
-        cur_gaem_rect = win32gui.GetWindowRect(gaem)
+        cur_gaem_rect = win32gui.GetWindowRect(gaem_handle)
         cur_height = cur_gaem_rect[3] - cur_gaem_rect[1]
         cur_width = cur_gaem_rect[2] - cur_gaem_rect[0]
         if prev_height - cur_height > 250:
@@ -99,78 +117,253 @@ def scale_height():
             scaled_width = workspace_width
 
         scaled_size = (round(scaled_width), round(scaled_height))
-        win32gui.MoveWindow(gaem, cur_gaem_rect[0], workspace[1], scaled_size[0], scaled_size[1], True)
+        win32gui.MoveWindow(gaem_handle, cur_gaem_rect[0], workspace[1], scaled_size[0], scaled_size[1], True)
 
         # Determine if orientation changed.
         prev_portrait = is_portrait()
         if first_orientation or jank_resize or prev_portrait != was_portrait:
             new_left = round((workspace_width / 2) - (scaled_width / 2))
-            win32gui.MoveWindow(gaem, new_left, workspace[1], scaled_size[0], scaled_size[1], True)
+            win32gui.MoveWindow(gaem_handle, new_left, workspace[1], scaled_size[0], scaled_size[1], True)
             first_orientation = False
         was_portrait = prev_portrait
-        new_gaem_rect = win32gui.GetWindowRect(gaem)
+        new_gaem_rect = win32gui.GetWindowRect(gaem_handle)
         cur_height = new_gaem_rect[3] - new_gaem_rect[1]
         prev_height = cur_height
     
 
+def get_screenshot():
+    global gaem_handle
+    x, y, x1, y1 = win32gui.GetClientRect(gaem_handle)
+    x, y = win32gui.ClientToScreen(gaem_handle, (x, y))
+    x1, y1 = win32gui.ClientToScreen(gaem_handle, (x1 - x, y1 - y))
+    return pyautogui.screenshot(region=(x, y, x1, y1)).convert("RGB")
+
+
+def do_presence(debug: bool = False):
+    global screen_state
+    
+    # Get screenshot
+    try:
+        img = get_screenshot()
+    except OSError:
+        logger.error("Couldn't get screenshot.")
+        return
+    if not img:
+        return
+    if debug:
+        img.save("screenshot.png", "PNG")
+
+    screen_state.update(img, debug)
+
+nord_auto = False
+@logger.catch
 def main():
-    global gaem
-    global gaem_got
+    global dmm_handle
+    global dmm_was_open
+    global gaem_handle
+    global gaem_was_open
     global portrait_topleft
     global landscape_topleft
     global stop_threads
-    global icon
+    global tray_icon
+    global last_screen
+    global rpc
+    global last_rpc_update
+    global screen_state
+    global nord_auto
+    dmm_closed = False
+    dmm_ignored = False
+    rpc_on = False
+    nord_auto = settings.get_tray_setting("NordVPN autolaunch")  # We only check this once, to ensure consistency with closing VPN later.
+
+    get_game()
+    if not gaem_handle:
+        # VPN
+        if nord_auto:
+            last_attempt_time = nord.connect("Japan")
+            now = time.time()
+            time_difference = now - last_attempt_time
+            if time_difference < 10:
+                # Connection jank, so wait until at least 10 seconds pass to hopefully avoid a "Network Changed" error in DMM.
+                time.sleep(time_difference)
+    else:
+        dmm_ignored = True
+        do_presence()
+
+    if not dmm_ignored:
+        logger.info("Sending DMMGamePlayer to umamusume.")
+        dmm.patch_dmm()
+        os.system("Start dmmgameplayer://umamusume/cl/general/umamusume")
+
+
+    # Rich Presence
+    # First, we need to create an async event loop in the thread.
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+    client_id = 954453106765225995
+    last_screen = time.time()
+    last_rpc_update = time.time()
+    rpc = None
+
 
     while True:
         time.sleep(0.1)
-        
+
         if stop_threads:
             break
 
-        if not gaem:
-            if gaem_got:
+        new_rpc_state = settings.get_tray_setting("Discord rich presence")
+        if rpc_on != new_rpc_state:
+            # RPC state changed
+            rpc_on = new_rpc_state
+            # Determine what to do now
+            if rpc_on:
+                if not rpc:
+                    try:
+                        rpc = pypresence.Presence(client_id)
+                    except pypresence.exceptions.DiscordNotFound:
+                        logger.error("Couldn't connect to Discord.")
+                if rpc:
+                    logger.info("Enabling Rich Presence.")
+                    rpc.connect()
+            else:
+                logger.info("Disabling Rich Presence.")
+                if rpc:
+                    try:
+                        rpc.clear()
+                        rpc.close()
+                    except AssertionError:
+                        # Happens when not connected before.
+                        pass
+        
+        if not dmm_handle and not dmm_was_open:
+            get_dmm()
+
+        if dmm_was_open and not dmm_ignored and not dmm_closed:
+            # Check if it changed window.
+            if not win32gui.IsWindow(dmm_handle):
+                dmm_handle = None
+                if not dmm_handle and "DMMGamePlayer.exe" not in (p.name() for p in psutil.process_iter()):
+                    # DMM Player was open and is now closed.
+                    logger.info("Disconnect VPN because DMM was closed.")
+                    dmm_closed = True
+                    if nord_auto:
+                        nord.disconnect()
+                    if not gaem_handle:
+                        break
+                else:
+                    dmm_was_open = False
+
+        if not gaem_handle:
+            if gaem_was_open:
                 # Game was found before, but no more.
                 get_game()
-                if not gaem:
+                if not gaem_handle:
                     break
             else:
                 get_game()
             
-        if gaem:
-            # Do stuff
-            # TODO: Catch an error if game is closed within scale_height()
+        if gaem_handle:
+            if not dmm_ignored and dmm_was_open and not dmm_closed:
+                # Game was launched via DMM.
+                if settings.get("autoclose_dmm"):
+                    # Automatically close the DMM window.
+                    logger.info("Closing DMM window.")
+                    close_dmm()
+                dmm_closed = True
+                if nord_auto:
+                    logger.info("Automatically shutting down VPN.")
+                    nord.disconnect()
             try:
-                if win32gui.IsWindow(gaem):
-                    scale_height()
+                if win32gui.IsWindow(gaem_handle):
+                    # Do stuff
+                    if settings.get_tray_setting("Auto-resize"):
+                        scale_height()
+                    if rpc_on and rpc:
+                        if time.time() - last_screen >= 1:
+                            # Take a screenshot every second
+                            last_screen = time.time()
+                            do_presence(False)
+                        if time.time() - last_rpc_update >= 15:
+                            # Update rich presence every 15 seconds
+                            last_rpc_update = time.time()
+                            rpc_next = screen_state.get_state()
+                            rpc_next["large_image"] = "umaicon"
+                            rpc_next["large_text"] = "It's Special Week!"
+                            rpc.update(**rpc_next)
                 else:
                     # Game window closed
-                    print("considered closed")
-                    gaem = None
+                    gaem_handle = None
             except pywintypes.error as e:
                 # Game window probaby closed
-                print(e)
-                gaem = None
-    if icon:
-        icon.stop()
+                logger.warning("Game probably closed. Error details:")
+                logger.info(e)
+                gaem_handle = None
+                
+    if tray_icon:
+        tray_icon.stop()
+    if nord_auto:
+        nord.disconnect()
+    if rpc:
+        rpc.clear()
+        rpc.close()
     return None
 
 
-get_game()
+# Set up tray icon.
+def close_clicked(icon, item):
+    global stop_threads
+    stop_threads = True
+    icon.stop()
 
-if not gaem:
-    os.startfile("dmmgameplayer://umamusume/cl/general/umamusume")
+def tray_take_screenshot(icon, item):
+    try:
+        img = get_screenshot()
+    except OSError:
+        logger.error("Couldn't get screenshot.")
+        util.show_alert_box("Failed to take screenshot.", "Couldn't take screenshot of the game.")
+        return
+    output = BytesIO()
+    img.convert("RGB").save(output, "BMP")
+    image_data = output.getvalue()[14:]
+    output.close()
+    win32clipboard.OpenClipboard()
+    win32clipboard.EmptyClipboard()
+    win32clipboard.SetClipboardData(win32clipboard.CF_DIB, image_data)
+    win32clipboard.CloseClipboard()
 
-icon = pystray.Icon(
+def setting_clicked(icon, item):
+    settings.set_tray_setting(item.text, not item.checked)
+
+menu_items = [
+    pystray.MenuItem(
+        menu_item,
+        setting_clicked,
+        checked=lambda item: settings.get_tray_setting(item.text)
+    ) for menu_item in settings.DEFAULT_SETTINGS["tray_items"]
+]
+menu_items.append(pystray.MenuItem("Take screenshot", tray_take_screenshot))
+menu_items.append(pystray.Menu.SEPARATOR)
+menu_items.append(pystray.MenuItem("Close", close_clicked))
+
+tray_icon = pystray.Icon(
     'Uma Launcher',
     Image.open("favicon.ico"),
-    menu=pystray.Menu(
-        pystray.MenuItem(
-            "Close",
-            on_clicked
-        ))
+    menu=pystray.Menu(*menu_items)
     )
 
-scaling_thread = threading.Thread(target=main, daemon=True)
-scaling_thread.start()
+# Start the main and tray icon threads.
+logger.info("Starting threads.")
+threading.Thread(target=main).start()
 
-icon.run()
+tray_icon.run()
+
+
+# After all threads closed.
+if nord_auto:
+    nord.disconnect()
+
+# dmm.unpatch_dmm()
+
+logger.info("===== Launcher Closed =====")
