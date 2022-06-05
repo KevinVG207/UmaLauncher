@@ -156,6 +156,7 @@ def do_presence(debug: bool = False):
     screen_state.update(img, debug)
 
 nord_auto = False
+@logger.catch
 def main():
     global dmm_handle
     global dmm_was_open
@@ -266,13 +267,13 @@ def main():
         if gaem_handle:
             if not dmm_ignored and dmm_was_open and not dmm_closed:
                 # Game was launched via DMM.
-                logger.info("Automatically shutting down VPN.")
                 if settings.get("autoclose_dmm"):
                     # Automatically close the DMM window.
                     logger.info("Closing DMM window.")
                     close_dmm()
                 dmm_closed = True
                 if nord_auto:
+                    logger.info("Automatically shutting down VPN.")
                     nord.disconnect()
             try:
                 if win32gui.IsWindow(gaem_handle):
@@ -307,8 +308,6 @@ def main():
     if rpc:
         rpc.clear()
         rpc.close()
-    if not dmm_ignored:
-        dmm.unpatch_dmm()
     return None
 
 
@@ -356,7 +355,7 @@ tray_icon = pystray.Icon(
 
 # Start the main and tray icon threads.
 logger.info("Starting threads.")
-threading.Thread(target=main, daemon=True).start()
+threading.Thread(target=main).start()
 
 tray_icon.run()
 
@@ -364,5 +363,7 @@ tray_icon.run()
 # After all threads closed.
 if nord_auto:
     nord.disconnect()
+
+# dmm.unpatch_dmm()
 
 logger.info("===== Launcher Closed =====")

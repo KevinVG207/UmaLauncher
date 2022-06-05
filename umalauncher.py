@@ -156,6 +156,7 @@ def do_presence(debug: bool = False):
     screen_state.update(img, debug)
 
 nord_auto = False
+@logger.catch
 def main():
     global dmm_handle
     global dmm_was_open
@@ -363,6 +364,6 @@ tray_icon.run()
 if nord_auto:
     nord.disconnect()
 
-dmm.unpatch_dmm()
+# dmm.unpatch_dmm()
 
 logger.info("===== Launcher Closed =====")
