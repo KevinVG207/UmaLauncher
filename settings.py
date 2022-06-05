@@ -1,17 +1,15 @@
 import os
 import json
+import copy
 from loguru import logger
 
 SETTINGS_FILE = "umasettings.json"
 DEFAULT_SETTINGS = {
     "dmm_path": "c:\\Program Files\\DMMGamePlayer\\",
-    "nordvpn_path": "c:\\Program Files\\NordVPN\\",
     "autoclose_dmm": True,
-    "autoclose_nord": True,
     "tray_items": {
         "Auto-resize": True,
-        "Discord rich presence": True,
-        "NordVPN autolaunch": False
+        "Discord rich presence": True
     }
 }
 
@@ -45,6 +43,17 @@ def load_settings():
                 elif default_setting not in loaded_settings:
                     logger.warning(f"Adding missing setting: {default_setting}")
                     loaded_settings[default_setting] = DEFAULT_SETTINGS[default_setting]
+            tmp_loaded_settings = copy.deepcopy(loaded_settings)
+            for setting in loaded_settings:
+                if isinstance(loaded_settings[setting], dict):
+                    for sub_setting in loaded_settings[setting]:
+                        if sub_setting not in DEFAULT_SETTINGS[setting]:
+                            logger.warning(f"Removing unknown setting: {setting}[{sub_setting}]")
+                            del tmp_loaded_settings[setting][sub_setting]
+                elif setting not in DEFAULT_SETTINGS:
+                    logger.warning(f"Removing unknown setting: {setting}")
+                    del tmp_loaded_settings[setting]
+            loaded_settings = tmp_loaded_settings
             save_settings()
         
         except (json.JSONDecodeError, TypeError):

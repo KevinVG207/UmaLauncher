@@ -14,5 +14,4 @@
   - Better Discord rich presence for Uma Musume.
   - Automatically resizing the game to the largest possible size on your screen.
   - Take screenshots.
-  - (Obsolete) Autostart a NordVPN connection to Japan for launching through DMM.
 - Or manually change settings after first launch by editing `umasettings.json`.

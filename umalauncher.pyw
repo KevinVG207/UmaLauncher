@@ -22,7 +22,6 @@ from PIL import Image
 import pyautogui
 from screenstate import ScreenState
 import settings
-import nord
 import util
 import dmm
 from io import BytesIO
@@ -155,7 +154,7 @@ def do_presence(debug: bool = False):
 
     screen_state.update(img, debug)
 
-nord_auto = False
+
 @logger.catch
 def main():
     global dmm_handle
@@ -170,23 +169,12 @@ def main():
     global rpc
     global last_rpc_update
     global screen_state
-    global nord_auto
     dmm_closed = False
     dmm_ignored = False
     rpc_on = False
-    nord_auto = settings.get_tray_setting("NordVPN autolaunch")  # We only check this once, to ensure consistency with closing VPN later.
 
     get_game()
-    if not gaem_handle:
-        # VPN
-        if nord_auto:
-            last_attempt_time = nord.connect("Japan")
-            now = time.time()
-            time_difference = now - last_attempt_time
-            if time_difference < 10:
-                # Connection jank, so wait until at least 10 seconds pass to hopefully avoid a "Network Changed" error in DMM.
-                time.sleep(time_difference)
-    else:
+    if gaem_handle:
         dmm_ignored = True
         do_presence()
 
@@ -248,8 +236,6 @@ def main():
                     # DMM Player was open and is now closed.
                     logger.info("Disconnect VPN because DMM was closed.")
                     dmm_closed = True
-                    if nord_auto:
-                        nord.disconnect()
                     if not gaem_handle:
                         break
                 else:
@@ -272,9 +258,6 @@ def main():
                     logger.info("Closing DMM window.")
                     close_dmm()
                 dmm_closed = True
-                if nord_auto:
-                    logger.info("Automatically shutting down VPN.")
-                    nord.disconnect()
             try:
                 if win32gui.IsWindow(gaem_handle):
                     # Do stuff
@@ -303,8 +286,6 @@ def main():
                 
     if tray_icon:
         tray_icon.stop()
-    if nord_auto:
-        nord.disconnect()
     if rpc:
         rpc.clear()
         rpc.close()
@@ -361,9 +342,7 @@ tray_icon.run()
 
 
 # After all threads closed.
-if nord_auto:
-    nord.disconnect()
 
-# dmm.unpatch_dmm()
+
 
 logger.info("===== Launcher Closed =====")
