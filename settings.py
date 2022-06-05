@@ -4,6 +4,7 @@ from loguru import logger
 
 SETTINGS_FILE = "umasettings.json"
 DEFAULT_SETTINGS = {
+    "dmm_path": "c:\\Program Files\\DMMGamePlayer\\",
     "nordvpn_path": "c:\\Program Files\\NordVPN\\",
     "autoclose_dmm": True,
     "autoclose_nord": True,

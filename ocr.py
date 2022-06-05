@@ -1,6 +1,7 @@
 import time
 import util
 from PIL import Image
+import random
 
 
 def get_pixel_values(img: Image.Image) -> tuple:
@@ -55,7 +56,6 @@ def preprocess_image(img: Image.Image) -> Image:
 def has_four_numbers(right, top, img: Image.Image) -> bool:
     check_coords = (right - 0.079365, top + three_number_wh[1] / 2)
     check_pxl = util.get_position_rgb(img, check_coords)
-    print(check_pxl)
     return not util.similar_color(check_pxl, (255, 255, 255))
 
 
@@ -110,6 +110,28 @@ def get_three_numbers_bounding_boxes(right, top, img: Image.Image):
     return reversed(bounding_boxes)
 
 
+def get_skill_points_bounding_boxes(img: Image.Image) -> list:
+    # Assumes there are three numbers.
+    top_pxl = 0.6765 * img.height
+    right_pxl = 0.936 * img.width
+    number_width_pxl = three_number_wh[0] * img.width * 1
+    number_height_pxl = three_number_wh[1] * img.height * 1.05
+    spacing_pxl = spacing_between_three_numbers * img.width * 1.25
+
+    bounding_boxes = list()
+    
+    for i in range(3):
+        cur_right_pxl = right_pxl - (number_width_pxl + spacing_pxl) * i
+        cur_bb = (
+            round(cur_right_pxl - number_width_pxl),
+            round(top_pxl),
+            round(cur_right_pxl),
+            round(top_pxl + number_height_pxl)
+        )
+        bounding_boxes.append(cur_bb)
+    return reversed(bounding_boxes)
+
+
 def most_likely_big_number(img: Image.Image) -> int:
     pixel_values = get_pixel_values(img)
     scores = list()
@@ -123,24 +145,32 @@ def most_likely_big_number(img: Image.Image) -> int:
     return scores[0][0]
 
 
+def bounding_boxes_to_stats(bounding_boxes: list, img: Image.Image, export: bool = False) -> list:
+    cur_stat = list()
+    for bb in bounding_boxes:
+        num_img = img.crop(bb)
+        num_img = num_img.resize((8, 10))
+        num_img = preprocess_image(num_img)
+        if export:
+            now = time.time()
+            num = 0
+            num_img.save(f"_ocr/_tmp/{str(now)}_{str(num + random.randint(0,10000))}.png", "PNG")
+            num += 1
+        cur_stat.append(most_likely_big_number(num_img))
+    return cur_stat
+
+
 def get_all_big_numbers(img: Image.Image, export: bool = False) -> list:
-    if export:
-        now = time.time()
-        num = 0
     stats = list()
+    # Training stats
     for right_side in right_sides_fractions:
-        cur_stat = list()
         bounding_boxes = get_big_stat_number_bounding_boxes(right_side, numbers_top_fraction, img)
-        for bb in bounding_boxes:
-            num_img = img.crop(bb)
-            num_img = num_img.resize((8, 10))
-            num_img = preprocess_image(num_img)
-            if export:
-                num_img.save(f"_ocr/_tmp/{str(now)}_{str(num)}.png", "PNG")
-                num += 1
-            cur_stat.append(most_likely_big_number(num_img))
-        # cur_stat.reverse()
-        stats.append(cur_stat)
+        stats.append(bounding_boxes_to_stats(bounding_boxes, img, export))
+    
+    # Skill points
+    bounding_boxes = get_skill_points_bounding_boxes(img)
+    stats.append(bounding_boxes_to_stats(bounding_boxes, img, export))
+
     return stats
 
 

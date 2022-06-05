@@ -80,7 +80,7 @@ class ScreenState:
                             if len(stats_dict) < 6:
                                 self.sub = " ".join(stats_dict.values())
                             else:
-                                self.sub = " ".join(stats_dict.values()[:-1]) + " | " + stats_dict.values()[-1]
+                                self.sub = " ".join(list(stats_dict.values())[:-1]) + " | " + list(stats_dict.values())[-1]
                             self.main = "Training"
                         if main_screen == "Concert Theater":
                             self.sub = "Vibing"

@@ -24,6 +24,7 @@ from screenstate import ScreenState
 import settings
 import nord
 import util
+import dmm
 from io import BytesIO
 
 # Globals
@@ -186,10 +187,11 @@ def main():
                 time.sleep(time_difference)
     else:
         dmm_ignored = True
-        do_presence(True)
+        do_presence()
 
     if not dmm_ignored:
         logger.info("Sending DMMGamePlayer to umamusume.")
+        dmm.patch_dmm()
         os.system("Start dmmgameplayer://umamusume/cl/general/umamusume")
 
 
@@ -264,13 +266,13 @@ def main():
         if gaem_handle:
             if not dmm_ignored and dmm_was_open and not dmm_closed:
                 # Game was launched via DMM.
-                logger.info("Automatically shutting down VPN.")
                 if settings.get("autoclose_dmm"):
                     # Automatically close the DMM window.
                     logger.info("Closing DMM window.")
                     close_dmm()
                 dmm_closed = True
                 if nord_auto:
+                    logger.info("Automatically shutting down VPN.")
                     nord.disconnect()
             try:
                 if win32gui.IsWindow(gaem_handle):
@@ -352,7 +354,7 @@ tray_icon = pystray.Icon(
 
 # Start the main and tray icon threads.
 logger.info("Starting threads.")
-threading.Thread(target=main, daemon=True).start()
+threading.Thread(target=main).start()
 
 tray_icon.run()
 
@@ -360,5 +362,7 @@ tray_icon.run()
 # After all threads closed.
 if nord_auto:
     nord.disconnect()
+
+dmm.unpatch_dmm()
 
 logger.info("===== Launcher Closed =====")

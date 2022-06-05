@@ -22,7 +22,8 @@ def _get_ip() -> str:
     i = 0
     while i < 5:
         try:
-            ip = requests.get("https://api.myip.com/").json()["ip"]
+            # ip = requests.get("https://api.myip.com/").json()["ip"]
+            ip = requests.get("https://api.ipify.org/?format=json").json()["ip"]
             break
         except requests.exceptions.ConnectionError:
             time.sleep(0.1)
