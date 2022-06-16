@@ -5,6 +5,8 @@ import math
 import ocr
 import time
 import elevate
+import random
+
 elevate.elevate()
 
 
@@ -40,13 +42,13 @@ def get_training_fail_chance(button_number: int, img: Image.Image) -> float:
     stop_height = 0.736111111
     start_pixel_height = math.floor(img.height * start_height)
     stop_pixel_height = math.ceil(img.height * stop_height)
-    gottem = None
+    popup_box_height = None
     for i in range(start_pixel_height, stop_pixel_height):
         pixel_color = img.getpixel((button_x_pixel, i))
         if util.similar_color(pixel_color, (255, 150, 0)) or util.similar_color(pixel_color, (13, 150, 255)) or util.similar_color(pixel_color, (255, 69, 0)):
-            gottem = i
+            popup_box_height = i
             break
-    if gottem is None:
+    if popup_box_height is None:
         logger.error("Could not find training fail chance box!")
         return None
 
@@ -56,49 +58,55 @@ def get_training_fail_chance(button_number: int, img: Image.Image) -> float:
     text_bottom_pixels = round(img.height * text_bottom_offset)
     searching_distance = 0.026455
     searching_pixels = round(img.width * searching_distance)
+    search_start_offset = 0.089788732
+    search_start_pixels = round(img.width * search_start_offset)
 
-    pixels_until_number_found = None
-
-    # TODO: Search from the right (percent sign) instead so the starting point can be consistent.
+    pixels_to_percent = None
 
     for i in range(searching_pixels):
         for j in range(text_top_pixels, text_bottom_pixels):
-            pixel_color = img.getpixel((button_x_pixel + i, gottem + j))
+            pixel_color = img.getpixel((button_x_pixel + search_start_pixels - i, popup_box_height + j))
             if util.similar_color(pixel_color, (255, 255, 255)) or util.similar_color(pixel_color, (255, 218, 18)):
-                pixels_until_number_found = i
-                logger.info(f"Found number at {button_x_pixel} + {i}, {gottem} + {j}")
+                pixels_to_percent = i
                 break
-        if pixels_until_number_found is not None:
+        if pixels_to_percent is not None:
             break
-    
-    if pixels_until_number_found is None:
+    if pixels_to_percent is None:
         logger.error("Could not find training fail chance number!")
         return None
     
-    distance_to_number = pixels_until_number_found / img.width
+    distance_to_percent = pixels_to_percent / img.width
 
+    percent_symbol_width = 0.030809859
+    percent_symbol_pixels = round(img.width * percent_symbol_width)
     number_width = 0.022046
+    number_pixels = round(img.width * number_width)
 
-    if distance_to_number < 0.0194:
+    first_x = button_x_pixel + search_start_pixels - pixels_to_percent - percent_symbol_pixels
+
+    randomnum = random.randint(0,999999999)
+
+    if distance_to_percent < 0.01056338:
         logger.info("Found a two-digit fail chance number.")
-        bbox1 = (button_x_pixel + pixels_until_number_found - 1, gottem + text_top_pixels, round(button_x_pixel + pixels_until_number_found - 1 + (number_width * img.width)), gottem + text_bottom_pixels)
-        bbox2 = (round(button_x_pixel + pixels_until_number_found - 1 + (number_width * img.width)), gottem + text_top_pixels, round(button_x_pixel + pixels_until_number_found - 1 + 2 * (number_width * img.width)), gottem + text_bottom_pixels)
+        bbox1 = (first_x - number_pixels, popup_box_height + text_top_pixels, first_x, popup_box_height + text_bottom_pixels)
+        bbox2 = (first_x - 2 * (number_pixels), popup_box_height + text_top_pixels, first_x - number_pixels, popup_box_height + text_bottom_pixels)
 
         num1 = img.crop(bbox1)
         num2 = img.crop(bbox2)
 
         num1 = ocr.preprocess_image(num1, True)
-        num1.save("num1.png")
+        num1.save(f"num1_{randomnum}.png")
         num2 = ocr.preprocess_image(num2, True)
-        num2.save("num2.png")
+        num2.save(f"num2_{randomnum}.png")
 
         logger.info(ocr.most_likely_big_number(num1))
         logger.info(ocr.most_likely_big_number(num2))
-        return (10 * int(ocr.most_likely_big_number(num1)) + int(ocr.most_likely_big_number(num2))) / 100
+        return (10 * int(ocr.most_likely_big_number(num2)) + int(ocr.most_likely_big_number(num1))) / 100
     logger.info("Found a one-digit fail chance number.")
-    bbox = (button_x_pixel + pixels_until_number_found - 1, gottem + text_top_pixels, round(button_x_pixel + pixels_until_number_found - 1 + (number_width * img.width)), gottem + text_bottom_pixels)
-    num1 = img.crop(bbox)
+    bbox1 = (first_x - number_pixels, popup_box_height + text_top_pixels, first_x, popup_box_height + text_bottom_pixels)
+    num1 = img.crop(bbox1)
     num1 = ocr.preprocess_image(num1, True)
+    num1.save(f"num1_{randomnum}.png")
     logger.info(ocr.most_likely_big_number(num1))
     return int(ocr.most_likely_big_number(num1)) / 100
 
