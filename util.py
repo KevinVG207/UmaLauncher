@@ -3,6 +3,7 @@ import win32gui
 import threading
 from loguru import logger
 from PIL import Image
+import pyautogui
 
 window_handle = None
 
@@ -72,3 +73,9 @@ def similar_color(col1: tuple[int,int,int], col2: tuple[int,int,int], threshold:
     for i in range(3):
         total_diff += abs(col1[i] - col2[i])
     return total_diff < threshold
+
+def take_screenshot(window_handle) -> Image.Image:
+    x, y, x1, y1 = win32gui.GetClientRect(window_handle)
+    x, y = win32gui.ClientToScreen(window_handle, (x, y))
+    x1, y1 = win32gui.ClientToScreen(window_handle, (x1 - x, y1 - y))
+    return pyautogui.screenshot(region=(x, y, x1, y1)).convert("RGB")

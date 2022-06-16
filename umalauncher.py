@@ -133,10 +133,7 @@ def scale_height():
 
 def get_screenshot():
     global gaem_handle
-    x, y, x1, y1 = win32gui.GetClientRect(gaem_handle)
-    x, y = win32gui.ClientToScreen(gaem_handle, (x, y))
-    x1, y1 = win32gui.ClientToScreen(gaem_handle, (x1 - x, y1 - y))
-    return pyautogui.screenshot(region=(x, y, x1, y1)).convert("RGB")
+    return util.take_screenshot(gaem_handle)
 
 
 def do_presence(debug: bool = False):

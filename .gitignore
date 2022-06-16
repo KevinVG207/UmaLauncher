@@ -6,7 +6,7 @@ _ocr/_raw/*
 _ocr/_ref/backup/*
 node_modules/*
 package-lock.json
-screenshot.png
+*.png
 umasettings.json
 log.log
 sandbox.py
