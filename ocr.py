@@ -47,9 +47,14 @@ four_number_wh = (0.02028, 0.01786)
 spacing_between_four_numbers = 0.00220
 
 
-def preprocess_image(img: Image.Image) -> Image:
+def preprocess_image(img: Image.Image, invert=False) -> Image:
     preprocessed = img.convert("L")
-    preprocessed = preprocessed.point(lambda x: 0 if x < 200 else 255)
+    preprocessed = preprocessed.resize((12, 18))
+    extrema = preprocessed.getextrema()
+    if invert:
+        preprocessed = preprocessed.point(lambda x: 255 if util.map(x, extrema[0], extrema[1], 0, 255) < 200 else 0)
+    else:
+        preprocessed = preprocessed.point(lambda x: 0 if util.map(x, extrema[0], extrema[1], 0, 255) < 200 else 255)
     return preprocessed
 
 
@@ -149,7 +154,6 @@ def bounding_boxes_to_stats(bounding_boxes: list, img: Image.Image, export: bool
     cur_stat = list()
     for bb in bounding_boxes:
         num_img = img.crop(bb)
-        num_img = num_img.resize((12, 18))
         num_img = preprocess_image(num_img)
         if export:
             now = time.time()

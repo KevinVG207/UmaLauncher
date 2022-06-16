@@ -2,15 +2,15 @@ import util
 from loguru import logger
 from PIL import Image
 import math
-import cv2
-import numpy as np
+import ocr
+import time
+import elevate
+elevate.elevate()
+
 
 default_window_size = (564, 1008)
-failchance = Image.open("_ocr/_ref/_training/failchance.png")
-failpercent = Image.open("_ocr/_ref/_training/failpercent.png")
-failchance_blue = Image.open("_ocr/_ref/_training/failchance_blue.png")
-failpercent_blue = Image.open("_ocr/_ref/_training/failpercent_blue.png")
-
+training_button_diameter = 0.176366843
+training_button_left_offset = 0.0590828924
 
 def estimate_energy(image: Image.Image, max_energy: int = 100) -> int:
     energy_bar_start = math.ceil(image.width * 0.3156)
@@ -29,54 +29,110 @@ def estimate_energy(image: Image.Image, max_energy: int = 100) -> int:
     return energy
 
 
-def pil_image_to_cv2_image(pil_image, size_multiplier=1) -> cv2.Mat:
-    return cv2.cvtColor(np.array(pil_image.resize((round(pil_image.width * size_multiplier), round(pil_image.height * size_multiplier)))), cv2.COLOR_RGB2BGR)
+def get_training_button_x_fraction(button_number: int) -> int:
+    return training_button_left_offset + (training_button_diameter / 2) + (button_number * training_button_diameter)
 
 
-def get_template_match_bbox(big_cv_image, small_cv_image, method=cv2.TM_CCOEFF_NORMED) -> tuple[int,int,int,int]:
-    template_matches = cv2.matchTemplate(big_cv_image, small_cv_image, method)
-    min_val, max_val, min_loc, max_loc = cv2.minMaxLoc(template_matches)
-    top_left = max_loc
-    logger.info(top_left)
-    logger.info(small_cv_image.shape[0])
-    logger.info(small_cv_image.shape[1])
-    bottom_right = (top_left[0] + small_cv_image.shape[1], top_left[1] + small_cv_image.shape[0])
+def get_training_fail_chance(button_number: int, img: Image.Image) -> float:
+    button_x_fraction = get_training_button_x_fraction(button_number)
+    button_x_pixel = math.ceil(img.width * button_x_fraction)
+    start_height = 0.71031746
+    stop_height = 0.736111111
+    start_pixel_height = math.floor(img.height * start_height)
+    stop_pixel_height = math.ceil(img.height * stop_height)
+    gottem = None
+    for i in range(start_pixel_height, stop_pixel_height):
+        pixel_color = img.getpixel((button_x_pixel, i))
+        if util.similar_color(pixel_color, (255, 150, 0)) or util.similar_color(pixel_color, (13, 150, 255)) or util.similar_color(pixel_color, (255, 69, 0)):
+            gottem = i
+            break
+    if gottem is None:
+        logger.error("Could not find training fail chance box!")
+        return None
 
-    cv2.rectangle(big_cv_image, top_left, bottom_right, (0, 0, 255), 2)
-    cv2.imshow("big_cv_image", big_cv_image)
-    cv2.waitKey(0)
+    text_top_offset = 0.007936
+    text_top_pixels = round(img.height * text_top_offset)
+    text_bottom_offset = 0.0233
+    text_bottom_pixels = round(img.height * text_bottom_offset)
+    searching_distance = 0.026455
+    searching_pixels = round(img.width * searching_distance)
 
-    return top_left + bottom_right
+    pixels_until_number_found = None
 
+    # TODO: Search from the right (percent sign) instead so the starting point can be consistent.
 
-def get_fail_chance_bbox(cv_image: cv2.Mat, size_multiplier: float) -> tuple[int,int,int,int]:
-    failchance_cv2 = pil_image_to_cv2_image(failchance_blue, size_multiplier)
-    failpercent_cv2 = pil_image_to_cv2_image(failpercent, size_multiplier)
-    failchance_bbox = get_template_match_bbox(cv_image, failchance_cv2)
-    failpercent_bbox = get_template_match_bbox(cv_image, failpercent_cv2)
-    logger.info(f"Failchance bbox: {failchance_bbox}")
-    logger.info(f"Failpercent bbox: {failpercent_bbox}")
-    fail_chance_numbers_bbox = (failchance_bbox[2], failchance_bbox[1], failpercent_bbox[0], failpercent_bbox[3])
+    for i in range(searching_pixels):
+        for j in range(text_top_pixels, text_bottom_pixels):
+            pixel_color = img.getpixel((button_x_pixel + i, gottem + j))
+            if util.similar_color(pixel_color, (255, 255, 255)) or util.similar_color(pixel_color, (255, 218, 18)):
+                pixels_until_number_found = i
+                logger.info(f"Found number at {button_x_pixel} + {i}, {gottem} + {j}")
+                break
+        if pixels_until_number_found is not None:
+            break
     
-    return fail_chance_numbers_bbox
+    if pixels_until_number_found is None:
+        logger.error("Could not find training fail chance number!")
+        return None
+    
+    distance_to_number = pixels_until_number_found / img.width
 
-def get_fail_chance(img: Image.Image, cv_image: cv2.Mat, size_multiplier: float) -> int:
-    bbox = get_fail_chance_bbox(cv_image, size_multiplier)
-    fail_chance_crop = img.crop(bbox)
-    fail_chance_crop.save("fail_chance_crop.png")
-    return 0
+    number_width = 0.022046
+
+    if distance_to_number < 0.0194:
+        logger.info("Found a two-digit fail chance number.")
+        bbox1 = (button_x_pixel + pixels_until_number_found - 1, gottem + text_top_pixels, round(button_x_pixel + pixels_until_number_found - 1 + (number_width * img.width)), gottem + text_bottom_pixels)
+        bbox2 = (round(button_x_pixel + pixels_until_number_found - 1 + (number_width * img.width)), gottem + text_top_pixels, round(button_x_pixel + pixels_until_number_found - 1 + 2 * (number_width * img.width)), gottem + text_bottom_pixels)
+
+        num1 = img.crop(bbox1)
+        num2 = img.crop(bbox2)
+
+        num1 = ocr.preprocess_image(num1, True)
+        num1.save("num1.png")
+        num2 = ocr.preprocess_image(num2, True)
+        num2.save("num2.png")
+
+        logger.info(ocr.most_likely_big_number(num1))
+        logger.info(ocr.most_likely_big_number(num2))
+        return (10 * int(ocr.most_likely_big_number(num1)) + int(ocr.most_likely_big_number(num2))) / 100
+    logger.info("Found a one-digit fail chance number.")
+    bbox = (button_x_pixel + pixels_until_number_found - 1, gottem + text_top_pixels, round(button_x_pixel + pixels_until_number_found - 1 + (number_width * img.width)), gottem + text_bottom_pixels)
+    num1 = img.crop(bbox)
+    num1 = ocr.preprocess_image(num1, True)
+    logger.info(ocr.most_likely_big_number(num1))
+    return int(ocr.most_likely_big_number(num1)) / 100
+
+
+def click_training_button(button_number: int):
+    global game_handle
+    x_fraction = get_training_button_x_fraction(button_number)
+    y_fraction = 0.845238
+    util.move_mouse_to_window_coords(game_handle, util.convert_fractions_to_window_coords(game_handle, (x_fraction, y_fraction)), click=True if button_number != 0 else False)
+
+
+def get_all_fail_chances():
+    global game_handle
+    fail_chances = []
+    for i in range(5):
+        click_training_button(i)
+        time.sleep(0.2)
+        while True:
+            cur_fail_chance = get_training_fail_chance(i, util.take_screenshot(game_handle))
+            if cur_fail_chance is not None:
+                fail_chances.append(cur_fail_chance)
+                break
+            logger.info("Could not get fail chance for training button #" + str(i))
+            time.sleep(0.01)
+    return fail_chances
 
 
 def main():
+    global game_handle
     game_handle = util.get_window_handle("umamusume", util.EXACT)
     img = util.take_screenshot(game_handle)
-    cv_image = pil_image_to_cv2_image(img)
     img.save("screenshot.png")
-    size_multiplier = img.height / default_window_size[1]
-    training_selection_crop = img.crop((round(32 * size_multiplier), round(717 * size_multiplier), round(32+100 * size_multiplier), round(717+210 * size_multiplier)))
-    training_selection_crop_cv2 = pil_image_to_cv2_image(training_selection_crop)
-    training_selection_crop.save("training_selection_crop.png")
-    fail_chance = get_fail_chance(training_selection_crop, training_selection_crop_cv2, size_multiplier)
+    print(get_all_fail_chances())
+
     # estimate_energy(img)
 
 
