@@ -342,7 +342,7 @@ tray_icon = pystray.Icon(
 # Start the main and tray icon threads.
 logger.info("Starting threads.")
 threading.Thread(target=main).start()
-threading.Thread(target=carrotjuicer.run).start()
+threading.Thread(target=carrotjuicer.run, args=(stop_threads,)).start()
 
 tray_icon.run()
 

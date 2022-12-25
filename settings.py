@@ -18,7 +18,16 @@ DEFAULT_SETTINGS = {
 }
 
 loaded_settings = dict()
+global stop_threads
+stop_threads = False
 
+def check_alive():
+    global stop_threads
+    return not stop_threads
+
+def stop():
+    global stop_threads
+    stop_threads = True
 
 def save_settings():
     global loaded_settings

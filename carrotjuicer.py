@@ -70,7 +70,9 @@ def run():
     msg_path = os.path.join(msg_path, "CarrotJuicer")
 
     while True:
-        time.sleep(0.2)
+        if not settings.check_alive():
+            return
+        time.sleep(1)
         
         messages = get_msgpack_batch(msg_path)
         for message in messages:

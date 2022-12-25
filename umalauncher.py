@@ -35,8 +35,6 @@ dmm_handle = None
 dmm_was_open = False
 dmm_patched = False
 
-stop_threads = False
-
 tray_icon = None
 
 first_orientation = True
@@ -165,7 +163,6 @@ def main():
     global gaem_was_open
     global portrait_topleft
     global landscape_topleft
-    global stop_threads
     global tray_icon
     global last_screen
     global rpc
@@ -204,7 +201,7 @@ def main():
     while True:
         time.sleep(0.1)
 
-        if stop_threads:
+        if not settings.check_alive():
             break
 
         new_rpc_state = settings.get_tray_setting("Discord rich presence")
@@ -299,8 +296,7 @@ def main():
 
 # Set up tray icon.
 def close_clicked(icon, item):
-    global stop_threads
-    stop_threads = True
+    settings.stop()
     icon.stop()
 
 def tray_take_screenshot(icon, item):
