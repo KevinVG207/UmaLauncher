@@ -25,6 +25,7 @@ import settings
 import util
 import dmm
 from io import BytesIO
+import carrotjuicer
 
 # Globals
 gaem_handle = None
@@ -283,10 +284,10 @@ def main():
                 else:
                     # Game window closed
                     gaem_handle = None
-            except pywintypes.error as e:
+            except pywintypes.error as exception:
                 # Game window probaby closed
                 logger.warning("Game probably closed. Error details:")
-                logger.info(e)
+                logger.info(exception)
                 gaem_handle = None
                 
     if tray_icon:
@@ -295,7 +296,6 @@ def main():
         rpc.clear()
         rpc.close()
     return None
-
 
 # Set up tray icon.
 def close_clicked(icon, item):
@@ -342,6 +342,7 @@ tray_icon = pystray.Icon(
 # Start the main and tray icon threads.
 logger.info("Starting threads.")
 threading.Thread(target=main).start()
+threading.Thread(target=carrotjuicer.run).start()
 
 tray_icon.run()
 

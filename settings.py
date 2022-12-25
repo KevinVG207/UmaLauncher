@@ -11,8 +11,10 @@ DEFAULT_SETTINGS = {
     "tray_items": {
         "Auto-resize": True,
         "Discord rich presence": True,
-        "Auto-launch game": True
-    }
+        "Auto-launch game": True,
+        "Intercept packets": False,
+    },
+    "game_install_path": None,
 }
 
 loaded_settings = dict()
