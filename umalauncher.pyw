@@ -2,7 +2,7 @@ from elevate import elevate
 elevate()
 
 from loguru import logger
-logger.add("log.log", retention="1 week")
+logger.add("log.log", rotation="10 MB", compression="zip", retention="1 month")
 logger.info("==== Starting Launcher ====")
 
 import psutil
@@ -34,8 +34,6 @@ gaem_was_open = False
 dmm_handle = None
 dmm_was_open = False
 dmm_patched = False
-
-stop_threads = False
 
 tray_icon = None
 
@@ -165,7 +163,6 @@ def main():
     global gaem_was_open
     global portrait_topleft
     global landscape_topleft
-    global stop_threads
     global tray_icon
     global last_screen
     global rpc
@@ -204,7 +201,7 @@ def main():
     while True:
         time.sleep(0.1)
 
-        if stop_threads:
+        if not settings.check_alive():
             break
 
         new_rpc_state = settings.get_tray_setting("Discord rich presence")
@@ -295,12 +292,12 @@ def main():
     if rpc:
         rpc.clear()
         rpc.close()
+    settings.stop()
     return None
 
 # Set up tray icon.
 def close_clicked(icon, item):
-    global stop_threads
-    stop_threads = True
+    settings.stop()
     icon.stop()
 
 def tray_take_screenshot(icon, item):
@@ -342,7 +339,7 @@ tray_icon = pystray.Icon(
 # Start the main and tray icon threads.
 logger.info("Starting threads.")
 threading.Thread(target=main).start()
-threading.Thread(target=carrotjuicer.run, args=(stop_threads,)).start()
+threading.Thread(target=carrotjuicer.run).start()
 
 tray_icon.run()
 
