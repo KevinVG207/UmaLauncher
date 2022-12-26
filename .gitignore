@@ -10,3 +10,5 @@ screenshot.png
 umasettings.json
 log.log
 sandbox.py
+*.log
+*.log.zip
