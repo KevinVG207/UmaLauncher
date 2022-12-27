@@ -46,6 +46,9 @@ def to_json(packet):
 
 def open_helper(helper_url):
     global browser
+    global previous_element
+
+    previous_element = None
 
     if not browser:
         browser = webdriver.Firefox()
@@ -77,10 +80,12 @@ def open_helper(helper_url):
 
 def close_browser():
     global browser
+    global previous_element
 
     if browser:
         browser.close()
         browser = None
+        previous_element = None
     return
 
 def handle_response(message):
