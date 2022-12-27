@@ -85,6 +85,7 @@ def close_browser():
 
 def handle_response(message):
     global browser
+    global previous_element
 
     data = load_response(message)
     logger.info(data)
