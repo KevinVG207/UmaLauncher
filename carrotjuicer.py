@@ -56,7 +56,8 @@ def open_helper(helper_url):
     previous_element = None
 
     if not browser:
-        browser = webdriver.Firefox()
+        profile = webdriver.FirefoxProfile("./ff_profile")
+        browser = webdriver.Firefox(firefox_profile=profile)
 
     browser.get(helper_url)
     # TODO: Find a way to know if the page is actually finished loading
@@ -200,7 +201,9 @@ def handle_response(message):
                 time.sleep(0.25)
                 browser.execute_script("""
                     if (arguments[0]) {
-                        document.querySelector(".tippy-box").scrollIntoView({behavior:"smooth", block:"center"});
+                        // document.querySelector(".tippy-box").scrollIntoView({behavior:"smooth", block:"center"});
+                        // arguments[0].scrollIntoView({behavior:"smooth", block:"end"});
+                        window.scrollBy({top: arguments[0].getBoundingClientRect().bottom - window.innerHeight + 32, left: 0, behavior: 'smooth'});
                     }
                     """,
                     previous_element
