@@ -202,6 +202,7 @@ def handle_response(message):
 
 def check_browser():
     global browser
+    global previous_element
 
     if browser:
         try:
@@ -209,6 +210,7 @@ def check_browser():
             return
         except WebDriverException:
             browser = None
+            previous_element = None
     return
 
 def process_message(message: str):
