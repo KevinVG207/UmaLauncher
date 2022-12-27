@@ -2,7 +2,7 @@ from elevate import elevate
 elevate()
 
 from loguru import logger
-logger.add("log.log", rotation="10 MB", compression="zip", retention="1 month")
+logger.add("log.log", rotation="1 week", compression="zip", retention="1 month")
 logger.info("==== Starting Launcher ====")
 
 import psutil
