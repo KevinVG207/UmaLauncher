@@ -198,7 +198,7 @@ def handle_response(message):
                 )
                 if not previous_element:
                     logger.info("Could not find event on GT page.")
-                time.sleep(0.25)
+                # time.sleep(0.25)
                 browser.execute_script("""
                     if (arguments[0]) {
                         // document.querySelector(".tippy-box").scrollIntoView({behavior:"smooth", block:"center"});
