@@ -128,7 +128,7 @@ def scale_height():
         new_gaem_rect = win32gui.GetWindowRect(gaem_handle)
         cur_height = new_gaem_rect[3] - new_gaem_rect[1]
         prev_height = cur_height
-    
+
 
 def get_screenshot():
     global gaem_handle
