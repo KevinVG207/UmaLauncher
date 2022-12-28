@@ -55,14 +55,17 @@ def open_helper(helper_url):
 
     previous_element = None
 
-    if not browser:
-        profile = webdriver.FirefoxProfile("./ff_profile")
-        browser = webdriver.Firefox(firefox_profile=profile)
+    if browser:
+        close_browser()
+
+    profile = webdriver.FirefoxProfile("./ff_profile")
+    browser = webdriver.Firefox(firefox_profile=profile)
 
     browser.get(helper_url)
     # TODO: Find a way to know if the page is actually finished loading
 
-    time.sleep(1)
+    while not browser.execute_script("""return document.querySelector("[class^='legal_cookie_banner_wrapper_']")"""):
+        time.sleep(0.1)
 
     # Hide the cookies banner
     browser.execute_script("""document.querySelector("[class^='legal_cookie_banner_wrapper_']").style.display = 'none';""")
@@ -116,9 +119,6 @@ def handle_response(message):
         # Gametora
         if 'chara_info' in data:
             logger.info("chara_info in data")
-            if "mission_list" in data:
-                # New run
-                close_browser()
 
             # Training info
             outfit_id = data['chara_info']['card_id']
@@ -140,23 +140,17 @@ def handle_response(message):
 
             if len(event_data['event_contents_info']['choice_array']) > 1:
 
-                if previous_element:
-                    browser.execute_script(
-                        """
-                        if (arguments[0].getAttribute("aria-expanded") == "true"){
-                            arguments[0].click();
-                        }
-                        """,
-                        previous_element
-                    )
-                
-                time.sleep(0.4)
+                browser.execute_script(
+                    """
+                    document.querySelectorAll("[class^='compatibility_viewer_item_'][aria-expanded=true]").forEach(e => e.click());
+                    """
+                )
 
                 conn = sqlite3.connect(os.path.expandvars("%userprofile%\\appdata\\locallow\\Cygames\\umamusume\\master\\master.mdb"))
                 cursor = conn.cursor()
                 cursor.execute(
-                    """SELECT text FROM text_data WHERE category = 181 AND "index" = ?""",
-                    (event_data['story_id'],)
+                    """SELECT text FROM text_data t JOIN single_mode_story_data s ON t."index" = s.story_id WHERE category = 181 AND t."index" = ? OR s.short_story_id = ? LIMIT 1""",
+                    (event_data['story_id'], event_data['story_id'])
                 )
                 event_title = cursor.fetchone()[0]
 
@@ -198,7 +192,6 @@ def handle_response(message):
                 )
                 if not previous_element:
                     logger.info("Could not find event on GT page.")
-                # time.sleep(0.25)
                 browser.execute_script("""
                     if (arguments[0]) {
                         // document.querySelector(".tippy-box").scrollIntoView({behavior:"smooth", block:"center"});

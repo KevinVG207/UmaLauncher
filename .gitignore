@@ -4,6 +4,7 @@ __pycache__/*
 _ocr/_tmp/*
 _ocr/_raw/*
 _ocr/_ref/backup/*
+ff_profile/parent.lock
 node_modules/*
 package-lock.json
 screenshot.png
