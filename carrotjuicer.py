@@ -12,6 +12,8 @@ import json
 import sqlite3
 from selenium.common.exceptions import WebDriverException
 from selenium import webdriver
+from selenium.webdriver.firefox.service import Service as FirefoxService
+from subprocess import CREATE_NO_WINDOW
 
 START_TIME = math.floor(time.time() * 1000)
 browser = None
@@ -58,8 +60,11 @@ def open_helper(helper_url):
     if browser:
         close_browser()
 
+    firefox_service = FirefoxService()
+    firefox_service.creation_flags = CREATE_NO_WINDOW
     profile = webdriver.FirefoxProfile("./ff_profile")
-    browser = webdriver.Firefox(firefox_profile=profile)
+    options = webdriver.FirefoxOptions()
+    browser = webdriver.Firefox(service=firefox_service, firefox_profile=profile, options=options)
 
     browser.get(helper_url)
     # TODO: Find a way to know if the page is actually finished loading
