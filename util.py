@@ -6,7 +6,6 @@ from PIL import Image
 
 window_handle = None
 
-
 def _show_alert_box(error, message):
     win32api.MessageBox(
         None,
@@ -49,7 +48,7 @@ LAZY = _get_window_lazy
 EXACT = _get_window_exact
 STARTSWITH = _get_window_startswith
 
-def get_window_handle(query: str, type: int=LAZY) -> str:
+def get_window_handle(query: str, type=LAZY) -> str:
     global window_handle
 
     window_handle = None

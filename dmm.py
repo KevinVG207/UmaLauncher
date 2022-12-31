@@ -5,8 +5,9 @@ import util
 from loguru import logger
 import hashlib
 
-def patch_dmm():
-    resources_path = os.path.join(settings.get("dmm_path"), "resources")
+def patch_dmm(dmm_path):
+    logger.info("Patching DMM.")
+    resources_path = os.path.join(dmm_path, "resources")
     if not os.path.isdir(resources_path):
         logger.error("Could not find DMM folder to patch DMM.")
         util.show_alert_box("Error", "Could not find DMM folder to patch DMM.\nPlease check if the path to DMMGamePlayer's install folder is correct in umasettings.json.")
@@ -15,7 +16,7 @@ def patch_dmm():
         logger.info("Found remnants of a patch. Checking hash.")
         with open(os.path.join(resources_path, "app.hash"), "r", encoding='utf-8') as f:
             hash_before = f.read()
-        
+
         with open(os.path.join(resources_path, "app.asar"), "rb") as f:
             app_hash = hashlib.md5(f.read()).hexdigest()
 
@@ -30,20 +31,20 @@ def patch_dmm():
 
     logger.info("Backing up app.asar.")
     shutil.copy("app.asar", "app.asar.org")
-    
+
     if os.path.isdir("tmp"):
         logger.info("Removing pre-existing tmp folder.")
         shutil.rmtree("tmp")
     logger.info("Extracting app.asar to tmp folder.")
     os.mkdir("tmp")
-    os.system(f"npx asar extract app.asar tmp")
+    os.system("npx asar extract app.asar tmp")
 
     logger.info("Patching store.html.")
     patch_folder = os.path.join(resources_path, "tmp", "dist")
 
     with open(os.path.join(patch_folder, "store.html"), "r", encoding='utf-8') as f:
         content = f.read()
-    
+
     with open(os.path.join(patch_folder, "store.html"), "w", encoding='utf-8') as f:
         f.write(content.replace("</html>","""
 <script>
@@ -61,7 +62,7 @@ buttonPoll();
         """))
 
     logger.info("Packing app.asar.")
-    os.system(f"npx asar pack tmp app.asar")
+    os.system("npx asar pack tmp app.asar")
     logger.info("DMM has been patched.")
 
     logger.info("Removing tmp folder.")
@@ -77,9 +78,9 @@ buttonPoll();
     logger.info("Patching complete.")
 
 
-def unpatch_dmm():
+def unpatch_dmm(dmm_path):
     logger.info("Attempting to unpatch DMM.")
-    resources_path = os.path.join(settings.get("dmm_path"), "resources")
+    resources_path = os.path.join(dmm_path, "resources")
     if os.path.isdir(resources_path):
         cwd_before = os.getcwd()
         os.chdir(resources_path)
@@ -98,3 +99,8 @@ def unpatch_dmm():
         os.chdir(cwd_before)
     else:
         logger.warning("Could not find DMM folder to unpatch DMM.")
+
+
+def start():
+    logger.info("Sending DMM to the Umamusume page.")
+    os.system("Start dmmgameplayer://umamusume/cl/general/umamusume")

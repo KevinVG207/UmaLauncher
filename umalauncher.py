@@ -20,7 +20,7 @@ import pywintypes
 import pypresence
 from PIL import Image
 import pyautogui
-from screenstate import ScreenState
+from screenstate import OldScreenState
 import settings
 import util
 import dmm
@@ -42,7 +42,7 @@ was_portrait = True
 
 prev_height = 0
 
-screen_state = ScreenState()
+screen_state = OldScreenState()
 
 
 def get_dmm():
