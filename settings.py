@@ -26,7 +26,8 @@ class Settings():
         "game_position": {
             "portrait": None,
             "landscape": None
-            }
+        },
+        "browser_position": None
     }
 
     loaded_settings = {}

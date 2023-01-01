@@ -10,6 +10,8 @@ from loguru import logger
 
 class GameWindow():
     # Object to be shared with Threader and holds functions to manipulate the game window.
+    carrotjuicer_maximized_trigger = False
+
     def __init__(self, handle):
         self.handle = handle
         return
@@ -113,13 +115,14 @@ class WindowMover():
     def try_maximize(self):
         if self.window:
             self.window.maximize()
+            self.threader.carrotjuicer.reset_browser = True
 
     def stop(self):
         self.should_stop = True
 
     def run(self):
         while not self.should_stop and not self.screenstate.game_handle:
-            time.sleep(0.2)
+            time.sleep(0.25)
         
         self.window = GameWindow(self.screenstate.game_handle)
         

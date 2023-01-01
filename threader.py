@@ -10,8 +10,6 @@ import screenstate
 import windowmover
 import win32api
 
-logger.add("log.log", rotation="1 week", compression="zip", retention="1 month", encoding='utf-8')
-
 class Threader():
     settings = None
     tray = None
@@ -47,6 +45,7 @@ class Threader():
         logger.info("==== Launcher Closed ===")
 
 def main():
+    logger.add("log.log", rotation="1 week", compression="zip", retention="1 month", encoding='utf-8')
     logger.info("==== Starting Launcher ====")
     Threader()
 

@@ -23,6 +23,8 @@ class CarrotJuicer():
     threader = None
     screen_state_handler = None
     should_stop = False
+    last_browser_rect = None
+    reset_browser = False
 
     def __init__(self, threader):
         self.threader = threader
@@ -72,14 +74,20 @@ class CarrotJuicer():
         options = webdriver.FirefoxOptions()
         self.browser = webdriver.Firefox(service=firefox_service, firefox_profile=profile, options=options)
 
+        saved_pos = self.threader.settings.get("browser_position")
+        if not saved_pos:
+            self.reset_browser_position()
+        else:
+            self.browser.set_window_rect(*saved_pos)
+
         self.browser.get(helper_url)
         # TODO: Find a way to know if the page is actually finished loading
 
         while not self.browser.execute_script("""return document.querySelector("[class^='legal_cookie_banner_wrapper_']")"""):
-            time.sleep(0.1)
+            time.sleep(0.25)
 
         # Hide the cookies banner
-        self.browser.execute_script("""document.querySelector("[class^='legal_cookie_banner_wrapper_']").style.display = 'none';""")
+        self.browser.execute_script("""document.querySelectorAll("[class^='legal_cookie_banner_wrapper_']").forEach(e => e.style.display = 'none');""")
 
         # Enable dark mode (the only reasonable color scheme)
         self.browser.execute_script("""document.querySelector("[class^='styles_header_settings_']").click()""")
@@ -98,12 +106,36 @@ class CarrotJuicer():
         self.browser.execute_script("""document.querySelector("[class^='filters_confirm_button_']").click()""")
 
 
+    def reset_browser_position(self):
+        self.check_browser()
+        if self.browser:
+            game_rect, _ = self.threader.windowmover.window.get_rect()
+            workspace_rect = self.threader.windowmover.window.get_workspace_rect()
+            left_side = abs(workspace_rect[0] - game_rect[0])
+            right_side = abs(game_rect[2] - workspace_rect[2])
+            if left_side > right_side:
+                left_x = workspace_rect[0] - 5
+                width = left_side
+            else:
+                left_x = game_rect[2] + 5
+                width = right_side
+            self.browser.set_window_rect(left_x, workspace_rect[1], width, workspace_rect[3] - workspace_rect[1] + 6)
+
+
     def close_browser(self):
         if self.browser:
+            self.last_browser_rect = self.browser.get_window_rect()
+            self.save_last_browser_rect()
             self.browser.close()
             self.browser = None
             self.previous_element = None
         return
+
+
+    def save_last_browser_rect(self):
+        if self.last_browser_rect:
+            self.threader.settings.set("browser_position", list(self.last_browser_rect.values()))
+            self.last_browser_rect = None
 
 
     def handle_response(self, message):
@@ -121,7 +153,7 @@ class CarrotJuicer():
             if 'single_mode_factor_select_common' in data:
                 self.close_browser()
                 return
-            
+
             # Concert Theater
             if "live_theater_save_info_array" in data:
                 if self.screen_state_handler:
@@ -306,12 +338,24 @@ class CarrotJuicer():
         while not self.should_stop:
             time.sleep(0.25)
 
+            if self.reset_browser:
+                self.reset_browser = False
+                self.reset_browser_position()
+
+            self.check_browser()
+            if self.browser:
+                self.last_browser_rect = self.browser.get_window_rect()
+            elif self.last_browser_rect:
+                self.save_last_browser_rect()
+
             messages = self.get_msgpack_batch(msg_path)
             for message in messages:
                 self.process_message(message)
 
         if self.browser:
+            self.last_browser_rect = self.browser.get_window_rect()
             self.browser.close()
+        self.save_last_browser_rect()
         return
 
 

@@ -346,6 +346,7 @@ class ScreenStateHandler():
                 if carrotjuicer_handle:
                     logger.info("Attempting to minimize CarrotJuicer.")
                     win32gui.ShowWindow(carrotjuicer_handle, win32con.SW_MINIMIZE)
+                    time.sleep(0.25)
 
             self.sleep_time = 1.
 
