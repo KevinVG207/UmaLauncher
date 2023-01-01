@@ -1,7 +1,15 @@
 import os
 import json
 import copy
+from enum import Enum
 from loguru import logger
+
+ORIENTATION_DICT = {
+    True: 'portrait',
+    False: 'landscape',
+    'portrait': True,
+    'landscape': False,
+}
 
 class Settings():
 
@@ -10,12 +18,15 @@ class Settings():
         "dmm_path": "c:\\Program Files\\DMMGamePlayer",
         "autoclose_dmm": True,
         "tray_items": {
-            "Auto-resize": True,
             "Discord rich presence": True,
             "Patch DMM": True,
             "Intercept packets": False,
         },
         "game_install_path": "%userprofile%\\Umamusume",
+        "game_position": {
+            "portrait": None,
+            "landscape": None
+            }
     }
 
     loaded_settings = {}
@@ -111,3 +122,13 @@ class Settings():
             self.save_settings()
         else:
             logger.error(f"Unknown key passed to settings. Key: {key}\tValue: {value}")
+
+    def save_game_position(self, pos, portrait):
+        orientation_key = ORIENTATION_DICT[portrait]
+        self.loaded_settings['game_position'][orientation_key] = pos
+        logger.info(f"Saving {orientation_key} position: {pos}")
+        self.save_settings()
+
+    def load_game_position(self, portrait):
+        orientation_key = ORIENTATION_DICT[portrait]
+        return self.loaded_settings['game_position'][orientation_key]

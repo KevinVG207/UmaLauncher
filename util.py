@@ -1,6 +1,7 @@
 import win32api
 import win32gui
 import threading
+import math
 from loguru import logger
 from PIL import Image
 
@@ -71,3 +72,30 @@ def similar_color(col1: tuple[int,int,int], col2: tuple[int,int,int], threshold:
     for i in range(3):
         total_diff += abs(col1[i] - col2[i])
     return total_diff < threshold
+
+MONTH_DICT = {
+    1: 'January',
+    2: 'February',
+    3: 'March',
+    4: 'April',
+    5: 'May',
+    6: 'June',
+    7: 'July',
+    8: 'August',
+    9: 'September',
+    10: 'October',
+    11: 'November',
+    12: 'December'
+}
+
+def turn_to_string(turn):
+    turn = turn - 1
+
+    second_half = turn % 2 != 0
+    if second_half:
+        turn -= 1
+    turn /= 2
+    month = int(turn) % 12 + 1
+    year = math.floor(turn / 12) + 1
+
+    return f"Y{year}, {'Late' if second_half else 'Early'} {MONTH_DICT[month]}"

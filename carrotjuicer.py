@@ -1,19 +1,20 @@
 import os
-import msgpack
-import numpy as np
 import time
-from loguru import logger
 import glob
 import traceback
-import time
 import math
 import json
-import sqlite3
+from subprocess import CREATE_NO_WINDOW
+import msgpack
+import numpy as np
+from loguru import logger
 from selenium.common.exceptions import WebDriverException
 from selenium import webdriver
 from selenium.webdriver.firefox.service import Service as FirefoxService
-from subprocess import CREATE_NO_WINDOW
 from screenstate import ScreenState, Location
+import util
+import mdb
+
 
 class CarrotJuicer():
     start_time = None
@@ -23,9 +24,9 @@ class CarrotJuicer():
     screen_state_handler = None
     should_stop = False
 
-    def __init__(self, threader, screen_state_handler):
+    def __init__(self, threader):
         self.threader = threader
-        self.screen_state_handler = screen_state_handler
+        self.screen_state_handler = threader.screenstate
         self.start_time = math.floor(time.time() * 1000)
 
     def load_request(self, msg_path):
@@ -147,7 +148,7 @@ class CarrotJuicer():
 
                     new_state.location = Location.TRAINING
 
-                    new_state.main = "Training"
+                    new_state.main = f"Training - {util.turn_to_string(data['chara_info']['turn'])}"
                     new_state.sub = f"{data['chara_info']['speed']} {data['chara_info']['stamina']} {data['chara_info']['power']} {data['chara_info']['guts']} {data['chara_info']['wiz']} | {data['chara_info']['skill_point']}"
 
                     new_state.set_chara(chara_id)
@@ -165,24 +166,17 @@ class CarrotJuicer():
                 # TODO: Check if there can be multiple events??
                 if len(data['unchecked_event_array']) > 1:
                     logger.warning(f"Packet has more than 1 unchecked event! {message}")
+                
+                self.browser.execute_script(
+                    """
+                    document.querySelectorAll("[class^='compatibility_viewer_item_'][aria-expanded=true]").forEach(e => e.click());
+                    """
+                )
 
                 if len(event_data['event_contents_info']['choice_array']) > 1:
 
-                    self.browser.execute_script(
-                        """
-                        document.querySelectorAll("[class^='compatibility_viewer_item_'][aria-expanded=true]").forEach(e => e.click());
-                        """
-                    )
+                    event_title = mdb.get_event_title(event_data['story_id'])
 
-                    conn = sqlite3.connect(os.path.expandvars("%userprofile%\\appdata\\locallow\\Cygames\\umamusume\\master\\master.mdb"))
-                    cursor = conn.cursor()
-                    cursor.execute(
-                        """SELECT text FROM text_data t JOIN single_mode_story_data s ON t."index" = s.story_id WHERE category = 181 AND t."index" = ? OR s.short_story_id = ? LIMIT 1""",
-                        (event_data['story_id'], event_data['story_id'])
-                    )
-                    event_title = cursor.fetchone()[0]
-
-                    conn.close()
                     logger.info(f"Event title determined: {event_title}")
 
                     # Event has choices
@@ -256,8 +250,6 @@ class CarrotJuicer():
                 new_state = ScreenState()
                 new_state.location = Location.THEATER
                 new_state.set_music(data['live_theater_save_info']['music_id'])
-                new_state.main = "Watching a concert"
-                new_state.sub = "Vibing"
                 self.screen_state_handler.carrotjuicer_state = new_state
 
             if 'start_chara' in data:

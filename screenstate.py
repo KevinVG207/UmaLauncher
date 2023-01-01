@@ -1,6 +1,7 @@
 import time
 import asyncio
 from enum import Enum
+from io import BytesIO
 import requests
 import win32gui
 import win32con
@@ -8,9 +9,11 @@ import pyautogui
 import pypresence
 from PIL import Image
 from loguru import logger
+import win32clipboard
 import presence_screens as scr
 import util
 import dmm
+import mdb
 
 START_TIME = time.time()
 
@@ -21,19 +24,6 @@ class Location(Enum):
     THEATER = 2
     TRAINING = 3
 
-
-def get_screenshot(game_handle, debug=False):
-    try:
-        x, y, x1, y1 = win32gui.GetClientRect(game_handle)
-        x, y = win32gui.ClientToScreen(game_handle, (x, y))
-        x1, y1 = win32gui.ClientToScreen(game_handle, (x1 - x, y1 - y))
-        image = pyautogui.screenshot(region=(x, y, x1, y1)).convert("RGB")
-        if debug:
-            image.save("screenshot.png", "PNG")
-        return image
-    except Exception:
-        logger.error("Couldn't get screenshot.")
-        return None
 
 
 def get_available_icons():
@@ -85,17 +75,22 @@ class ScreenState:
         if chara_icon not in self.available_chara_icons:
             chara_icon = self.fallback_chara_icon
         self.small_image = self.large_image
+        self.small_text = self.large_text
         self.large_image = chara_icon
+        self.large_text = None
 
     def set_music(self, music_id):
         music_id = str(music_id)
         music_icon = f"music_{music_id}"
         if music_icon not in self.available_music_icons:
             music_icon = self.fallback_music_icon
+        song_title = mdb.get_song_title(music_id)
         self.small_image = self.large_image
         self.small_text = self.large_text
         self.large_image = music_icon
-        self.large_text = None
+        self.large_text = song_title
+        self.main = "Watching a concert:"
+        self.sub = song_title
 
     def __eq__(self, other):
         if isinstance(other, ScreenState):
@@ -234,30 +229,6 @@ class OldScreenState:
             pass
 
 
-class GameWindow():
-    # Object to be shared with Threader and holds functions to manipulate the game window.
-    def __init__(self):
-        return
-
-    def _is_alive(self):
-        return
-
-    def get_handle(self):
-        return
-
-    def get_rect(self):
-        return
-
-    def get_pos(self):
-        return
-
-    def set_pos(self, pos):
-        return
-
-    def set_rect(self, rect):
-        return
-
-
 class ScreenStateHandler():
     threader = None
 
@@ -293,6 +264,35 @@ class ScreenStateHandler():
 
         self.check_game()
         return
+
+    def get_screenshot(self, debug=False):
+        try:
+            x, y, x1, y1 = win32gui.GetClientRect(self.game_handle)
+            x, y = win32gui.ClientToScreen(self.game_handle, (x, y))
+            x1, y1 = win32gui.ClientToScreen(self.game_handle, (x1 - x, y1 - y))
+            image = pyautogui.screenshot(region=(x, y, x1, y1)).convert("RGB")
+            if debug:
+                image.save("screenshot.png", "PNG")
+            return image
+        except Exception:
+            logger.error("Couldn't get screenshot.")
+            return None
+
+    def screenshot_to_clipboard(self):
+        try:
+            img = self.get_screenshot()
+        except OSError:
+            logger.error("Couldn't get screenshot.")
+            util.show_alert_box("Failed to take screenshot.", "Couldn't take screenshot of the game.")
+            return
+        output = BytesIO()
+        img.convert("RGB").save(output, "BMP")
+        image_data = output.getvalue()[14:]
+        output.close()
+        win32clipboard.OpenClipboard()
+        win32clipboard.EmptyClipboard()
+        win32clipboard.SetClipboardData(win32clipboard.CF_DIB, image_data)
+        win32clipboard.CloseClipboard()
 
     def check_game(self):
         game_handle = util.get_window_handle("umamusume", type=util.EXACT)
@@ -342,6 +342,9 @@ class ScreenStateHandler():
 
             # Game is open, DMM is closed. Do screen state stuff
 
+            self.update()
+            cur_update = time.time()
+
             if self.threader.settings.get_tray_setting("Discord rich presence"):
                 if not self.rpc:
                     try:
@@ -353,8 +356,6 @@ class ScreenStateHandler():
                         continue
 
                 # Get the latest screen state.
-                self.update()
-                cur_update = time.time()
                 if cur_update - self.rpc_last_update > 15 and self.screen_state != self.rpc_latest_state:
                     logger.info(f"Updating Rich Presence state: {self.screen_state.main}, {self.screen_state.sub}")
                     self.rpc_last_update = cur_update
@@ -390,34 +391,35 @@ class ScreenStateHandler():
             return tmp
         else:
             new_state = ScreenState()
-            image = get_screenshot(self.game_handle)
+            image = self.get_screenshot()
 
-            # DETERMINE / ADJUST STATE
-            for main_screen, check_targets in scr.screens.items():
-                if main_screen == "Main Menu":
-                    # Main Menu:
-                    count = 0
-                    tmp_subscr = str()
+            if image:
+                # DETERMINE / ADJUST STATE
+                for main_screen, check_targets in scr.screens.items():
+                    if main_screen == "Main Menu":
+                        # Main Menu:
+                        count = 0
+                        tmp_subscr = str()
 
-                    for subscreen, subscr_data in scr.screens["Main Menu"].items():
-                        pos = subscr_data["pos"]
-                        col = subscr_data["col"]
-                        pixel_color = util.get_position_rgb(image, pos)
+                        for subscreen, subscr_data in scr.screens["Main Menu"].items():
+                            pos = subscr_data["pos"]
+                            col = subscr_data["col"]
+                            pixel_color = util.get_position_rgb(image, pos)
 
-                        tab_enabled = util.similar_color(pixel_color, col)
-                        tab_visible = util.similar_color(pixel_color, (226, 223, 231))
+                            tab_enabled = util.similar_color(pixel_color, col)
+                            tab_visible = util.similar_color(pixel_color, (226, 223, 231))
 
-                        if tab_enabled or tab_visible :
-                            # Current pixel should be part of the menu
-                            count += 1
-                            if tab_enabled:
-                                tmp_subscr = subscreen
-                        else:
-                            break
-                    if count == 5 and tmp_subscr:
-                        # All menu items found and one is enabled. This must be the home menu.
-                        new_state.main = "Main Menu"
-                        new_state.sub = tmp_subscr
-                        return new_state
+                            if tab_enabled or tab_visible :
+                                # Current pixel should be part of the menu
+                                count += 1
+                                if tab_enabled:
+                                    tmp_subscr = subscreen
+                            else:
+                                break
+                        if count == 5 and tmp_subscr:
+                            # All menu items found and one is enabled. This must be the home menu.
+                            new_state.main = "Main Menu"
+                            new_state.sub = tmp_subscr
+                            return new_state
 
         return self.screen_state
