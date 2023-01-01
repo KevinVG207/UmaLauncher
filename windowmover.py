@@ -3,6 +3,11 @@ import win32gui
 import win32api
 from loguru import logger
 
+# TODO: Fix resize during concert
+# Catch the first resize during concert?
+# Trigger an event when user interacts with resize?
+# On resize, check how big the change is?
+
 JANK_OFFSET = 8
 
 class GameWindow():
