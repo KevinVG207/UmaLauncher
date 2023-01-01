@@ -9,7 +9,6 @@ import umatray
 import screenstate
 import windowmover
 import win32api
-import time
 
 logger.add("log.log", rotation="1 week", compression="zip", retention="1 month", encoding='utf-8')
 

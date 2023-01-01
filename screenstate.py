@@ -242,6 +242,8 @@ class ScreenStateHandler():
     game_seen = False
     game_handle = None
 
+    carrotjuicer_closed = False
+
     should_stop = False
 
     rpc_client_id = 954453106765225995
@@ -337,6 +339,13 @@ class ScreenStateHandler():
                     logger.info("Closing DMM.")
                     win32gui.PostMessage(new_dmm_handle, win32con.WM_CLOSE, 0, 0)
                 self.dmm_closed = True
+
+            if not self.carrotjuicer_closed:
+                self.carrotjuicer_closed = True
+                carrotjuicer_handle = util.get_window_handle("Umapyoi", type=util.EXACT)
+                if carrotjuicer_handle:
+                    logger.info("Attempting to minimize CarrotJuicer.")
+                    win32gui.ShowWindow(carrotjuicer_handle, win32con.SW_MINIMIZE)
 
             self.sleep_time = 1.
 

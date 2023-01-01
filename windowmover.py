@@ -8,8 +8,6 @@ from loguru import logger
 # Trigger an event when user interacts with resize?
 # On resize, check how big the change is?
 
-JANK_OFFSET = 8
-
 class GameWindow():
     # Object to be shared with Threader and holds functions to manipulate the game window.
     def __init__(self, handle):
@@ -36,38 +34,33 @@ class GameWindow():
         if not workspace_rect:
             logger.error("Cannot find workspace of game window")
             return
-        logger.info(workspace_rect)
+
+        # Get the current game rect, dejankify it and turn it into pos.
         game_rect, _ = self.get_rect()
-
         game_rect = dejankify(list(game_rect))
-
         game_pos = rect_to_pos(game_rect)
 
+        # Get workspace w/h
         workspace_height = workspace_rect[3] - workspace_rect[1]
         workspace_width = workspace_rect[2] - workspace_rect[0]
 
-        # if workspace_width > workspace_height:
-        #     multiplier = workspace_height / game_pos[3]
-        # else:
-        #     multiplier = workspace_width / game_pos[2]
-
+        # Scale game based on height.
         multiplier = workspace_height / game_pos[3]
         new_game_width = round(game_pos[2] * multiplier)
         new_game_height = round(game_pos[3] * multiplier)
 
-        logger.info(f"{workspace_width} {workspace_height}")
-        logger.info(f"{new_game_width} {new_game_height}")
-
+        # Check if game is too wide, scale based on width.
         if new_game_width > workspace_width:
             multiplier = workspace_width / new_game_width
             new_game_height = round(new_game_height * multiplier)
             new_game_width = round(new_game_width * multiplier)
             logger.info(f"{new_game_width} {new_game_height}")
 
+        # Calcualte the new top-left x and y position
         new_x = workspace_rect[0] + round((workspace_width * 0.5) - (new_game_width * 0.5))
-
         new_y = workspace_rect[1] + round((workspace_height * 0.5) - (new_game_height * 0.5))
 
+        # Create the new game rect
         new_game_rect = [
             new_x,
             new_y,
@@ -75,10 +68,13 @@ class GameWindow():
             new_y + new_game_height
         ]
 
+        # Re-add jank before resizing window
         new_game_rect = jankify(new_game_rect)
-
         self.set_pos(rect_to_pos(new_game_rect))
         return
+
+
+JANK_OFFSET = 8
 
 def dejankify(rect):
     rect[0] = rect[0] + JANK_OFFSET
