@@ -35,18 +35,28 @@ def get_available_icons():
     if not response.ok:
         logger.error("Could not fetch Rich Presence assets.")
         return chara_icons, music_icons
-    else:
-        assets = response.json()
-        for asset in assets:
-            name = asset['name']
-            if name.startswith("chara_"):
-                chara_icons.append(name)
-            elif name.startswith("music_"):
-                music_icons.append(name)
+
+    assets = response.json()
+    for asset in assets:
+        name = asset['name']
+        if name.startswith("chara_"):
+            chara_icons.append(name)
+        elif name.startswith("music_"):
+            music_icons.append(name)
     return chara_icons, music_icons
 
 def get_character_name_dict():
-    pass
+    chara_dict = {}
+    logger.info("Requesting character names.")
+    response = requests.get("https://umapyoi.net/api/v1/character/names")
+    if not response.ok:
+        logger.error("Could not fetch character names")
+        return chara_dict
+
+    for character in response.json():
+        chara_dict[character['game_id']] = character['name']
+
+    return chara_dict
 
 class ScreenState:
     location = Location.MAIN_MENU
@@ -61,6 +71,8 @@ class ScreenState:
     fallback_chara_icon = "chara_0000"
     fallback_music_icon = "music_0000"
 
+    chara_names_dict = get_character_name_dict()
+
     def to_dict(self) -> dict:
         return {
             "state": self.sub,
@@ -73,14 +85,16 @@ class ScreenState:
         }
 
     def set_chara(self, chara_id):
-        chara_id = str(chara_id)
         chara_icon = f"chara_{chara_id}"
         if chara_icon not in self.available_chara_icons:
             chara_icon = self.fallback_chara_icon
         self.small_image = self.large_image
         self.small_text = self.large_text
         self.large_image = chara_icon
-        self.large_text = None
+        if chara_id in self.chara_names_dict:
+            self.large_text = self.chara_names_dict[chara_id]
+        else:
+            self.large_text = None
 
     def set_music(self, music_id):
         music_id = str(music_id)
