@@ -15,22 +15,26 @@ class Threader():
     tray = None
     carrotjuicer = None
     windowmover = None
-    screenstate = None  # Screen states for rich presence (+ get screenshot?)
+    screenstate = None
+    threads = []
 
     def __init__(self):
         self.settings = settings.Settings()
 
         self.screenstate = screenstate.ScreenStateHandler(self)
-        threading.Thread(target=self.screenstate.run).start()
+        self.threads.append(threading.Thread(target=self.screenstate.run))
 
         self.carrotjuicer = carrotjuicer.CarrotJuicer(self)
-        threading.Thread(target=self.carrotjuicer.run).start()
+        self.threads.append(threading.Thread(target=self.carrotjuicer.run))
 
         self.windowmover = windowmover.WindowMover(self)
-        threading.Thread(target=self.windowmover.run).start()
+        self.threads.append(threading.Thread(target=self.windowmover.run))
 
         self.tray = umatray.UmaTray(self)
-        threading.Thread(target=self.tray.run).start()
+        self.threads.append(threading.Thread(target=self.tray.run))
+
+        for thread in self.threads:
+            thread.start()
 
         win32api.SetConsoleCtrlHandler(self.stop_signal, True)
 
@@ -38,12 +42,13 @@ class Threader():
         self.stop()
 
     def stop(self):
+        logger.info("=== Closing launcher ===")
         self.tray.stop()
         self.carrotjuicer.stop()
         self.screenstate.stop()
         self.windowmover.stop()
-        logger.info("==== Launcher Closed ===")
 
+@logger.catch
 def main():
     logger.add("log.log", rotation="1 week", compression="zip", retention="1 month", encoding='utf-8')
     logger.info("==== Starting Launcher ====")

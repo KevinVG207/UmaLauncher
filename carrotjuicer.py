@@ -324,7 +324,7 @@ class CarrotJuicer():
 
 
     def run(self):
-        if not self.threader.settings.get_tray_setting("Intercept packets"):
+        if not self.threader.settings.get_tray_setting("Automatic training event helper"):
             return
 
         msg_path = self.threader.settings.get("game_install_path")

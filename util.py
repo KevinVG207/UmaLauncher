@@ -1,5 +1,6 @@
 import win32api
 import win32gui
+from pywintypes import error as pywinerror
 import threading
 import math
 from loguru import logger
@@ -99,3 +100,35 @@ def turn_to_string(turn):
     year = math.floor(turn / 12) + 1
 
     return f"Y{year}, {'Late' if second_half else 'Early'} {MONTH_DICT[month]}"
+
+def get_window_rect(*args, **kwargs):
+    try:
+        return win32gui.GetWindowRect(*args, **kwargs)
+    except pywinerror:
+        return None
+
+def move_window(*args, **kwargs):
+    try:
+        win32gui.MoveWindow(*args, **kwargs)
+        return True
+    except pywinerror:
+        return False
+
+def monitor_from_window(*args, **kwargs):
+    try:
+        return win32api.MonitorFromWindow(*args, **kwargs)
+    except pywinerror:
+        return None
+
+def get_monitor_info(*args, **kwargs):
+    try:
+        return win32api.GetMonitorInfo(*args, **kwargs)
+    except pywinerror:
+        return None
+
+def show_window(*args, **kwargs):
+    try:
+        win32gui.ShowWindow(*args, **kwargs)
+        return True
+    except pywinerror:
+        return False

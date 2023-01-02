@@ -1,7 +1,8 @@
 import os
 import json
 import copy
-from enum import Enum
+import tkinter
+from tkinter import filedialog
 from loguru import logger
 
 ORIENTATION_DICT = {
@@ -15,14 +16,15 @@ class Settings():
 
     settings_file = "umasettings.json"
     default_settings = {
-        "dmm_path": "c:\\Program Files\\DMMGamePlayer",
+        "dmm_path": "c:/Program Files/DMMGamePlayer",
         "autoclose_dmm": True,
         "tray_items": {
+            "Lock game window": True,
             "Discord rich presence": True,
             "Patch DMM": True,
-            "Intercept packets": False,
+            "Automatic training event helper": True,
         },
-        "game_install_path": "%userprofile%\\Umamusume",
+        "game_install_path": "%userprofile%/Umamusume",
         "game_position": {
             "portrait": None,
             "landscape": None
@@ -40,8 +42,24 @@ class Settings():
             self.save_settings()
         else:
             self.load_settings()
+        
+        # Check if the game install path is correct.
+        for folder_tuple in [
+            ('game_install_path', "umamusume.exe", "Please choose the game's installation folder. (Where umamusume.exe is located.)"),
+            ('dmm_path', "DMMGamePlayer.exe", "Please choose the DMM Game Player installation folder."),
+        ]:
+            self.make_user_choose_folder(*folder_tuple)
 
         logger.info(self.loaded_settings)
+
+    def make_user_choose_folder(self, setting, file_to_verify, title):
+        while not os.path.exists(os.path.join(self.get(setting), file_to_verify)):
+            root = tkinter.Tk()
+            root.withdraw()
+            file_path = filedialog.askdirectory(title=title)
+            if file_path:
+                self.set(setting, file_path)
+            root.destroy()
 
     def save_settings(self):
         with open(self.settings_file, 'w', encoding='utf-8') as f:
