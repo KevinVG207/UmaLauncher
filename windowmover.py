@@ -138,9 +138,9 @@ class WindowMover():
     def run(self):
         while not self.should_stop and not self.screenstate.game_handle:
             time.sleep(0.25)
-        
+
         self.window = GameWindow(self.screenstate.game_handle)
-        
+
         while not self.should_stop and self.screenstate.game_handle:
             time.sleep(0.25)
             game_rect, is_portrait = self.window.get_rect()

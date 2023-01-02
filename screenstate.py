@@ -45,6 +45,9 @@ def get_available_icons():
                 music_icons.append(name)
     return chara_icons, music_icons
 
+def get_character_name_dict():
+    pass
+
 class ScreenState:
     location = Location.MAIN_MENU
     main = "Launching game..."
