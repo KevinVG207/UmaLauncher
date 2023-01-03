@@ -2,26 +2,37 @@
 Script that enhances the Uma Musume (DMM Version) experience.
 
 ## Requirements
-- Python 3
-  - Make sure to run `pip install -r requirements.txt` before first launch.
-- Node.js
-  - Make sure to run `npm install` before first launch.
+- [EXNOA-CarrotJuicer](https://github.com/CNA-Bld/EXNOA-CarrotJuicer)
+  - Make sure CarrotJuicer's `version.dll` is located in the same directory as `umamusume.exe`.
+  - CarrotJuicer allows UmaLauncher to extract information from the network packets the game sends/receives. This information is used to determine the current status of the game for Discord rich presence.
+- [Python 3](https://www.python.org/downloads/)
+  - Make sure to run `pip install -r requirements.txt` where you unpacked UmaLauncher before running UmaLauncher.
+- [Node.js](https://nodejs.org/)
+  - Make sure to run `npm install` where you unpacked UmaLauncher before running UmaLauncher.
+- **Firefox!!**
+
+## Usage
+Extract the latest release's source code .zip anywhere and run `UmaLauncher.lnk`.
+On first launch, you may be asked to select the installation locations for the game and DMM if you are not using the default locations.
 
 ## Features
-- Launch Uma Musume simply by running one Python script.
-  - `umalauncher.pyw` automatically launches DMMGamePlayer and autostarts the game. No interaction necessary.
-    - Alternatively, run `umalauncher.py` to keep the console open.
+- Launch Uma Musume simply by running one file.
+  - `UmaLauncher.pyw` automatically launches DMMGamePlayer and autostarts the game. No interaction necessary.
+    - Alternatively, run `threader.py` to keep the console open.
     - Whichever way you run the script, output will be logged to `log.log`.
     - The script will ask for administrator privileges to interact the DMMGamePlayer and Uma Musume windows and to patch DMMGamePlayer.
-- Various options to enable/disable during gameplay by right-clicking the horse shoe icon in the taskbar:
-  - Better Discord rich presence for Uma Musume. (WIP)
+- Better Discord rich presence for Uma Musume. (WIP)
     - (Still work-in-progress and only works if nothing is above the game window.)
     - Shows which home screen you're on.
-    - Shows stats during training using OCR.
+    - Shows training details extracted from the game's packets through CarrotJuicer.
+- Automation of GameTora's training event helper.
+  - Automatically start a browser window with the current trained character and support cards.
+  - Automatically selects and scrolls to event choices when needed.
+- Various options to enable/disable during gameplay by right-clicking the horse shoe icon in the taskbar:
+  - Locking and remembering the game window position for portrait and landscape mode separately.
   - Automatically resizing the game to the largest possible size on your screen.
   - Take screenshots.
 - Or manually change settings after first launch by editing `umasettings.json`.
-  - E.g. to change the path to DMMGamePlayer to a non-default location.
 
 ## Disclaimer
 UmaLauncher is in no way associated with Uma Musume, Cygames or DMM.  

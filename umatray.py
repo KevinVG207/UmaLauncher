@@ -2,14 +2,12 @@ import pystray
 from loguru import logger
 from PIL import Image
 
-from threader import Threader
-
 class UmaTray():
     menu_items = None
     icon_thread = None
     threader = None
 
-    def __init__(self, threader: Threader):
+    def __init__(self, threader):
         self.threader = threader
         menu_items = [
             pystray.MenuItem(
