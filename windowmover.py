@@ -1,6 +1,7 @@
 import time
 from loguru import logger
 import util
+import math
 
 # TODO: Fix resize during concert
 # Catch the first resize during concert?
@@ -52,19 +53,21 @@ class GameWindow():
         game_pos = rect_to_pos(game_rect)
 
         # Get workspace w/h
-        workspace_height = workspace_rect[3] - workspace_rect[1]
-        workspace_width = workspace_rect[2] - workspace_rect[0]
+        workspace_height = float(workspace_rect[3] - workspace_rect[1])
+        workspace_width = float(workspace_rect[2] - workspace_rect[0])
 
         # Scale game based on height.
         multiplier = workspace_height / game_pos[3]
-        new_game_width = round(game_pos[2] * multiplier)
         new_game_height = round(game_pos[3] * multiplier)
+        new_game_width = util.get_width_from_height(new_game_height, is_portrait)
 
         # Check if game is too wide, scale based on width.
         if new_game_width > workspace_width:
             multiplier = workspace_width / new_game_width
             new_game_height = round(new_game_height * multiplier)
-            new_game_width = round(new_game_width * multiplier)
+            new_game_width = util.get_width_from_height(new_game_height, is_portrait)
+        else:
+            new_game_width = round(new_game_width)
 
         # Calcualte the new top-left x and y position
         new_x = workspace_rect[0] + round((workspace_width * 0.5) - (new_game_width * 0.5))
@@ -74,13 +77,17 @@ class GameWindow():
         new_game_rect = [
             new_x,
             new_y,
-            new_x + new_game_width,
+            new_x + util.get_width_from_height(new_game_height, is_portrait),
             new_y + new_game_height
         ]
 
+        logger.info(new_game_rect)
+
         # Re-add jank before resizing window
         new_game_rect = jankify(new_game_rect)
-        return rect_to_pos(new_game_rect), is_portrait
+        new_game_pos = rect_to_pos(new_game_rect)
+        new_game_pos[2] = util.get_width_from_height(new_game_pos[3], is_portrait)
+        return new_game_pos, is_portrait
 
     def maximize_and_center(self):
         self.set_pos(self.calc_max_and_center_pos()[0])
@@ -105,10 +112,10 @@ def rect_is_portrait(rect):
     return rect[3] - rect[1] > rect[2] - rect[0]
 
 def rect_to_pos(rect):
-    return (rect[0], rect[1], rect[2] - rect[0], rect[3] - rect[1])
+    return [rect[0], rect[1], rect[2] - rect[0], rect[3] - rect[1]]
 
 def pos_to_rect(pos):
-    return (pos[0], pos[1], pos[0] + pos[2], pos[1] + pos[3])
+    return [pos[0], pos[1], pos[0] + pos[2], pos[1] + pos[3]]
 
 
 class WindowMover():
@@ -157,6 +164,8 @@ class WindowMover():
 
                 # Just enabled auto-resize. Save current window position so it can be re-used.
                 if not self.prev_auto_resize:
+                    logger.info("a")
+                    logger.info(dejankify(rect_to_pos(game_rect)))
                     self.threader.settings.save_game_position(rect_to_pos(game_rect), portrait=is_portrait)
 
                 # Already in auto-resize but orientation changed. Save the previous orientation's position.

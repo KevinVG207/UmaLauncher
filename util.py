@@ -1,12 +1,17 @@
 import win32api
 import win32gui
-from pywintypes import error as pywinerror
 import threading
 import math
+from pywintypes import error as pywinerror  # pylint: disable=no-name-in-module
 from loguru import logger
 from PIL import Image
 
 window_handle = None
+
+def get_width_from_height(height, portrait):
+    if portrait:
+        return math.ceil((height * 0.5626065430) - 6.2123937177)
+    return math.ceil((height * 1.7770777107) - 52.7501897551)
 
 def _show_alert_box(error, message):
     win32api.MessageBox(
