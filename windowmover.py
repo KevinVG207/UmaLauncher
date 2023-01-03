@@ -81,8 +81,6 @@ class GameWindow():
             new_y + new_game_height
         ]
 
-        logger.info(new_game_rect)
-
         # Re-add jank before resizing window
         new_game_rect = jankify(new_game_rect)
         new_game_pos = rect_to_pos(new_game_rect)
@@ -164,8 +162,6 @@ class WindowMover():
 
                 # Just enabled auto-resize. Save current window position so it can be re-used.
                 if not self.prev_auto_resize:
-                    logger.info("a")
-                    logger.info(dejankify(rect_to_pos(game_rect)))
                     self.threader.settings.save_game_position(rect_to_pos(game_rect), portrait=is_portrait)
 
                 # Already in auto-resize but orientation changed. Save the previous orientation's position.
