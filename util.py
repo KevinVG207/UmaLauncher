@@ -1,11 +1,17 @@
 import win32api
 import win32gui
 import threading
+import math
+from pywintypes import error as pywinerror  # pylint: disable=no-name-in-module
 from loguru import logger
 from PIL import Image
 
 window_handle = None
 
+def get_width_from_height(height, portrait):
+    if portrait:
+        return math.ceil((height * 0.5626065430) - 6.2123937177)
+    return math.ceil((height * 1.7770777107) - 52.7501897551)
 
 def _show_alert_box(error, message):
     win32api.MessageBox(
@@ -49,7 +55,7 @@ LAZY = _get_window_lazy
 EXACT = _get_window_exact
 STARTSWITH = _get_window_startswith
 
-def get_window_handle(query: str, type: int=LAZY) -> str:
+def get_window_handle(query: str, type=LAZY) -> str:
     global window_handle
 
     window_handle = None
@@ -72,3 +78,62 @@ def similar_color(col1: tuple[int,int,int], col2: tuple[int,int,int], threshold:
     for i in range(3):
         total_diff += abs(col1[i] - col2[i])
     return total_diff < threshold
+
+MONTH_DICT = {
+    1: 'January',
+    2: 'February',
+    3: 'March',
+    4: 'April',
+    5: 'May',
+    6: 'June',
+    7: 'July',
+    8: 'August',
+    9: 'September',
+    10: 'October',
+    11: 'November',
+    12: 'December'
+}
+
+def turn_to_string(turn):
+    turn = turn - 1
+
+    second_half = turn % 2 != 0
+    if second_half:
+        turn -= 1
+    turn /= 2
+    month = int(turn) % 12 + 1
+    year = math.floor(turn / 12) + 1
+
+    return f"Y{year}, {'Late' if second_half else 'Early'} {MONTH_DICT[month]}"
+
+def get_window_rect(*args, **kwargs):
+    try:
+        return win32gui.GetWindowRect(*args, **kwargs)
+    except pywinerror:
+        return None
+
+def move_window(*args, **kwargs):
+    try:
+        win32gui.MoveWindow(*args, **kwargs)
+        return True
+    except pywinerror:
+        return False
+
+def monitor_from_window(*args, **kwargs):
+    try:
+        return win32api.MonitorFromWindow(*args, **kwargs)
+    except pywinerror:
+        return None
+
+def get_monitor_info(*args, **kwargs):
+    try:
+        return win32api.GetMonitorInfo(*args, **kwargs)
+    except pywinerror:
+        return None
+
+def show_window(*args, **kwargs):
+    try:
+        win32gui.ShowWindow(*args, **kwargs)
+        return True
+    except pywinerror:
+        return False
