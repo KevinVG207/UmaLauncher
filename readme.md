@@ -9,10 +9,11 @@ Script that enhances the Uma Musume (DMM Version) experience.
   - Make sure to run `pip install -r requirements.txt` where you unpacked UmaLauncher before running UmaLauncher.
 - [Node.js](https://nodejs.org/)
   - Make sure to run `npm install` where you unpacked UmaLauncher before running UmaLauncher.
-- **Firefox!!**
+- [Firefox](https://www.mozilla.org/)
+  - A version of Firefox needs to be installed for the automatic GameTora event helper.
 
 ## Usage
-Extract the latest release's source code .zip anywhere and run `UmaLauncher.lnk`.
+Extract the latest release's source code .zip anywhere and run `UmaLauncher.lnk`. Change settings or close by right-clicking the horse shoe tray icon on the taskbar.
 On first launch, you may be asked to select the installation locations for the game and DMM if you are not using the default locations.
 
 ## Features
