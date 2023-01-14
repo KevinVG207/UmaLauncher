@@ -19,7 +19,7 @@ class Threader():
     threads = []
 
     def __init__(self):
-        self.settings = settings.Settings()
+        self.settings = settings.Settings(self)
 
         self.screenstate = screenstate.ScreenStateHandler(self)
         self.threads.append(threading.Thread(target=self.screenstate.run))

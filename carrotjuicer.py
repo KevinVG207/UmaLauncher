@@ -134,6 +134,10 @@ class CarrotJuicer():
 
     def save_last_browser_rect(self):
         if self.last_browser_rect:
+            if (self.last_browser_rect['x'] == -32000 and self.last_browser_rect['y'] == -32000):
+                logger.warning(f"Browser minimized, cannot save position: {self.last_browser_rect}")
+                self.last_browser_rect = None
+                return
             self.threader.settings.set("browser_position", list(self.last_browser_rect.values()))
             self.last_browser_rect = None
 
