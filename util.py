@@ -1,5 +1,6 @@
 import win32api
 import win32gui
+import win32con
 import threading
 import math
 from pywintypes import error as pywinerror  # pylint: disable=no-name-in-module
@@ -137,3 +138,13 @@ def show_window(*args, **kwargs):
         return True
     except pywinerror:
         return False
+
+def is_minimized(handle):
+    try:
+        tup = win32gui.GetWindowPlacement(handle)
+        if tup[1] == win32con.SW_SHOWMINIMIZED:
+            return True
+        return False
+    except pywinerror:
+        # Default to it being minimized as to not save the game window.
+        return True

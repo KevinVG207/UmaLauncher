@@ -4,6 +4,7 @@ import copy
 import tkinter
 from tkinter import filedialog
 from loguru import logger
+import util
 
 ORIENTATION_DICT = {
     True: 'portrait',
@@ -34,7 +35,8 @@ class Settings():
 
     loaded_settings = {}
 
-    def __init__(self):
+    def __init__(self, threader):
+        self.threader = threader
         # Load settings on import.
         if not os.path.exists(self.settings_file):
             logger.info("Settings file not found. Starting with default settings.")
@@ -143,6 +145,14 @@ class Settings():
             logger.error(f"Unknown key passed to settings. Key: {key}\tValue: {value}")
 
     def save_game_position(self, pos, portrait):
+        if util.is_minimized(self.threader.screenstate.game_handle):
+            logger.warning(f"Game minimized, cannot save {ORIENTATION_DICT[portrait]} position: {pos}")
+            return
+
+        if (pos[0] == -32000 and pos[1] == -32000):
+            logger.warning(f"Game minimized, cannot save {ORIENTATION_DICT[portrait]} position: {pos}")
+            return
+
         orientation_key = ORIENTATION_DICT[portrait]
         self.loaded_settings['game_position'][orientation_key] = pos
         logger.info(f"Saving {orientation_key} position: {pos}")
