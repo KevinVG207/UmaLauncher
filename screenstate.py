@@ -197,10 +197,8 @@ class ScreenStateHandler():
     def run(self):
         # If DMM is not seen AND Game is not seen: Start DMM
         if not self.game_seen:
-            if self.threader.settings.get_tray_setting("Patch DMM"):
-                dmm.patch_dmm(self.threader.settings.get("dmm_path"))
-            else:
-                dmm.unpatch_dmm(self.threader.settings.get("dmm_path"))
+            if self.threader.settings.unpatch_dmm:
+                dmm.unpatch_dmm(self.threader.settings.unpatch_dmm)
             dmm.start()
 
         while not self.should_stop:

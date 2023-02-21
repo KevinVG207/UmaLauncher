@@ -1,4 +1,3 @@
-import settings
 import shutil
 import os
 import util
@@ -70,10 +69,10 @@ buttonPoll();
 
     logger.info("Creating hash file.")
     with open(os.path.join(resources_path, "app.asar"), "rb") as f:
-            app_hash = hashlib.md5(f.read()).hexdigest()
+        app_hash = hashlib.md5(f.read()).hexdigest()
     with open(os.path.join(resources_path, "app.hash"), "w", encoding='utf-8') as f:
         f.write(app_hash)
-    
+
     os.chdir(cwd_before)
     logger.info("Patching complete.")
 
@@ -103,4 +102,4 @@ def unpatch_dmm(dmm_path):
 
 def start():
     logger.info("Sending DMM to the Umamusume page.")
-    os.system("Start dmmgameplayer://umamusume/cl/general/umamusume")
+    os.system("Start dmmgameplayer://play/GCL/umamusume/cl/win")
