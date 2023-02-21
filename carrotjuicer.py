@@ -367,7 +367,7 @@ class CarrotJuicer():
         if message_time < self.start_time:
             return
 
-        logger.info(f"New Packet: {os.path.basename(message)}")
+        # logger.info(f"New Packet: {os.path.basename(message)}")
 
         if message.endswith("R.msgpack"):
             # Response
@@ -408,7 +408,6 @@ class CarrotJuicer():
                 self.check_browser()
                 if self.browser:
                     self.last_browser_rect = self.browser.get_window_rect()
-                    logger.info(self.last_browser_rect)
                 elif self.last_browser_rect:
                     self.save_last_browser_rect()
 
