@@ -7,10 +7,8 @@ Script that enhances the Uma Musume (DMM Version) experience.
   - CarrotJuicer allows UmaLauncher to extract information from the network packets the game sends/receives. This information is used to determine the current status of the game for Discord rich presence.
 - [Python 3](https://www.python.org/downloads/)
   - Make sure to run `pip install -r requirements.txt` where you unpacked UmaLauncher before running UmaLauncher.
-- [Node.js](https://nodejs.org/)
-  - Make sure to run `npm install` where you unpacked UmaLauncher before running UmaLauncher.
 - [Firefox](https://www.mozilla.org/)
-  - A version of Firefox needs to be installed for the automatic GameTora event helper.
+  - A version of Firefox needs to be instled for the automatic GameTora event helper.
 
 ## Installation
 Move instructions from requirements here.

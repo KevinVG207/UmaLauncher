@@ -1,10 +1,14 @@
 venv/*
 _release/*
+dist/*
+build/*
 __pycache__/*
 _ocr/_tmp/*
 _ocr/_raw/*
 _ocr/_ref/backup/*
 ff_profile/parent.lock
+chr_profile/*
+edg_profile/*
 node_modules/*
 package-lock.json
 screenshot.png

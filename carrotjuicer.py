@@ -11,9 +11,13 @@ from loguru import logger
 from selenium.common.exceptions import WebDriverException
 from selenium import webdriver
 from selenium.webdriver.firefox.service import Service as FirefoxService
+from selenium.webdriver.edge.service import Service as EdgeService
+from selenium.webdriver.chrome.service import Service as ChromeService
+from selenium.common.exceptions import NoSuchWindowException
 from screenstate import ScreenState, Location
 import util
 import mdb
+
 
 
 class CarrotJuicer():
@@ -26,8 +30,17 @@ class CarrotJuicer():
     last_browser_rect = None
     reset_browser = False
 
+    _browser_list = None
+
     def __init__(self, threader):
         self.threader = threader
+
+        self._browser_list = [
+            self.firefox_setup,
+            self.chrome_setup,
+            self.edge_setup,
+        ]
+
         self.screen_state_handler = threader.screenstate
         self.start_time = math.floor(time.time() * 1000)
 
@@ -61,6 +74,53 @@ class CarrotJuicer():
         with open("packet.json", 'w', encoding='utf-8') as f:
             f.write(json.dumps(packet, indent=4, ensure_ascii=False))
 
+    def firefox_setup(self, helper_url):
+        firefox_service = FirefoxService()
+        firefox_service.creation_flags = CREATE_NO_WINDOW
+        profile = webdriver.FirefoxProfile(self.threader.get_asset("ff_profile"))
+        options = webdriver.FirefoxOptions()
+        browser = webdriver.Firefox(service=firefox_service, firefox_profile=profile, options=options)
+        browser.get(helper_url)
+        return browser
+
+    def chromium_setup(self, service, options_class, driver_class, profile, helper_url):
+        options = options_class()
+        # Add profile stuff
+        options.add_argument("--user-data-dir=" + str(self.threader.get_asset(profile)))
+        options.add_argument("--app=" + helper_url)
+        browser = driver_class(service=service, options=options)
+        return browser
+
+    def chrome_setup(self, helper_url):
+        return self.chromium_setup(
+            service=ChromeService(),
+            options_class=webdriver.ChromeOptions,
+            driver_class=webdriver.Chrome,
+            profile="chr_profile",
+            helper_url=helper_url
+        )
+
+    def edge_setup(self, helper_url):
+        return self.chromium_setup(
+            service=EdgeService(),
+            options_class=webdriver.EdgeOptions,
+            driver_class=webdriver.Edge,
+            profile="edg_profile",
+            helper_url=helper_url
+        )
+
+    def init_browser(self, helper_url):
+        driver = None
+        for browser in self._browser_list:
+            try:
+                logger.info("Attempting " + str(browser))
+                driver = browser(helper_url)
+                break
+            except:
+                pass
+        if not driver:
+            logger.error("No instance of Firefox, Chrome or Edge found! Cannot start Event Helper!")
+        return driver
 
     def open_helper(self, helper_url):
         self.previous_element = None
@@ -68,19 +128,16 @@ class CarrotJuicer():
         if self.browser:
             self.close_browser()
 
-        firefox_service = FirefoxService()
-        firefox_service.creation_flags = CREATE_NO_WINDOW
-        profile = webdriver.FirefoxProfile("./ff_profile")
-        options = webdriver.FirefoxOptions()
-        self.browser = webdriver.Firefox(service=firefox_service, firefox_profile=profile, options=options)
+
+        self.browser = self.init_browser(helper_url)
 
         saved_pos = self.threader.settings.get("browser_position")
         if not saved_pos:
             self.reset_browser_position()
         else:
+            logger.info(saved_pos)
             self.browser.set_window_rect(*saved_pos)
 
-        self.browser.get(helper_url)
         # TODO: Find a way to know if the page is actually finished loading
 
         while not self.browser.execute_script("""return document.querySelector("[class^='legal_cookie_banner_wrapper_']")"""):
@@ -93,14 +150,15 @@ class CarrotJuicer():
         self.browser.execute_script("""document.querySelector("[class^='styles_header_settings_']").click()""")
         while not self.browser.execute_script("""return document.querySelector("[class^='filters_toggle_button_']");"""):
             time.sleep(0.2)
-        dark_enabled = self.browser.execute_script("""document.querySelector("[class^='filters_toggle_button_']").childNodes[0].querySelector("input").checked;""")
+        
+        dark_enabled = self.browser.execute_script("""return document.querySelector("[class^='filters_toggle_button_']").childNodes[0].querySelector("input").checked;""")
         if not dark_enabled:
             self.browser.execute_script("""document.querySelector("[class^='filters_toggle_button_']").childNodes[0].querySelector("input").click()""")
         self.browser.execute_script("""document.querySelector("[class^='styles_header_settings_']").click()""")
 
         # Enable all cards
         self.browser.execute_script("""document.querySelector("[class^='filters_settings_button_']").click()""")
-        all_cards_enabled = self.browser.execute_script("""document.getElementById("allAtOnceCheckbox").checked;""")
+        all_cards_enabled = self.browser.execute_script("""return document.getElementById("allAtOnceCheckbox").checked;""")
         if not all_cards_enabled:
             self.browser.execute_script("""document.getElementById("allAtOnceCheckbox").click()""")
         self.browser.execute_script("""document.querySelector("[class^='filters_confirm_button_']").click()""")
@@ -138,7 +196,7 @@ class CarrotJuicer():
                 logger.warning(f"Browser minimized, cannot save position: {self.last_browser_rect}")
                 self.last_browser_rect = None
                 return
-            self.threader.settings.set("browser_position", list(self.last_browser_rect.values()))
+            self.threader.settings.set("browser_position", [self.last_browser_rect['x'], self.last_browser_rect['y'], self.last_browser_rect['width'], self.last_browser_rect['height']])
             self.last_browser_rect = None
 
 
@@ -339,22 +397,26 @@ class CarrotJuicer():
 
         msg_path = os.path.join(msg_path, "CarrotJuicer")
 
-        while not self.should_stop:
-            time.sleep(0.25)
+        try:
+            while not self.should_stop:
+                time.sleep(0.25)
 
-            if self.reset_browser:
-                self.reset_browser = False
-                self.reset_browser_position()
+                if self.reset_browser:
+                    self.reset_browser = False
+                    self.reset_browser_position()
 
-            self.check_browser()
-            if self.browser:
-                self.last_browser_rect = self.browser.get_window_rect()
-            elif self.last_browser_rect:
-                self.save_last_browser_rect()
+                self.check_browser()
+                if self.browser:
+                    self.last_browser_rect = self.browser.get_window_rect()
+                    logger.info(self.last_browser_rect)
+                elif self.last_browser_rect:
+                    self.save_last_browser_rect()
 
-            messages = self.get_msgpack_batch(msg_path)
-            for message in messages:
-                self.process_message(message)
+                messages = self.get_msgpack_batch(msg_path)
+                for message in messages:
+                    self.process_message(message)
+        except NoSuchWindowException:
+            pass
 
         if self.browser:
             self.last_browser_rect = self.browser.get_window_rect()

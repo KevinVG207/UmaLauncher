@@ -23,7 +23,7 @@ class UmaTray():
 
         self.icon_thread = pystray.Icon(
             'Uma Launcher',
-            Image.open("favicon.ico"),
+            Image.open(self.threader.get_asset("favicon.ico")),
             menu=pystray.Menu(*menu_items)
         )
 
