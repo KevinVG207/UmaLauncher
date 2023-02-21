@@ -16,7 +16,7 @@ class UmaTray():
                 checked=lambda item: self.threader.settings.get_tray_setting(item.text)
             ) for menu_item in self.threader.settings.default_settings["tray_items"]
         ]
-        menu_items.append(pystray.MenuItem("Maximize game", self.threader.windowmover.try_maximize))
+        menu_items.append(pystray.MenuItem("Maximize + center game", self.threader.windowmover.try_maximize))
         menu_items.append(pystray.MenuItem("Take screenshot", self.threader.screenstate.screenshot_to_clipboard))
         menu_items.append(pystray.Menu.SEPARATOR)
         menu_items.append(pystray.MenuItem("Close", lambda: close_clicked(self)))

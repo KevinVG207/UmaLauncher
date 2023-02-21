@@ -17,12 +17,10 @@ class Settings():
 
     settings_file = "umasettings.json"
     default_settings = {
-        "dmm_path": "c:/Program Files/DMMGamePlayer",
         "autoclose_dmm": True,
         "tray_items": {
             "Lock game window": True,
             "Discord rich presence": True,
-            "Patch DMM": True,
             "Automatic training event helper": True,
         },
         "game_install_path": "%userprofile%/Umamusume",
@@ -34,6 +32,7 @@ class Settings():
     }
 
     loaded_settings = {}
+    unpatch_dmm = False
 
     def __init__(self, threader):
         self.threader = threader
@@ -47,8 +46,7 @@ class Settings():
         
         # Check if the game install path is correct.
         for folder_tuple in [
-            ('game_install_path', "umamusume.exe", "Please choose the game's installation folder. (Where umamusume.exe is located.)"),
-            ('dmm_path', "DMMGamePlayer.exe", "Please choose the DMM Game Player installation folder."),
+            ('game_install_path', "umamusume.exe", "Please choose the game's installation folder. (Where umamusume.exe is located.)")
         ]:
             self.make_user_choose_folder(*folder_tuple)
 
@@ -93,11 +91,21 @@ class Settings():
                     if isinstance(self.loaded_settings[setting], dict):
                         for sub_setting in self.loaded_settings[setting]:
                             if sub_setting not in self.default_settings[setting]:
-                                logger.warning(f"Removing unknown setting: {setting}[{sub_setting}]")
-                                del tmp_loaded_settings[setting][sub_setting]
+                                logger.warning(f"Unknown setting found: {setting}[{sub_setting}]")
+                                # del tmp_loaded_settings[setting][sub_setting]
+
                     elif setting not in self.default_settings:
-                        logger.warning(f"Removing unknown setting: {setting}")
-                        del tmp_loaded_settings[setting]
+                        logger.warning(f"Unknown setting found: {setting}")
+                        # del tmp_loaded_settings[setting]
+
+                        # Unpatch DMM if needed.
+                        if setting == 'dmm_path':
+                            logger.info("Found remnants of DMM patcher. Unpatching DMM.")
+                            self.unpatch_dmm = tmp_loaded_settings[setting]
+                            del tmp_loaded_settings[setting]
+                            if 'Patch DMM' in tmp_loaded_settings['tray_items']:
+                                del tmp_loaded_settings['tray_items']['Patch DMM']
+
                 self.loaded_settings = tmp_loaded_settings
                 self.save_settings()
             
