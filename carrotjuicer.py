@@ -18,8 +18,6 @@ from screenstate import ScreenState, Location
 import util
 import mdb
 
-
-
 class CarrotJuicer():
     start_time = None
     browser = None
@@ -84,8 +82,8 @@ class CarrotJuicer():
         return browser
 
     def chromium_setup(self, service, options_class, driver_class, profile, helper_url):
+        service.creation_flags = CREATE_NO_WINDOW
         options = options_class()
-        # Add profile stuff
         options.add_argument("--user-data-dir=" + str(self.threader.get_asset(profile)))
         options.add_argument("--app=" + helper_url)
         browser = driver_class(service=service, options=options)
@@ -139,7 +137,6 @@ class CarrotJuicer():
 
         if self.browser:
             self.close_browser()
-
 
         self.browser = self.init_browser(helper_url)
 
@@ -264,7 +261,7 @@ class CarrotJuicer():
                 if not self.browser or not self.browser.current_url.startswith("https://gametora.com/umamusume/training-event-helper"):
                     logger.info("GT tab not open, opening tab")
                     self.open_helper(self.create_gametora_helper_url(outfit_id, scenario_id, supports))
-            
+
             if 'unchecked_event_array' in data and data['unchecked_event_array']:
                 # Training event.
                 logger.info("Training event detected")
@@ -272,7 +269,7 @@ class CarrotJuicer():
                 # TODO: Check if there can be multiple events??
                 if len(data['unchecked_event_array']) > 1:
                     logger.warning(f"Packet has more than 1 unchecked event! {message}")
-                
+
                 self.browser.execute_script(
                     """
                     document.querySelectorAll("[class^='compatibility_viewer_item_'][aria-expanded=true]").forEach(e => e.click());
@@ -286,7 +283,7 @@ class CarrotJuicer():
                     logger.info(f"Event title determined: {event_title}")
 
                     # Event has choices
-                    
+
                     # If character is the trained character
                     if event_data['event_contents_info']['support_card_id'] and event_data['event_contents_info']['support_card_id'] not in supports:
                         # Random support card event
@@ -434,7 +431,7 @@ class CarrotJuicer():
 
         if self.browser:
             self.last_browser_rect = self.browser.get_window_rect()
-            self.browser.close()
+            self.browser.quit()
         self.save_last_browser_rect()
         return
 
