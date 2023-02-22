@@ -8,7 +8,9 @@ Script that enhances the Uma Musume (DMM Version) experience.
 
 ## Usage
 Download the latest release's `Uma Launcher.exe` and run it.
+
 (When downloading a newer version, you may overwrite the existing .exe)
+
 On first launch or when you change the game's location, you may be asked to select the installation location for the game if you are not using the default location.
 
 ## Features
@@ -23,6 +25,7 @@ On first launch or when you change the game's location, you may be asked to sele
 - (Still work-in-progress and only works if nothing is above the game window.)
 ### Automatic GameTora training event helper
 **(CarrotJuicer required)**
+
 ![An example of the automatic training event helper scrolling to the training event.](assets/event-helper.gif)
 - Automatically start a browser window with the current trained character and support cards.
 - Automatically selects and scrolls to event choices when needed.
