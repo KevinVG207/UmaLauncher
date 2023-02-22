@@ -9,8 +9,7 @@ Script that enhances the Uma Musume (DMM Version) experience.
 ## Usage
 Download the latest release's `Uma Launcher.exe` and run it.
 (When downloading a newer version, you may overwrite the existing .exe)
-On first launch, you may be asked to select the installation location for the game if you are not using the default location.
-If you ever change this, you can edit the location in `umasettings.json` that gets created next to the .exe after first launch.
+On first launch or when you change the game's location, you may be asked to select the installation location for the game if you are not using the default location.
 
 ## Features
 ### Launch Uma Musume simply by running one file
