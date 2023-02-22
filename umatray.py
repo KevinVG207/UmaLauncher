@@ -16,6 +16,21 @@ class UmaTray():
                 checked=lambda item: self.threader.settings.get_tray_setting(item.text)
             ) for menu_item in self.threader.settings.default_settings["tray_items"]
         ]
+        menu_items.append(
+            pystray.MenuItem(
+                "Set Browser Type",
+                pystray.Menu(
+                    lambda: (
+                        pystray.MenuItem(
+                            browser,
+                            self.threader.settings.set_browser,
+                            checked=self.threader.settings.get_browser,
+                            radio=True)
+                        for browser in self.threader.settings.get_browsers()
+                    )
+                )
+            )
+        )
         menu_items.append(pystray.MenuItem("Maximize + center game", self.threader.windowmover.try_maximize))
         menu_items.append(pystray.MenuItem("Take screenshot", self.threader.screenstate.screenshot_to_clipboard))
         menu_items.append(pystray.Menu.SEPARATOR)

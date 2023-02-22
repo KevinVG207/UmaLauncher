@@ -30,7 +30,13 @@ class Settings():
             "portrait": None,
             "landscape": None
         },
-        "browser_position": None
+        "browser_position": None,
+        "selected_browser": {
+            "Auto": True,
+            "Chrome": False,
+            "Firefox": False,
+            "Edge": False
+        }
     }
 
     loaded_settings = {}
@@ -166,3 +172,15 @@ class Settings():
     def load_game_position(self, portrait):
         orientation_key = ORIENTATION_DICT[portrait]
         return self.loaded_settings['game_position'][orientation_key]
+
+    def get_browsers(self):
+        return self.loaded_settings['selected_browser'].keys()
+
+    def get_browser(self, item):
+        return self.loaded_settings['selected_browser'].get(item.text, False)
+
+    def set_browser(self, icon, item):
+        for key in self.loaded_settings['selected_browser']:
+            self.loaded_settings['selected_browser'][key] = key == item.text
+        logger.info(f"Saving browser selection: {item.text}")
+        self.save_settings()

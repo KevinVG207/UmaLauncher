@@ -35,11 +35,11 @@ class CarrotJuicer():
     def __init__(self, threader):
         self.threader = threader
 
-        self._browser_list = [
-            self.firefox_setup,
-            self.chrome_setup,
-            self.edge_setup,
-        ]
+        self._browser_list = {
+            'Firefox': self.firefox_setup,
+            'Chrome': self.chrome_setup,
+            'Edge': self.edge_setup,
+        }
 
         self.screen_state_handler = threader.screenstate
         self.start_time = math.floor(time.time() * 1000)
@@ -111,15 +111,27 @@ class CarrotJuicer():
 
     def init_browser(self, helper_url):
         driver = None
-        for browser in self._browser_list:
+
+        browser_list = []
+        if self.threader.settings.loaded_settings['selected_browser']['Auto']:
+            browser_list = self._browser_list.values()
+        else:
+            browser_list = [
+                self._browser_list[browser]
+                for browser, selected in self.threader.settings.loaded_settings['selected_browser'].items()
+                if selected
+            ]
+
+        for browser_setup in browser_list:
             try:
-                logger.info("Attempting " + str(browser))
-                driver = browser(helper_url)
+                logger.info("Attempting " + str(browser_setup.__name__))
+                driver = browser_setup(helper_url)
                 break
-            except:
+            except Exception:
                 pass
         if not driver:
-            logger.error("No instance of Firefox, Chrome or Edge found! Cannot start Event Helper!")
+            logger.error("Cannot start Event Helper!")
+            util.show_alert_box("UmaLauncher: Unable to start browser.", "Selected webbrowser cannot be started. Use the tray icon to select a browser that is installed on your system.")
         return driver
 
     def open_helper(self, helper_url):
@@ -206,7 +218,7 @@ class CarrotJuicer():
 
         try:
             if 'data' not in data:
-                logger.info("This packet doesn't have data :)")
+                # logger.info("This packet doesn't have data :)")
                 return
 
             data = data['data']
@@ -321,6 +333,7 @@ class CarrotJuicer():
             logger.error("ERROR IN HANDLING RESPONSE MSGPACK")
             logger.error(data)
             logger.error(traceback.format_exc())
+            util.show_alert_box("UmaLauncher: Error in response msgpack.", "This should not happen. You may contact the developer about this issue.")
             self.close_browser()
 
     def check_browser(self):
@@ -354,6 +367,7 @@ class CarrotJuicer():
             logger.error("ERROR IN HANDLING REQUEST MSGPACK")
             logger.error(data)
             logger.error(traceback.format_exc())
+            util.show_alert_box("UmaLauncher: Error in request msgpack.", "This should not happen. You may contact the developer about this issue.")
             self.close_browser()
 
 
@@ -393,6 +407,7 @@ class CarrotJuicer():
 
         if not msg_path:
             logger.error("Packet intercept enabled but no carrotjuicer path found")
+            util.show_alert_box("UmaLauncher: No game install path found.", "This should not happen. Please add the game install path to umasettings.json")
             return
 
         msg_path = os.path.join(msg_path, "CarrotJuicer")
