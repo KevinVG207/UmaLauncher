@@ -7,7 +7,7 @@ Script that enhances the Uma Musume (DMM Version) experience.
   - While optional, CarrotJuicer allows UmaLauncher to extract information from the network packets the game sends/receives. This information is necessary to determine the current status of the game for the automatic training event helper and Discord rich presence.
 
 ## Usage
-Download the latest release's `Uma Launcher.exe` and run it.
+Download the latest release's `UmaLauncher.exe` and run it.
 
 (When downloading a newer version, you may overwrite the existing .exe)
 
