@@ -5,6 +5,7 @@ import tkinter
 from tkinter import filedialog
 from loguru import logger
 import util
+import version
 
 ORIENTATION_DICT = {
     True: 'portrait',
@@ -17,6 +18,7 @@ class Settings():
 
     settings_file = "umasettings.json"
     default_settings = {
+        "_version": version.VERSION,
         "autoclose_dmm": True,
         "tray_items": {
             "Lock game window": True,
@@ -32,7 +34,6 @@ class Settings():
     }
 
     loaded_settings = {}
-    unpatch_dmm = False
 
     def __init__(self, threader):
         self.threader = threader
@@ -72,6 +73,9 @@ class Settings():
             try:
                 self.loaded_settings = json.load(f)
 
+                # Upgrade old versions
+                self.loaded_settings = version.upgrade(self.loaded_settings)
+
                 # Ensure that the default settings keys actually exist.
                 for default_setting, setting_value in self.default_settings.items():
                     if isinstance(setting_value, dict):
@@ -98,18 +102,11 @@ class Settings():
                         logger.warning(f"Unknown setting found: {setting}")
                         # del tmp_loaded_settings[setting]
 
-                        # Unpatch DMM if needed.
-                        if setting == 'dmm_path':
-                            logger.info("Found remnants of DMM patcher. Unpatching DMM.")
-                            self.unpatch_dmm = tmp_loaded_settings[setting]
-                            del tmp_loaded_settings[setting]
-                            if 'Patch DMM' in tmp_loaded_settings['tray_items']:
-                                del tmp_loaded_settings['tray_items']['Patch DMM']
-
                 self.loaded_settings = tmp_loaded_settings
                 self.save_settings()
             
-            except (json.JSONDecodeError, TypeError):
+            except (json.JSONDecodeError, TypeError) as e:
+                print(e)
                 logger.info("Failed to load settings file. Loading default settings instead.")
                 self.loaded_settings = self.default_settings
 

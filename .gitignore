@@ -12,7 +12,7 @@ edg_profile/*
 node_modules/*
 package-lock.json
 screenshot.png
-umasettings.json
+umasettings*.json
 log.log
 sandbox.py
 *.log
