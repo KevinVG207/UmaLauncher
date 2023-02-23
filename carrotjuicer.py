@@ -18,6 +18,14 @@ from screenstate import ScreenState, Location
 import util
 import mdb
 
+SCENARIO_DICT = {
+    1: "URA Finals",
+    2: "Aoharu Cup",
+    3: "Grand Live",
+    4: "Make a New Track",
+    5: "Grand Masters",
+}
+
 class CarrotJuicer():
     start_time = None
     browser = None
@@ -41,6 +49,11 @@ class CarrotJuicer():
 
         self.screen_state_handler = threader.screenstate
         self.start_time = math.floor(time.time() * 1000)
+
+        # Remove existing geckodriver.log
+        if os.path.exists("geckodriver.log"):
+            os.remove("geckodriver.log")
+
 
     def load_request(self, msg_path):
         with open(msg_path, "rb") as in_file:
@@ -212,6 +225,7 @@ class CarrotJuicer():
     def handle_response(self, message):
         data = self.load_response(message)
         # logger.info(json.dumps(data))
+        self.to_json(data)
 
         try:
             if 'data' not in data:
@@ -254,7 +268,12 @@ class CarrotJuicer():
                     new_state.main = f"Training - {util.turn_to_string(data['chara_info']['turn'])}"
                     new_state.sub = f"{data['chara_info']['speed']} {data['chara_info']['stamina']} {data['chara_info']['power']} {data['chara_info']['guts']} {data['chara_info']['wiz']} | {data['chara_info']['skill_point']}"
 
-                    new_state.set_chara(chara_id)
+                    scenario_id = data['chara_info']['scenario_id']
+                    scenario_name = SCENARIO_DICT.get(scenario_id, None)
+                    if not scenario_name:
+                        logger.error(f"Scenario ID not found in scenario dict: {scenario_id}")
+                        scenario_name = "You are now breathing manually."
+                    new_state.set_chara(chara_id, scenario_name)
 
                     self.screen_state_handler.carrotjuicer_state = new_state
 
