@@ -128,7 +128,6 @@ class CarrotJuicer():
             except Exception:
                 pass
         if not driver:
-            logger.error("Cannot start Event Helper!")
             util.show_alert_box("UmaLauncher: Unable to start browser.", "Selected webbrowser cannot be started. Use the tray icon to select a browser that is installed on your system.")
         return driver
 
@@ -158,7 +157,7 @@ class CarrotJuicer():
         # Enable dark mode (the only reasonable color scheme)
         self.browser.execute_script("""document.querySelector("[class^='styles_header_settings_']").click()""")
         while not self.browser.execute_script("""return document.querySelector("[class^='filters_toggle_button_']");"""):
-            time.sleep(0.2)
+            time.sleep(0.25)
         
         dark_enabled = self.browser.execute_script("""return document.querySelector("[class^='filters_toggle_button_']").childNodes[0].querySelector("input").checked;""")
         if not dark_enabled:

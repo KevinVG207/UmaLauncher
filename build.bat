@@ -1,0 +1,2 @@
+python create_version.py
+pyinstaller threader.spec

@@ -33,7 +33,6 @@ def get_available_icons():
     logger.info("Requesting Rich Presence assets.")
     response = requests.get("https://discord.com/api/v9/oauth2/applications/954453106765225995/assets")
     if not response.ok:
-        logger.error("Could not fetch Rich Presence assets.")
         util.show_alert_box("UmaLauncher: Internet error.", "Cannot download the image assets for the Discord Rich Presence. Please check your internet connection.")
         return chara_icons, music_icons
 
@@ -51,7 +50,6 @@ def get_character_name_dict():
     logger.info("Requesting character names.")
     response = requests.get("https://umapyoi.net/api/v1/character/names")
     if not response.ok:
-        logger.error("Could not fetch character names")
         util.show_alert_box("UmaLauncher: Internet error.", "Cannot download the character names for the Discord Rich Presence. Please check your internet connection.")
         return chara_dict
 
@@ -169,7 +167,7 @@ class ScreenStateHandler():
             return image
         except Exception:
             logger.error("Couldn't get screenshot.")
-            util.show_alert_box("UmaLauncher: Screenshot error.", "Could not take screenshot. If this keeps occurring, please contact the developer.")
+            # util.show_alert_box("UmaLauncher: Screenshot error.", "Could not take screenshot. If this keeps occurring, please contact the developer.")
             return None
 
     def screenshot_to_clipboard(self):
@@ -177,7 +175,7 @@ class ScreenStateHandler():
             img = self.get_screenshot()
         except OSError:
             logger.error("Couldn't get screenshot.")
-            util.show_alert_box("UmaLauncher: Internet error.", "Cannot download the assets for the Discord Rich Presence. Please check your internet connection.")
+            # util.show_alert_box("UmaLauncher: Internet error.", "Cannot download the assets for the Discord Rich Presence. Please check your internet connection.")
             return
         output = BytesIO()
         img.convert("RGB").save(output, "BMP")
