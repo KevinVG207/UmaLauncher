@@ -1,12 +1,11 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-
 block_cipher = None
 
 
 a = Analysis(
     ['threader.py'],
-    pathex=[],
+    pathex=['venv\\Lib\\site-packages'],
     binaries=[],
     datas=[('./favicon.ico', '.')],
     hiddenimports=[],
@@ -44,4 +43,5 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
     icon=['favicon.ico'],
+    version='version.rc'
 )

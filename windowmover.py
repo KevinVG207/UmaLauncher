@@ -1,7 +1,6 @@
 import time
 from loguru import logger
 import util
-import math
 
 # TODO: Fix resize during concert
 # Catch the first resize during concert?
