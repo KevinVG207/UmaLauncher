@@ -224,7 +224,7 @@ class CarrotJuicer():
     def handle_response(self, message):
         data = self.load_response(message)
         # logger.info(json.dumps(data))
-        self.to_json(data)
+        # self.to_json(data)
 
         try:
             if 'data' not in data:
