@@ -25,6 +25,7 @@ def _show_alert_box(error, message):
 
 def show_alert_box(error, message):
     logger.error(f"{error}")
+    logger.error(f"{message}")
     threading.Thread(target=_show_alert_box, args=(error, message), daemon=False).start()
 
 

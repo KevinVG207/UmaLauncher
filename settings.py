@@ -2,6 +2,7 @@ import os
 import json
 import copy
 import tkinter
+import traceback
 from tkinter import filedialog
 from loguru import logger
 import util
@@ -19,6 +20,8 @@ class Settings():
     settings_file = "umasettings.json"
     default_settings = {
         "_version": version.VERSION,
+        "_skip_update": None,
+        "beta_optin": False,
         "autoclose_dmm": True,
         "tray_items": {
             "Lock game window": True,
@@ -110,9 +113,9 @@ class Settings():
 
                 self.loaded_settings = tmp_loaded_settings
                 self.save_settings()
-            
-            except (json.JSONDecodeError, TypeError) as e:
-                print(e)
+
+            except (json.JSONDecodeError, TypeError) as _:
+                logger.error(traceback.format_exc())
                 logger.info("Failed to load settings file. Loading default settings instead.")
                 self.loaded_settings = self.default_settings
 

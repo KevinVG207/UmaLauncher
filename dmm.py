@@ -1,8 +1,8 @@
 import shutil
 import os
-import util
-from loguru import logger
 import hashlib
+from loguru import logger
+import util
 
 def patch_dmm(dmm_path):
     logger.info("Patching DMM.")
