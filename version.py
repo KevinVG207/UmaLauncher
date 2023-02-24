@@ -11,7 +11,7 @@ from loguru import logger
 import dmm
 import util
 
-VERSION = "1.1.2"
+VERSION = "1.1.3"
 
 def parse_version(version_string: str):
     """Convert version string to tuple."""
@@ -145,7 +145,7 @@ def auto_update(umasettings, script_version, skip_version):
                 # Start a process that starts the new exe.
                 logger.info("Download complete, now trying to open the new launcher.")
                 open("update.tmp", "wb").close()
-                subprocess.Popen("taskkill /F /IM UmaLauncher.exe && move /y ./UmaLauncher.exe_ ./UmaLauncher.exe && .\\UmaLauncher.exe", shell=True)
+                subprocess.Popen("taskkill /F /IM UmaLauncher.exe && move /y .\\UmaLauncher.exe .\\UmaLauncher.old && move /y .\\UmaLauncher.exe_ .\\UmaLauncher.exe && .\\UmaLauncher.exe", shell=True)
                 while True:
                     time.sleep(1)
             except Exception as e:
