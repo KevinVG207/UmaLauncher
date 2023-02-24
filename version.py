@@ -11,7 +11,7 @@ from loguru import logger
 import dmm
 import util
 
-VERSION = "1.1.1"
+VERSION = "1.1.2"
 
 def parse_version(version_string: str):
     """Convert version string to tuple."""
