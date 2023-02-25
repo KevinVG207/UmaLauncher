@@ -4,14 +4,18 @@ import time
 import sys
 import os
 import threading
+import tkinter as tk  # Delet
+from tkinter import ttk
+from tkinter import messagebox
 from urllib.parse import urlparse
 import requests
-import easygui
 from loguru import logger
 import dmm
 import util
 
-VERSION = "1.1.3"
+VERSION = "1.1.4"
+
+choice = 1
 
 def parse_version(version_string: str):
     """Convert version string to tuple."""
@@ -72,10 +76,7 @@ def auto_update(umasettings, script_version, skip_version):
     # Check if we're coming from an update
     if os.path.exists("update.tmp"):
         os.remove("update.tmp")
-        easygui.msgbox(
-            title="Update complete!",
-            msg="Uma Launcher updated successfully."
-        )
+        messagebox.showinfo(title="Update complete!", message="Uma Launcher updated successfully.")
 
     response = requests.get("https://api.github.com/repos/KevinVG207/UmaLauncher/releases")
     if not response.ok:
@@ -110,13 +111,32 @@ def auto_update(umasettings, script_version, skip_version):
         return
 
     # Ask user to update
-    choice = easygui.indexbox(
-        title=f"New version: {vstr(release_version)}",
-        msg="A new version of Uma Launcher was found. Update now?",
-        choices=("Yes", "No", "Skip this version"),
-        default_choice="Yes",
-        cancel_choice="No"
-    )
+    root = tk.Tk()
+    root.iconbitmap(util.get_asset("favicon.ico"))
+    root.wm_title(f"Version {vstr(release_version)}")
+    root.wm_attributes("-topmost", 1)
+    def return_and_kill(value):
+        global choice
+        choice = value
+        root.destroy()
+
+    label = tk.Label(root, text=f"""A new version of Uma Launcher was found.\nVersion: {'Pre-release ' if latest_release.get('prerelease', False) else ''}{vstr(release_version)}\nUpdate now?""")
+    label.grid(row=0, column=0, columnspan=3, padx=(10,10), pady=(10,5))
+
+    btn_yes = ttk.Button(root, text="Yes", command=lambda: return_and_kill(0))
+    btn_yes.grid(row=1, column=0, columnspan=1, padx=(10,5), pady=(5, 10))
+
+    btn_no = ttk.Button(root, text="No", command=lambda: return_and_kill(1))
+    btn_no.grid(row=1, column=1, columnspan=1, padx=(5,5), pady=(5, 10))
+
+    btn_skip = ttk.Button(root, text="Skip this version", command=lambda: return_and_kill(2))
+    btn_skip.grid(row=1, column=2, columnspan=1, padx=(5,10), pady=(5, 10))
+
+    root.resizable(False, False)
+    root.eval('tk::PlaceWindow . center')
+    root.lift()
+
+    root.mainloop()
 
     # No
     if choice == 1:
@@ -155,11 +175,22 @@ def auto_update(umasettings, script_version, skip_version):
                 util.show_alert_box("Error downloading update.", "Could not download the latest version. Check your internet connection.")
                 return
 
-
 def show_update_box():
-    easygui.msgbox(
-        title="Now updating",
-        msg="Please wait while Uma Launcher updates..."
-    )
-    while True:
-        time.sleep(1)
+    def do_nothing():
+        pass
+
+    root = tk.Tk()
+    root.wm_attributes("-topmost", 1)
+    root.iconbitmap(util.get_asset("favicon.ico"))
+    root.title = "Now updating"
+    label = tk.Label(root, text="Please wait while Uma Launcher updates...")
+    label.grid(row=0, column=0, columnspan=3, padx=(20,20), pady=(20,20))
+
+    root.protocol("WM_DELETE_WINDOW", do_nothing)
+    root.overrideredirect(True)
+
+    root.resizable(False, False)
+    root.eval('tk::PlaceWindow . center')
+    root.lift()
+
+    root.mainloop()

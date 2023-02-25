@@ -1,7 +1,5 @@
 from elevate import elevate
 elevate()
-import sys
-import os
 
 import threading
 from loguru import logger
@@ -23,10 +21,6 @@ class Threader():
 
     def __init__(self):
         # Set directory to find assets
-        self.unpack_dir = os.getcwd()
-        if hasattr(sys, "_MEIPASS"):
-            self.unpack_dir = sys._MEIPASS
-
         self.settings = settings.Settings(self)
 
         self.screenstate = screenstate.ScreenStateHandler(self)
@@ -55,9 +49,6 @@ class Threader():
         self.carrotjuicer.stop()
         self.screenstate.stop()
         self.windowmover.stop()
-
-    def get_asset(self, asset_path):
-        return os.path.join(self.unpack_dir, asset_path)
 
 @logger.catch
 def main():
