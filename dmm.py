@@ -31,8 +31,8 @@ def patch_dmm(dmm_path):
     logger.debug("Backing up app.asar.")
     shutil.copy("app.asar", "app.asar.org")
 
-    if os.path.debug("tmp"):
-        logger.info("Removing pre-existing tmp folder.")
+    if os.path.exists("tmp"):
+        logger.debug("Removing pre-existing tmp folder.")
         shutil.rmtree("tmp")
     logger.debug("Extracting app.asar to tmp folder.")
     os.mkdir("tmp")
