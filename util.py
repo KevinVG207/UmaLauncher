@@ -3,11 +3,20 @@ import win32gui
 import win32con
 import threading
 import math
+import os
+import sys
 from pywintypes import error as pywinerror  # pylint: disable=no-name-in-module
 from loguru import logger
 from PIL import Image
 
 window_handle = None
+
+unpack_dir = os.getcwd()
+if hasattr(sys, "_MEIPASS"):
+    unpack_dir = sys._MEIPASS
+
+def get_asset(asset_path):
+    return os.path.join(unpack_dir, asset_path)
 
 def get_width_from_height(height, portrait):
     if portrait:

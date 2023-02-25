@@ -88,7 +88,7 @@ class CarrotJuicer():
     def firefox_setup(self, helper_url):
         firefox_service = FirefoxService()
         firefox_service.creation_flags = CREATE_NO_WINDOW
-        profile = webdriver.FirefoxProfile(self.threader.get_asset("ff_profile"))
+        profile = webdriver.FirefoxProfile(util.get_asset("ff_profile"))
         options = webdriver.FirefoxOptions()
         browser = webdriver.Firefox(service=firefox_service, firefox_profile=profile, options=options)
         browser.get(helper_url)
@@ -97,7 +97,7 @@ class CarrotJuicer():
     def chromium_setup(self, service, options_class, driver_class, profile, helper_url):
         service.creation_flags = CREATE_NO_WINDOW
         options = options_class()
-        options.add_argument("--user-data-dir=" + str(self.threader.get_asset(profile)))
+        options.add_argument("--user-data-dir=" + str(util.get_asset(profile)))
         options.add_argument("--app=" + helper_url)
         browser = driver_class(service=service, options=options)
         return browser
