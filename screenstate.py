@@ -256,7 +256,7 @@ class ScreenStateHandler():
 
                 # Get the latest screen state.
                 if cur_update - self.rpc_last_update > 15 and self.screen_state != self.rpc_latest_state:
-                    logger.info(f"Updating Rich Presence state: {self.screen_state.main}, {self.screen_state.sub}")
+                    logger.debug(f"Updating Rich Presence state: {self.screen_state.main}, {self.screen_state.sub}")
                     self.rpc_last_update = cur_update
                     self.rpc_latest_state = self.screen_state
                     self.rpc.update(**self.screen_state.to_dict())
@@ -280,7 +280,7 @@ class ScreenStateHandler():
         if new_state != self.screen_state:
             # New state is different
             self.screen_state = new_state
-            logger.info(f"Determined state: {self.screen_state.main}, {self.screen_state.sub}")
+            logger.debug(f"Determined state: {self.screen_state.main}, {self.screen_state.sub}")
 
     def determine_state(self):
         # Carrotjuicer takes priority
