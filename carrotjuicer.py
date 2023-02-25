@@ -81,8 +81,8 @@ class CarrotJuicer():
         return f"https://gametora.com/umamusume/training-event-helper?deck={np.base_repr(int(str(card_id) + str(scenario_id)), 36)}-{np.base_repr(int(support_ids[0] + support_ids[1] + support_ids[2]), 36)}-{np.base_repr(int(support_ids[3] + support_ids[4] + support_ids[5]), 36)}".lower()
 
 
-    def to_json(self, packet):
-        with open("packet.json", 'w', encoding='utf-8') as f:
+    def to_json(self, packet, out_name="packet.json"):
+        with open(out_name, 'w', encoding='utf-8') as f:
             f.write(json.dumps(packet, indent=4, ensure_ascii=False))
 
     def firefox_setup(self, helper_url):
@@ -224,7 +224,8 @@ class CarrotJuicer():
     def handle_response(self, message):
         data = self.load_response(message)
         # logger.info(json.dumps(data))
-        # self.to_json(data)
+        if self.threader.settings.loaded_settings.get("save_packet", False):
+            self.to_json(data, "packet_in.json")
 
         try:
             if 'data' not in data:
@@ -247,6 +248,7 @@ class CarrotJuicer():
                     new_state.sub = "Vibing"
 
                     self.screen_state_handler.carrotjuicer_state = new_state
+                return
 
             # Gametora
             if 'chara_info' in data:
@@ -361,18 +363,31 @@ class CarrotJuicer():
                 self.previous_element = None
         return
 
+    def start_concert(self, music_id):
+        logger.debug("Starting concert")
+        new_state = ScreenState()
+        new_state.location = Location.THEATER
+        new_state.set_music(music_id)
+        self.screen_state_handler.carrotjuicer_state = new_state
+        return
 
     def handle_request(self, message):
         data = self.load_request(message)
         # logger.info(json.dumps(data))
+
+        if self.threader.settings.loaded_settings.get("save_packet", False):
+            self.to_json(data, "packet_out.json")
+
         try:
             # Watching a concert
             if "live_theater_save_info" in data:
-                logger.debug("Starting concert")
-                new_state = ScreenState()
-                new_state.location = Location.THEATER
-                new_state.set_music(data['live_theater_save_info']['music_id'])
-                self.screen_state_handler.carrotjuicer_state = new_state
+                self.start_concert(data['live_theater_save_info']['music_id'])
+                return
+            
+            if "music_id" in data:
+                self.start_concert(data['music_id'])
+                return
+
 
             if 'start_chara' in data:
                 # Packet is a request to start a training
