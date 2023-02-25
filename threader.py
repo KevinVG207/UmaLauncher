@@ -52,7 +52,7 @@ class Threader():
 
 @logger.catch
 def main():
-    logger.add("log.log", rotation="1 week", compression="zip", retention="1 month", encoding='utf-8')
+    logger.add("log.log", rotation="1 week", compression="zip", retention="1 month", encoding='utf-8', level="INFO")
     logger.info("==== Starting Launcher ====")
     Threader()
 
