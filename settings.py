@@ -48,7 +48,7 @@ class Settings():
         self.threader = threader
         # Load settings on import.
         if not os.path.exists(self.settings_file):
-            logger.info("Settings file not found. Starting with default settings.")
+            logger.warning("Settings file not found. Starting with default settings.")
             self.loaded_settings = self.default_settings
             self.save_settings()
         else:
@@ -116,7 +116,7 @@ class Settings():
 
             except (json.JSONDecodeError, TypeError) as _:
                 logger.error(traceback.format_exc())
-                logger.info("Failed to load settings file. Loading default settings instead.")
+                logger.error("Failed to load settings file. Loading default settings instead.")
                 self.loaded_settings = self.default_settings
 
 

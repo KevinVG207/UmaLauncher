@@ -12,7 +12,7 @@ def patch_dmm(dmm_path):
         util.show_alert_box("Error", "Could not find DMM folder to patch DMM.\nPlease check if the path to DMMGamePlayer's install folder is correct in umasettings.json.")
         return
     if os.path.isfile(os.path.join(resources_path, "app.hash")):
-        logger.info("Found remnants of a patch. Checking hash.")
+        logger.debug("Found remnants of a patch. Checking hash.")
         with open(os.path.join(resources_path, "app.hash"), "r", encoding='utf-8') as f:
             hash_before = f.read()
 
@@ -20,25 +20,25 @@ def patch_dmm(dmm_path):
             app_hash = hashlib.md5(f.read()).hexdigest()
 
         if hash_before == app_hash:
-            logger.info("Hashes match. No need to patch.")
+            logger.debug("Hashes match. No need to patch.")
             return
-        logger.info("Hashes do not match.")
+        logger.debug("Hashes do not match.")
 
-    logger.info("Starting DMM patch.")
+    logger.debug("Starting DMM patch.")
     cwd_before = os.getcwd()
     os.chdir(resources_path)
 
-    logger.info("Backing up app.asar.")
+    logger.debug("Backing up app.asar.")
     shutil.copy("app.asar", "app.asar.org")
 
-    if os.path.isdir("tmp"):
+    if os.path.debug("tmp"):
         logger.info("Removing pre-existing tmp folder.")
         shutil.rmtree("tmp")
-    logger.info("Extracting app.asar to tmp folder.")
+    logger.debug("Extracting app.asar to tmp folder.")
     os.mkdir("tmp")
     os.system("npx asar extract app.asar tmp")
 
-    logger.info("Patching store.html.")
+    logger.debug("Patching store.html.")
     patch_folder = os.path.join(resources_path, "tmp", "dist")
 
     with open(os.path.join(patch_folder, "store.html"), "r", encoding='utf-8') as f:
@@ -60,14 +60,14 @@ buttonPoll();
 </html>
         """))
 
-    logger.info("Packing app.asar.")
+    logger.debug("Packing app.asar.")
     os.system("npx asar pack tmp app.asar")
-    logger.info("DMM has been patched.")
+    logger.debug("DMM has been patched.")
 
-    logger.info("Removing tmp folder.")
+    logger.debug("Removing tmp folder.")
     shutil.rmtree("tmp")
 
-    logger.info("Creating hash file.")
+    logger.debug("Creating hash file.")
     with open(os.path.join(resources_path, "app.asar"), "rb") as f:
         app_hash = hashlib.md5(f.read()).hexdigest()
     with open(os.path.join(resources_path, "app.hash"), "w", encoding='utf-8') as f:
@@ -84,16 +84,16 @@ def unpatch_dmm(dmm_path):
         cwd_before = os.getcwd()
         os.chdir(resources_path)
         if os.path.isfile("app.asar.org"):
-            logger.info("Reverting app.asar.")
+            logger.debug("Reverting app.asar.")
             if os.path.isfile("app.asar"):
                 os.remove("app.asar")
             shutil.copy("app.asar.org", "app.asar")
             os.remove("app.asar.org")
         if os.path.isdir("tmp"):
-            logger.info("Removing tmp folder.")
+            logger.debug("Removing tmp folder.")
             shutil.rmtree("tmp")
         if os.path.isfile("app.hash"):
-            logger.info("Removing hash file.")
+            logger.debug("Removing hash file.")
             os.remove("app.hash")
         os.chdir(cwd_before)
     else:

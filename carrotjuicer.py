@@ -156,7 +156,7 @@ class CarrotJuicer():
         if not saved_pos:
             self.reset_browser_position()
         else:
-            logger.info(saved_pos)
+            logger.debug(saved_pos)
             self.browser.set_window_rect(*saved_pos)
 
         # TODO: Find a way to know if the page is actually finished loading
@@ -250,7 +250,7 @@ class CarrotJuicer():
 
             # Gametora
             if 'chara_info' in data:
-                logger.info("chara_info in data")
+                logger.debug("chara_info in data")
 
                 # Training info
                 outfit_id = data['chara_info']['card_id']
@@ -282,7 +282,7 @@ class CarrotJuicer():
 
             if 'unchecked_event_array' in data and data['unchecked_event_array']:
                 # Training event.
-                logger.info("Training event detected")
+                logger.debug("Training event detected")
                 event_data = data['unchecked_event_array'][0]
                 # TODO: Check if there can be multiple events??
                 if len(data['unchecked_event_array']) > 1:
@@ -298,14 +298,14 @@ class CarrotJuicer():
 
                     event_title = mdb.get_event_title(event_data['story_id'])
 
-                    logger.info(f"Event title determined: {event_title}")
+                    logger.debug(f"Event title determined: {event_title}")
 
                     # Event has choices
 
                     # If character is the trained character
                     if event_data['event_contents_info']['support_card_id'] and event_data['event_contents_info']['support_card_id'] not in supports:
                         # Random support card event
-                        logger.info("Random support card detected")
+                        logger.debug("Random support card detected")
                         self.browser.execute_script("""document.getElementById("boxSupportExtra").click();""")
                         self.browser.execute_script(
                             """
@@ -314,7 +314,7 @@ class CarrotJuicer():
                             event_data['event_contents_info']['support_card_id']
                         )
                     else:
-                        logger.info("Trained character or support card detected")
+                        logger.debug("Trained character or support card detected")
 
                     # Activate and scroll to the outcome.
                     self.previous_element = self.browser.execute_script(
@@ -334,7 +334,7 @@ class CarrotJuicer():
                         event_title
                     )
                     if not self.previous_element:
-                        logger.info("Could not find event on GT page.")
+                        logger.debug("Could not find event on GT page.")
                     self.browser.execute_script("""
                         if (arguments[0]) {
                             // document.querySelector(".tippy-box").scrollIntoView({behavior:"smooth", block:"center"});
@@ -368,7 +368,7 @@ class CarrotJuicer():
         try:
             # Watching a concert
             if "live_theater_save_info" in data:
-                logger.info("Starting concert")
+                logger.debug("Starting concert")
                 new_state = ScreenState()
                 new_state.location = Location.THEATER
                 new_state.set_music(data['live_theater_save_info']['music_id'])
@@ -376,7 +376,7 @@ class CarrotJuicer():
 
             if 'start_chara' in data:
                 # Packet is a request to start a training
-                logger.info("Start of training detected")
+                logger.debug("Start of training detected")
                 self.open_helper(self.create_gametora_helper_url_from_start(data))
         except Exception:
             logger.error("ERROR IN HANDLING REQUEST MSGPACK")
@@ -394,6 +394,8 @@ class CarrotJuicer():
         except ValueError:
             return
         if message_time < self.start_time:
+            # Delete old msgpack files.
+            os.remove(message)
             return
 
         # logger.info(f"New Packet: {os.path.basename(message)}")
