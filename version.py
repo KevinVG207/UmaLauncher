@@ -12,7 +12,7 @@ from loguru import logger
 import dmm
 import util
 
-VERSION = "1.2.0"
+VERSION = "1.2.1"
 
 choice = 1
 
