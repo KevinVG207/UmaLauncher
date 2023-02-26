@@ -19,4 +19,3 @@ sandbox.py
 *.log.zip
 packet.json
 version.rc
-*.json

@@ -9,7 +9,6 @@ import umatray
 import screenstate
 import windowmover
 import win32api
-import util
 
 class Threader():
     unpack_dir = None
@@ -53,11 +52,7 @@ class Threader():
 
 @logger.catch
 def main():
-    if util.is_script:
-        util.log_set_trace()
-        logger.debug("Running from script, enabling debug logging.")
-    else:
-        util.log_set_info()
+    logger.add("log.log", rotation="1 week", compression="zip", retention="1 month", encoding='utf-8')
     logger.info("==== Starting Launcher ====")
     Threader()
 

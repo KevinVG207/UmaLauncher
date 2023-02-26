@@ -22,12 +22,11 @@ class Settings():
         "_version": version.VERSION,
         "_skip_update": None,
         "beta_optin": False,
-        "debug_mode": False,
         "autoclose_dmm": True,
         "tray_items": {
             "Lock game window": True,
             "Discord rich presence": True,
-            "Enable CarrotJuicer": True,
+            "Automatic training event helper": True,
         },
         "game_install_path": "%userprofile%/Umamusume",
         "game_position": {
@@ -49,12 +48,12 @@ class Settings():
         self.threader = threader
         # Load settings on import.
         if not os.path.exists(self.settings_file):
-            logger.warning("Settings file not found. Starting with default settings.")
+            logger.info("Settings file not found. Starting with default settings.")
             self.loaded_settings = self.default_settings
             self.save_settings()
         else:
             self.load_settings()
-
+        
         # Check if the game install path is correct.
         for folder_tuple in [
             ('game_install_path', "umamusume.exe", "Please choose the game's installation folder. (Where umamusume.exe is located.)")
@@ -82,11 +81,6 @@ class Settings():
         with open(self.settings_file, 'r', encoding='utf-8') as f:
             try:
                 self.loaded_settings = json.load(f)
-
-                if self.loaded_settings.get("debug_mode"):
-                    util.is_debug = True
-                    util.log_set_trace()
-                    logger.debug("Debug mode enabled. Logging more.")
 
                 # Upgrade old versions
                 self.loaded_settings = version.upgrade(self.loaded_settings)
@@ -122,7 +116,7 @@ class Settings():
 
             except (json.JSONDecodeError, TypeError) as _:
                 logger.error(traceback.format_exc())
-                logger.error("Failed to load settings file. Loading default settings instead.")
+                logger.info("Failed to load settings file. Loading default settings instead.")
                 self.loaded_settings = self.default_settings
 
 
@@ -140,11 +134,6 @@ class Settings():
         if key in self.loaded_settings["tray_items"]:
             logger.info(f"Saving tray setting. Key: {key}\tValue: {value}")
             self.loaded_settings["tray_items"][key] = value
-
-            # Restart CarrotJuicer time if re-enabled.
-            if key == "Enable CarrotJuicer":
-                self.threader.carrotjuicer.restart_time()
-
             self.save_settings()
         else:
             logger.error(f"Unknown key passed to tray items. Key: {key}\tValue: {value}")

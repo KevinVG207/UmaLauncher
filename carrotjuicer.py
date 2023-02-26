@@ -48,18 +48,12 @@ class CarrotJuicer():
         }
 
         self.screen_state_handler = threader.screenstate
-        self.restart_time()
+        self.start_time = math.floor(time.time() * 1000)
 
         # Remove existing geckodriver.log
         if os.path.exists("geckodriver.log"):
-            try:
-                os.remove("geckodriver.log")
-            except PermissionError:
-                logger.warning("Could not delete geckodriver.log because it is already in use!")
-                return
+            os.remove("geckodriver.log")
 
-    def restart_time(self):
-        self.start_time = math.floor(time.time() * 1000)
 
     def load_request(self, msg_path):
         with open(msg_path, "rb") as in_file:
@@ -87,8 +81,8 @@ class CarrotJuicer():
         return f"https://gametora.com/umamusume/training-event-helper?deck={np.base_repr(int(str(card_id) + str(scenario_id)), 36)}-{np.base_repr(int(support_ids[0] + support_ids[1] + support_ids[2]), 36)}-{np.base_repr(int(support_ids[3] + support_ids[4] + support_ids[5]), 36)}".lower()
 
 
-    def to_json(self, packet, out_name="packet.json"):
-        with open(out_name, 'w', encoding='utf-8') as f:
+    def to_json(self, packet):
+        with open("packet.json", 'w', encoding='utf-8') as f:
             f.write(json.dumps(packet, indent=4, ensure_ascii=False))
 
     def firefox_setup(self, helper_url):
@@ -162,7 +156,7 @@ class CarrotJuicer():
         if not saved_pos:
             self.reset_browser_position()
         else:
-            logger.debug(saved_pos)
+            logger.info(saved_pos)
             self.browser.set_window_rect(*saved_pos)
 
         # TODO: Find a way to know if the page is actually finished loading
@@ -230,8 +224,7 @@ class CarrotJuicer():
     def handle_response(self, message):
         data = self.load_response(message)
         # logger.info(json.dumps(data))
-        if self.threader.settings.loaded_settings.get("save_packet", False):
-            self.to_json(data, "packet_in.json")
+        # self.to_json(data)
 
         try:
             if 'data' not in data:
@@ -248,17 +241,16 @@ class CarrotJuicer():
             # Concert Theater
             if "live_theater_save_info_array" in data:
                 if self.screen_state_handler:
-                    new_state = ScreenState(self.threader.screenstate)
+                    new_state = ScreenState()
                     new_state.location = Location.THEATER
                     new_state.main = "Concert Theater"
                     new_state.sub = "Vibing"
 
                     self.screen_state_handler.carrotjuicer_state = new_state
-                return
 
             # Gametora
             if 'chara_info' in data:
-                logger.debug("chara_info in data")
+                logger.info("chara_info in data")
 
                 # Training info
                 outfit_id = data['chara_info']['card_id']
@@ -268,7 +260,7 @@ class CarrotJuicer():
 
                 # Training stats
                 if self.screen_state_handler:
-                    new_state = ScreenState(self.threader.screenstate)
+                    new_state = ScreenState()
 
                     new_state.location = Location.TRAINING
 
@@ -290,7 +282,7 @@ class CarrotJuicer():
 
             if 'unchecked_event_array' in data and data['unchecked_event_array']:
                 # Training event.
-                logger.debug("Training event detected")
+                logger.info("Training event detected")
                 event_data = data['unchecked_event_array'][0]
                 # TODO: Check if there can be multiple events??
                 if len(data['unchecked_event_array']) > 1:
@@ -306,14 +298,14 @@ class CarrotJuicer():
 
                     event_title = mdb.get_event_title(event_data['story_id'])
 
-                    logger.debug(f"Event title determined: {event_title}")
+                    logger.info(f"Event title determined: {event_title}")
 
                     # Event has choices
 
                     # If character is the trained character
                     if event_data['event_contents_info']['support_card_id'] and event_data['event_contents_info']['support_card_id'] not in supports:
                         # Random support card event
-                        logger.debug("Random support card detected")
+                        logger.info("Random support card detected")
                         self.browser.execute_script("""document.getElementById("boxSupportExtra").click();""")
                         self.browser.execute_script(
                             """
@@ -322,7 +314,7 @@ class CarrotJuicer():
                             event_data['event_contents_info']['support_card_id']
                         )
                     else:
-                        logger.debug("Trained character or support card detected")
+                        logger.info("Trained character or support card detected")
 
                     # Activate and scroll to the outcome.
                     self.previous_element = self.browser.execute_script(
@@ -342,7 +334,7 @@ class CarrotJuicer():
                         event_title
                     )
                     if not self.previous_element:
-                        logger.debug("Could not find event on GT page.")
+                        logger.info("Could not find event on GT page.")
                     self.browser.execute_script("""
                         if (arguments[0]) {
                             // document.querySelector(".tippy-box").scrollIntoView({behavior:"smooth", block:"center"});
@@ -365,40 +357,26 @@ class CarrotJuicer():
                 self.browser.current_url
                 return
             except WebDriverException:
-                self.browser.quit()
                 self.browser = None
                 self.previous_element = None
         return
 
-    def start_concert(self, music_id):
-        logger.debug("Starting concert")
-        new_state = ScreenState(self.threader.screenstate)
-        new_state.location = Location.THEATER
-        new_state.set_music(music_id)
-        self.screen_state_handler.carrotjuicer_state = new_state
-        return
 
     def handle_request(self, message):
         data = self.load_request(message)
         # logger.info(json.dumps(data))
-
-        if self.threader.settings.loaded_settings.get("save_packet", False):
-            self.to_json(data, "packet_out.json")
-
         try:
             # Watching a concert
             if "live_theater_save_info" in data:
-                self.start_concert(data['live_theater_save_info']['music_id'])
-                return
-            
-            if "music_id" in data:
-                self.start_concert(data['music_id'])
-                return
-
+                logger.info("Starting concert")
+                new_state = ScreenState()
+                new_state.location = Location.THEATER
+                new_state.set_music(data['live_theater_save_info']['music_id'])
+                self.screen_state_handler.carrotjuicer_state = new_state
 
             if 'start_chara' in data:
                 # Packet is a request to start a training
-                logger.debug("Start of training detected")
+                logger.info("Start of training detected")
                 self.open_helper(self.create_gametora_helper_url_from_start(data))
         except Exception:
             logger.error("ERROR IN HANDLING REQUEST MSGPACK")
@@ -416,8 +394,6 @@ class CarrotJuicer():
         except ValueError:
             return
         if message_time < self.start_time:
-            # Delete old msgpack files.
-            os.remove(message)
             return
 
         # logger.info(f"New Packet: {os.path.basename(message)}")
@@ -439,6 +415,9 @@ class CarrotJuicer():
 
 
     def run(self):
+        if not self.threader.settings.get_tray_setting("Automatic training event helper"):
+            return
+
         msg_path = self.threader.settings.get("game_install_path")
 
         if not msg_path:
@@ -452,15 +431,11 @@ class CarrotJuicer():
             while not self.should_stop:
                 time.sleep(0.25)
 
-                self.check_browser()
-
-                if not self.threader.settings.get_tray_setting("Enable CarrotJuicer"):
-                    continue
-
                 if self.reset_browser:
                     self.reset_browser = False
                     self.reset_browser_position()
 
+                self.check_browser()
                 if self.browser:
                     self.last_browser_rect = self.browser.get_window_rect()
                 elif self.last_browser_rect:
