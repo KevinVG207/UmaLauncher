@@ -365,6 +365,7 @@ class CarrotJuicer():
                 self.browser.current_url
                 return
             except WebDriverException:
+                self.browser.quit()
                 self.browser = None
                 self.previous_element = None
         return
@@ -451,6 +452,8 @@ class CarrotJuicer():
             while not self.should_stop:
                 time.sleep(0.25)
 
+                self.check_browser()
+
                 if not self.threader.settings.get_tray_setting("Enable CarrotJuicer"):
                     continue
 
@@ -458,7 +461,6 @@ class CarrotJuicer():
                     self.reset_browser = False
                     self.reset_browser_position()
 
-                self.check_browser()
                 if self.browser:
                     self.last_browser_rect = self.browser.get_window_rect()
                 elif self.last_browser_rect:
