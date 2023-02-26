@@ -24,38 +24,6 @@ class Location(Enum):
     TRAINING = 3
 
 
-def get_available_icons():
-    # Prepare the character icon names
-    chara_icons = []
-    music_icons = []
-    logger.info("Requesting Rich Presence assets.")
-    response = requests.get("https://discord.com/api/v9/oauth2/applications/954453106765225995/assets")
-    if not response.ok:
-        util.show_alert_box("UmaLauncher: Internet error.", "Cannot download the image assets for the Discord Rich Presence. Please check your internet connection.")
-        return chara_icons, music_icons
-
-    assets = response.json()
-    for asset in assets:
-        name = asset['name']
-        if name.startswith("chara_"):
-            chara_icons.append(name)
-        elif name.startswith("music_"):
-            music_icons.append(name)
-    return chara_icons, music_icons
-
-def get_character_name_dict():
-    chara_dict = {}
-    logger.info("Requesting character names.")
-    response = requests.get("https://umapyoi.net/api/v1/character/names")
-    if not response.ok:
-        util.show_alert_box("UmaLauncher: Internet error.", "Cannot download the character names for the Discord Rich Presence. Please check your internet connection.")
-        return chara_dict
-
-    for character in response.json():
-        chara_dict[character['game_id']] = character['name']
-
-    return chara_dict
-
 class ScreenState:
     location = Location.MAIN_MENU
     main = "Launching game..."
@@ -65,11 +33,8 @@ class ScreenState:
     small_image = None
     small_text = None
 
-    available_chara_icons, available_music_icons = get_available_icons()
-    fallback_chara_icon = "chara_0000"
-    fallback_music_icon = "music_0000"
-
-    chara_names_dict = get_character_name_dict()
+    def __init__(self, handler):
+        self.handler = handler
 
     def to_dict(self) -> dict:
         return {
@@ -84,24 +49,24 @@ class ScreenState:
 
     def set_chara(self, chara_id, small_text=None):
         chara_icon = f"chara_{chara_id}"
-        if chara_icon not in self.available_chara_icons:
-            chara_icon = self.fallback_chara_icon
+        if chara_icon not in self.handler.available_chara_icons:
+            chara_icon = self.handler.fallback_chara_icon
         self.small_image = self.large_image
         if small_text:
             self.small_text = small_text
         else:
             self.small_text = self.large_text
         self.large_image = chara_icon
-        if chara_id in self.chara_names_dict:
-            self.large_text = self.chara_names_dict[chara_id]
+        if chara_id in self.handler.chara_names_dict:
+            self.large_text = self.handler.chara_names_dict[chara_id]
         else:
             self.large_text = None
 
     def set_music(self, music_id):
         music_id = str(music_id)
         music_icon = f"music_{music_id}"
-        if music_icon not in self.available_music_icons:
-            music_icon = self.fallback_music_icon
+        if music_icon not in self.handler.available_music_icons:
+            music_icon = self.handler.fallback_music_icon
         song_title = mdb.get_song_title(music_id)
         self.small_image = self.large_image
         self.small_text = self.large_text
@@ -141,10 +106,19 @@ class ScreenStateHandler():
 
     sleep_time = 0.25
 
+    available_chara_icons = None
+    available_music_icons = None
+    fallback_chara_icon = "chara_0000"
+    fallback_music_icon = "music_0000"
+
+    chara_names_dict = None
+
     def __init__(self, threader):
         self.threader = threader
 
-        self.screen_state = ScreenState()
+        self.get_available_icons()
+        self.get_character_name_dict()
+        self.screen_state = ScreenState(self)
 
         dmm_handle = util.get_window_handle("DMM GAME PLAYER", type=util.LAZY)
         if dmm_handle:
@@ -153,6 +127,42 @@ class ScreenStateHandler():
 
         self.check_game()
         return
+
+
+    def get_available_icons(self):
+        # Prepare the character icon names
+        chara_icons = []
+        music_icons = []
+        logger.info("Requesting Rich Presence assets.")
+        response = requests.get("https://discord.com/api/v9/oauth2/applications/954453106765225995/assets")
+        if not response.ok:
+            util.show_alert_box("UmaLauncher: Internet error.", "Cannot download the image assets for the Discord Rich Presence. Please check your internet connection.")
+            return chara_icons, music_icons
+
+        assets = response.json()
+        for asset in assets:
+            name = asset['name']
+            if name.startswith("chara_"):
+                chara_icons.append(name)
+            elif name.startswith("music_"):
+                music_icons.append(name)
+        self.available_chara_icons = chara_icons
+        self.available_music_icons = music_icons
+
+
+    def get_character_name_dict(self):
+        chara_dict = {}
+        logger.info("Requesting character names.")
+        response = requests.get("https://umapyoi.net/api/v1/character/names")
+        if not response.ok:
+            util.show_alert_box("UmaLauncher: Internet error.", "Cannot download the character names for the Discord Rich Presence. Please check your internet connection.")
+            return chara_dict
+
+        for character in response.json():
+            chara_dict[character['game_id']] = character['name']
+
+        self.chara_names_dict = chara_dict
+
 
     def get_screenshot(self, debug=False):
         if util.is_minimized(self.game_handle):
@@ -219,7 +229,7 @@ class ScreenStateHandler():
                 self.threader.stop()
 
             # Close DMM
-            if not self.dmm_closed:
+            if not self.dmm_closed and self.threader.settings.get("autoclose_dmm"):
                 # Attempt to close DMM, even if it doesn't exist
                 new_dmm_handle = util.get_window_handle("DMM GAME PLAYER", type=util.LAZY)
                 if new_dmm_handle:
@@ -262,6 +272,7 @@ class ScreenStateHandler():
                     self.rpc.update(**self.screen_state.to_dict())
             elif self.rpc:
                 self.close_rpc()
+
         if self.rpc:
             self.close_rpc()
         return
@@ -273,6 +284,7 @@ class ScreenStateHandler():
         self.event_loop.stop()
         self.event_loop.close()
         self.event_loop = None
+        self.rpc_latest_state = None
         return
 
     def update(self):
@@ -289,7 +301,7 @@ class ScreenStateHandler():
             self.carrotjuicer_state = None
             return tmp
         else:
-            new_state = ScreenState()
+            new_state = ScreenState(self)
             image = self.get_screenshot()
 
             if image:

@@ -16,6 +16,7 @@ is_script = True
 if hasattr(sys, "_MEIPASS"):
     unpack_dir = sys._MEIPASS
     is_script = False
+is_debug = is_script
 
 def get_asset(asset_path):
     return os.path.join(unpack_dir, asset_path)
@@ -160,3 +161,18 @@ def is_minimized(handle):
     except pywinerror:
         # Default to it being minimized as to not save the game window.
         return True
+
+def log_reset():
+    logger.remove()
+    logger.add(sys.stdout, level="TRACE")
+    return
+
+def log_set_info():
+    log_reset()
+    logger.add("log.log", rotation="1 week", compression="zip", retention="1 month", encoding='utf-8', level="INFO")
+    return
+
+def log_set_trace():
+    log_reset()
+    logger.add("log.log", rotation="1 week", compression="zip", retention="1 month", encoding='utf-8', level="TRACE")
+    return

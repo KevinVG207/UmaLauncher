@@ -48,7 +48,7 @@ class CarrotJuicer():
         }
 
         self.screen_state_handler = threader.screenstate
-        self.start_time = math.floor(time.time() * 1000)
+        self.restart_time()
 
         # Remove existing geckodriver.log
         if os.path.exists("geckodriver.log"):
@@ -58,6 +58,8 @@ class CarrotJuicer():
                 logger.warning("Could not delete geckodriver.log because it is already in use!")
                 return
 
+    def restart_time(self):
+        self.start_time = math.floor(time.time() * 1000)
 
     def load_request(self, msg_path):
         with open(msg_path, "rb") as in_file:
@@ -246,7 +248,7 @@ class CarrotJuicer():
             # Concert Theater
             if "live_theater_save_info_array" in data:
                 if self.screen_state_handler:
-                    new_state = ScreenState()
+                    new_state = ScreenState(self.threader.screenstate)
                     new_state.location = Location.THEATER
                     new_state.main = "Concert Theater"
                     new_state.sub = "Vibing"
@@ -266,7 +268,7 @@ class CarrotJuicer():
 
                 # Training stats
                 if self.screen_state_handler:
-                    new_state = ScreenState()
+                    new_state = ScreenState(self.threader.screenstate)
 
                     new_state.location = Location.TRAINING
 
@@ -369,7 +371,7 @@ class CarrotJuicer():
 
     def start_concert(self, music_id):
         logger.debug("Starting concert")
-        new_state = ScreenState()
+        new_state = ScreenState(self.threader.screenstate)
         new_state.location = Location.THEATER
         new_state.set_music(music_id)
         self.screen_state_handler.carrotjuicer_state = new_state
@@ -436,9 +438,6 @@ class CarrotJuicer():
 
 
     def run(self):
-        if not self.threader.settings.get_tray_setting("Automatic training event helper"):
-            return
-
         msg_path = self.threader.settings.get("game_install_path")
 
         if not msg_path:
@@ -451,6 +450,9 @@ class CarrotJuicer():
         try:
             while not self.should_stop:
                 time.sleep(0.25)
+
+                if not self.threader.settings.get_tray_setting("Enable CarrotJuicer"):
+                    continue
 
                 if self.reset_browser:
                     self.reset_browser = False
