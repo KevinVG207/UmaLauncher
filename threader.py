@@ -1,5 +1,11 @@
 from elevate import elevate
-elevate()
+try:
+    elevate()
+except OSError:
+    import util
+    import sys
+    util.show_alert_box("Launch Error", "Uma Launcher needs administrator privileges to start.")
+    sys.exit()
 
 import threading
 from loguru import logger

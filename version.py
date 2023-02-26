@@ -39,8 +39,8 @@ def upgrade(umasettings: dict):
 
     # Update settings file
     if script_version < settings_version:
-        logger.warning("Umasettings are for a newer version. Skipping upgrade.")
-        return umasettings
+        logger.warning("Umasettings are for a newer version.")
+    #     return umasettings
 
     if settings_version <= (0,9,0):
         # Remove DMM patch
@@ -74,7 +74,7 @@ def upgrade(umasettings: dict):
 
 def auto_update(umasettings, script_version, skip_version):
     # Don't update if we're running from script.
-    if not util.is_script:
+    if util.is_script:
         logger.info("Skipping auto-update because you are running the script version.")
         return
 
