@@ -43,16 +43,22 @@ def upgrade(umasettings: dict):
         logger.warning("Umasettings are for a newer version. Skipping upgrade.")
         return umasettings
 
-    if settings_version < (0,9,1):
+    if settings_version <= (0,9,0):
         # Remove DMM patch
-        logger.info("Found settings before 0.9.1 - Attempting to unpatch DMM.")
+        logger.info("Need to upgrade settings past 0.9.0 - Attempting to unpatch DMM.")
         # Unpatch DMM if needed.
         if "dmm_path" in umasettings:
             dmm.unpatch_dmm(umasettings['dmm_path'])
             del umasettings['dmm_path']
         if 'Patch DMM' in umasettings['tray_items']:
             del umasettings['tray_items']['Patch DMM']
-        logger.info("Completed upgrade to version 0.9.1")
+        logger.info("Completed upgrade.")
+
+    if settings_version <= (1,1,4):
+        logger.info("Need to upgrade settings past 1.1.4 - Upgrading.")
+        if "Automatic training event helper" in umasettings["tray_items"]:
+            del umasettings["tray_items"]["Automatic training event helper"]
+        logger.info("Completed upgrade.")
 
     # If upgraded at all
     if script_version > settings_version:
@@ -69,10 +75,10 @@ def upgrade(umasettings: dict):
 
 def auto_update(umasettings, script_version, skip_version):
     # Don't update if we're running from script.
-    if not hasattr(sys, "_MEIPASS"):
+    if not util.is_script:
         logger.info("Skipping auto-update because you are running the script version.")
         return
-    
+
     # Check if we're coming from an update
     if os.path.exists("update.tmp"):
         os.remove("update.tmp")
