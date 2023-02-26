@@ -45,7 +45,7 @@ class UmaTray():
 
     def run(self):
         self.icon_thread.run()
-    
+
     def stop(self):
         self.icon_thread.stop()
 
