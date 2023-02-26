@@ -52,7 +52,11 @@ class CarrotJuicer():
 
         # Remove existing geckodriver.log
         if os.path.exists("geckodriver.log"):
-            os.remove("geckodriver.log")
+            try:
+                os.remove("geckodriver.log")
+            except PermissionError:
+                logger.warning("Could not delete geckodriver.log because it is already in use!")
+                return
 
 
     def load_request(self, msg_path):
