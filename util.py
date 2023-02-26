@@ -164,7 +164,8 @@ def is_minimized(handle):
 
 def log_reset():
     logger.remove()
-    logger.add(sys.stdout, level="TRACE")
+    if is_script:
+        logger.add(sys.stderr, level="TRACE")
     return
 
 def log_set_info():
