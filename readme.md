@@ -1,5 +1,5 @@
 # Uma Launcher
-Script that enhances the Uma Musume (DMM Version) experience.
+Software that enhances the Uma Musume (DMM Version) experience.
 
 ## Requirements (Optional)
 - [EXNOA-CarrotJuicer](https://github.com/CNA-Bld/EXNOA-CarrotJuicer)
