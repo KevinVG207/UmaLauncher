@@ -52,10 +52,16 @@ class Threader():
 
     def stop(self):
         logger.info("=== Closing launcher ===")
-        self.tray.stop()
-        self.carrotjuicer.stop()
-        self.screenstate.stop()
-        self.windowmover.stop()
+        if self.tray:
+            self.tray.stop()
+        if self.carrotjuicer:
+            self.carrotjuicer.stop()
+        if self.screenstate:
+            self.screenstate.stop()
+        if self.windowmover:
+            self.windowmover.stop()
+
+        logger.info("=== Launcher closed ===")
 
 @logger.catch
 def main():
