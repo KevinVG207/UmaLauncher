@@ -20,3 +20,4 @@ sandbox.py
 packet.json
 version.rc
 *.json
+*.exe_

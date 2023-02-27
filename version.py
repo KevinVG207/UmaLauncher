@@ -2,6 +2,7 @@ import urllib.request
 import subprocess
 import time
 import os
+import sys
 import threading
 import tkinter as tk  # Delet
 from tkinter import ttk
@@ -27,7 +28,7 @@ def vstr(version_tuple: tuple):
     return ".".join([str(num) for num in version_tuple])
 
 
-def upgrade(umasettings: dict):
+def upgrade(umasettings):
     """Upgrades old versions."""
     script_version = parse_version(VERSION)
     skip_version = parse_version(umasettings.get("_skip_update", None))
@@ -35,7 +36,8 @@ def upgrade(umasettings: dict):
     logger.info(f"Script version: {vstr(script_version)}, Settings version: {vstr(settings_version)}")
 
     # Auto-update
-    auto_update(umasettings, script_version, skip_version)
+    if not auto_update(umasettings, script_version, skip_version):
+        sys.exit()
 
     # Update settings file
     if script_version < settings_version:
@@ -76,7 +78,7 @@ def auto_update(umasettings, script_version, skip_version):
     # Don't update if we're running from script.
     if util.is_script:
         logger.info("Skipping auto-update because you are running the script version.")
-        return
+        return True
 
     # Check if we're coming from an update
     if os.path.exists("update.tmp"):
@@ -86,7 +88,7 @@ def auto_update(umasettings, script_version, skip_version):
     response = requests.get("https://api.github.com/repos/KevinVG207/UmaLauncher/releases")
     if not response.ok:
         logger.error("Could not fetch latest release.")
-        return
+        return True
     response_json = response.json()
 
     allow_prerelease = umasettings.get("beta_optin", False)
@@ -101,19 +103,21 @@ def auto_update(umasettings, script_version, skip_version):
     if not latest_release:
         logger.error("Could not find a release in the API response?")
         util.show_alert_box("Update Error", "Could not update. Please contact the developer if this reoccurs.")
-        return
+        return True
 
     release_version = parse_version(latest_release['tag_name'][1:])
 
     # Check if update is needed
     if release_version <= script_version:
         # No need to update
-        return
+        return True
 
     # Newer version found
     # Return if skipped
     if release_version <= skip_version:
-        return
+        return True
+
+    logger.info("Newer version found. Asking user to update.")
 
     # Ask user to update
     root = tk.Tk()
@@ -145,57 +149,91 @@ def auto_update(umasettings, script_version, skip_version):
 
     # No
     if choice == 1:
-        return
+        return True
 
     # Skip
     if choice == 2:
         umasettings['_skip_update'] = vstr(release_version)
-        return
+        return True
 
     # Yes
-    process = threading.Thread(target=show_update_box)
-    process.start()
-    for asset in latest_release['assets']:
-        if asset['name'] == "UmaLauncher.exe":
-            # Found the correct file, download and overwrite
-            download_url = asset['browser_download_url']
-            parsed = urlparse(download_url)
-            if parsed.scheme != "https":
-                logger.error(f"Download URL is not HTTPS! {download_url}")
-                util.show_alert_box("Update failed.", "Please contact the developer if this error reoccurs.")
-                return
-            try:
-                logger.info(f"Attempting to download from {download_url}")
-                urllib.request.urlretrieve(download_url, "UmaLauncher.exe_")
-                # Start a process that starts the new exe.
-                logger.info("Download complete, now trying to open the new launcher.")
-                open("update.tmp", "wb").close()
-                subprocess.Popen("taskkill /F /IM UmaLauncher.exe && move /y .\\UmaLauncher.exe .\\UmaLauncher.old && move /y .\\UmaLauncher.exe_ .\\UmaLauncher.exe && .\\UmaLauncher.exe", shell=True)
-                while True:
-                    time.sleep(1)
-            except Exception as e:
-                if os.path.exists("update.tmp"):
-                    os.remove("update.tmp")
-                logger.error(e)
-                util.show_alert_box("Error downloading update.", "Could not download the latest version. Check your internet connection.")
-                return
+    # Create updater thread
+    update_object = Updater(latest_release['assets'])
+    update_thread = threading.Thread(target=update_object.run)
+    update_thread.start()
 
-def show_update_box():
-    def do_nothing():
+    # Create updater window
+    root = tk.Tk()
+
+    def on_closing():
+        # Don't allow closing
         pass
 
-    root = tk.Tk()
+    def check_if_done():
+        # Check if done
+        if update_object.close_me:
+            root.destroy()
+            return
+        root.after(250, check_if_done)
+
     root.wm_attributes("-topmost", 1)
     root.iconbitmap(util.get_asset("favicon.ico"))
     root.title = "Now updating"
     label = tk.Label(root, text="Please wait while Uma Launcher updates...")
     label.grid(row=0, column=0, columnspan=3, padx=(20,20), pady=(20,20))
 
-    root.protocol("WM_DELETE_WINDOW", do_nothing)
+    root.protocol("WM_DELETE_WINDOW", on_closing)
     root.overrideredirect(True)
 
     root.resizable(False, False)
     root.eval('tk::PlaceWindow . center')
     root.lift()
 
+    root.after(250, check_if_done)
+
+    logger.debug("Starting update window.")
     root.mainloop()
+
+    logger.debug("Update window closed: Update failed.")
+    if os.path.exists("update.tmp"):
+        os.remove("update.tmp")
+    util.show_alert_box("Error downloading update.", "Could not download the latest version. Check your internet connection.\nUma Launcher will now close.")
+    return False
+
+
+class Updater():
+    assets = None
+    close_me = False
+    def __init__(self, assets):
+        self.assets = assets
+
+    def run(self):
+        logger.debug("Updater thread started.")
+        for asset in self.assets:
+            if asset['name'] == "UmaLauncher.exe":
+                # Found the correct file, download and overwrite
+                download_url = asset['browser_download_url']
+                parsed = urlparse(download_url)
+                if parsed.scheme != "https":
+                    logger.error(f"Download URL is not HTTPS! {download_url}")
+                    util.show_alert_box("Update failed.", "Please contact the developer if this error reoccurs.")
+                    self.close_me = True
+                    return
+                try:
+                    logger.info(f"Attempting to download from {download_url}")
+                    urllib.request.urlretrieve(download_url, "UmaLauncher.exe_")
+                    # Start a process that starts the new exe.
+                    logger.info("Download complete, now trying to open the new launcher.")
+                    open("update.tmp", "wb").close()
+                    sub = subprocess.Popen("taskkill /F /IM UmaLauncher.exe && move /y .\\UmaLauncher.exe .\\UmaLauncher.old && move /y .\\UmaLauncher.exe_ .\\UmaLauncher.exe && .\\UmaLauncher.exe", shell=True)
+                    while True:
+                        # Check if subprocess is still running
+                        if sub.poll() is not None:
+                            # Subprocess is done, but we should never reach this point.
+                            self.close_me = True
+                            return
+                        time.sleep(1)
+                except Exception as e:
+                    logger.error(e)
+                    self.close_me = True
+                    return
