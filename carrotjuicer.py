@@ -96,9 +96,9 @@ class CarrotJuicer():
         with open(out_name, 'w', encoding='utf-8') as f:
             f.write(json.dumps(packet, indent=4, ensure_ascii=False))
 
-    def to_python_dict_file(self, packet, out_name="packet.py"):
-        with open(out_name, 'w', encoding='utf-8') as f:
-            f.write("packet = " + str(packet))
+    # def to_python_dict_file(self, packet, out_name="packet.py"):
+    #     with open(out_name, 'w', encoding='utf-8') as f:
+    #         f.write("packet = " + str(packet))
 
     def firefox_setup(self, helper_url):
         firefox_service = FirefoxService()
@@ -247,7 +247,6 @@ class CarrotJuicer():
             data = data['data']
 
             if self.threader.settings.loaded_settings.get("save_packet", False):
-                self.to_python_dict_file(data, "packet_in.py")
                 self.to_json(data, "packet_in.json")
 
             # Run ended
@@ -404,7 +403,6 @@ class CarrotJuicer():
         # logger.info(json.dumps(data))
 
         if self.threader.settings.loaded_settings.get("save_packet", False):
-            self.to_python_dict_file(data, "packet_out.py")
             self.to_json(data, "packet_out.json")
 
         try:

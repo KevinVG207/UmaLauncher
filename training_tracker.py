@@ -2,6 +2,11 @@ import os
 import json
 import gzip
 from loguru import logger
+import PyQt5.QtCore as qtc
+from PyQt5 import QtGui
+import PyQt5.QtWidgets as qtw
+import util
+
 
 class TrainingTracker():
     training_log_folder = None
@@ -93,3 +98,66 @@ class TrainingTracker():
                 packet_list = json.loads(f"[{f.read().decode('utf-8')}]")
         logger.debug(f"Amount of packets loaded: {len(packet_list)}")
         return packet_list
+
+    def analyze(self):
+        TrainingAnalyzer(self)
+
+
+class TrainingAnalyzerGui(qtw.QWidget):
+    training_tracker = None
+    def __init__(self, training_tracker: TrainingTracker):
+        super().__init__()
+        self.training_tracker = training_tracker
+
+        # Set window icon
+        self.setWindowIcon(QtGui.QIcon(util.get_asset('favicon.ico')))
+        self.setWindowTitle("Training Analyzer")
+
+        # Set window size
+        self.resize(800, 600)
+
+        # Disallow resizing
+        self.setFixedSize(self.size())
+
+        # Center widget to primary screen
+        screen = qtw.QDesktopWidget().primaryScreen()
+        screen_size = qtw.QDesktopWidget().screenGeometry(screen)
+        self.move(screen_size.center() - self.rect().center())
+
+        # Hide maxminize and minimize buttons
+        self.setWindowFlag(qtc.Qt.WindowType.WindowMaximizeButtonHint, False)
+        self.setWindowFlag(qtc.Qt.WindowType.WindowMinimizeButtonHint, False)
+
+        # Create widgets
+        self.hello_world_label = qtw.QLabel("Hello World!")
+        self.hello_world_label.setAlignment(qtc.Qt.AlignmentFlag.AlignCenter)
+
+        self.layout = qtw.QVBoxLayout(self)
+        self.layout.addWidget(self.hello_world_label)
+
+        # Bring to foreground
+        self.raise_()
+
+        # Stay on top
+        self.setWindowFlag(qtc.Qt.WindowType.WindowStaysOnTopHint, True)
+
+
+
+class TrainingAnalyzer():
+    training_tracker = None
+    app = None
+
+    def __init__(self, training_tracker: TrainingTracker):
+        self.training_tracker = training_tracker
+
+        app = qtw.QApplication([])
+        gui = TrainingAnalyzerGui(self.training_tracker)
+        gui.show()
+        app.exec_()
+
+
+def main():
+    TrainingTracker('2023_02_28_21_57_35').analyze()
+
+if __name__ == "__main__":
+    main()
