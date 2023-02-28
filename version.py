@@ -71,11 +71,12 @@ def upgrade(umasettings):
 
 
 def auto_update(umasettings, script_version, skip_version):
+    logger.info("Checking for updates...")
+
     # Don't update if we're running from script.
-    # TODO: Uncomment this
-    # if util.is_script:
-    #     logger.info("Skipping auto-update because you are running the script version.")
-    #     return True
+    if util.is_script:
+        logger.info("Skipping auto-update because you are running the script version.")
+        return True
 
     # Check if we're coming from an update
     if os.path.exists("update.tmp"):
@@ -106,6 +107,7 @@ def auto_update(umasettings, script_version, skip_version):
         return True
 
     release_version = parse_version(latest_release['tag_name'][1:])
+    logger.info(f"Latest release: {vstr(release_version)}")
 
     # Check if update is needed
     if release_version <= script_version:

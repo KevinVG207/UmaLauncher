@@ -38,8 +38,6 @@ class UmaMainWidget(qtw.QWidget):
 
         # Init defaults
         self.setWindowTitle("Uma Launcher")
-        # self.setWindowIcon(qtg.QIcon(util.get_asset("favicon.ico")))
-
 
         # Init unique
         self.init_ui(*args, **kwargs)
@@ -105,15 +103,13 @@ class UmaUpdateConfirm(UmaMainWidget):
     def _no(self):
         self.choice.append(1)
         self._parent.close()
-    
+
     @qtc.pyqtSlot()
     def _skip(self):
         self.choice.append(2)
         self._parent.close()
 
-# A popup that indicates that an update is being performed.
-# It should stay always on top and should not be closable.
-# It should not have a frame.
+
 class UmaUpdatePopup(UmaMainWidget):
     update_object = None
     timer = None
@@ -130,6 +126,7 @@ class UmaUpdatePopup(UmaMainWidget):
 
         self.label = qtw.QLabel("Please wait while Uma Launcher updates...")
         self.label.setWordWrap(False)
+
         # Center label text
         self.label.setAlignment(qtc.Qt.AlignmentFlag.AlignCenter)
         self.label.setContentsMargins(10, 20, 10, 20)
@@ -162,12 +159,3 @@ class UmaInfoPopup(qtw.QMessageBox):
         self.setWindowFlag(qtc.Qt.WindowType.WindowStaysOnTopHint, True)
         self.setIcon(msg_icon)
         self.show()
-
-
-def main():
-    app = UmaApp()
-    app.run(UmaInfoPopup("Test1", "Lorem ipsum dolor sit amet"))
-    app.close()
-
-if __name__ == "__main__":
-    main()
