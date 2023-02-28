@@ -3,9 +3,12 @@ import json
 import gzip
 from loguru import logger
 import PyQt5.QtCore as qtc
-from PyQt5 import QtGui
 import PyQt5.QtWidgets as qtw
-import util
+import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
+from matplotlib.backends.backend_qt5agg import FigureCanvas
+from matplotlib.figure import Figure
+import gui
 
 
 class TrainingTracker():
@@ -90,7 +93,7 @@ class TrainingTracker():
                 f.write(json.dumps(self.previous_packet, ensure_ascii=False).encode('utf-8'))
 
 
-    def unpickle_packets(self):
+    def load_packets(self):
         packet_list = []
         logger.debug("Loading packets from file")
         if os.path.exists(self.get_sav_path()):
@@ -100,60 +103,103 @@ class TrainingTracker():
         return packet_list
 
     def analyze(self):
-        TrainingAnalyzer(self)
+        app = TrainingAnalyzer(self)
+        app.run(TrainingAnalyzerGui(app))
+        app.close()
 
 
-class TrainingAnalyzerGui(qtw.QWidget):
+class TrainingAnalyzerGui(gui.UmaMainWidget):
     training_tracker = None
-    def __init__(self, training_tracker: TrainingTracker):
-        super().__init__()
-        self.training_tracker = training_tracker
 
-        # Set window icon
-        self.setWindowIcon(QtGui.QIcon(util.get_asset('favicon.ico')))
-        self.setWindowTitle("Training Analyzer")
-
-        # Set window size
-        self.resize(800, 600)
-
-        # Disallow resizing
-        self.setFixedSize(self.size())
-
-        # Center widget to primary screen
-        screen = qtw.QDesktopWidget().primaryScreen()
-        screen_size = qtw.QDesktopWidget().screenGeometry(screen)
-        self.move(screen_size.center() - self.rect().center())
-
-        # Hide maxminize and minimize buttons
-        self.setWindowFlag(qtc.Qt.WindowType.WindowMaximizeButtonHint, False)
-        self.setWindowFlag(qtc.Qt.WindowType.WindowMinimizeButtonHint, False)
-
+    def init_ui(self, *args, **kwargs):
         # Create widgets
         self.hello_world_label = qtw.QLabel("Hello World!")
         self.hello_world_label.setAlignment(qtc.Qt.AlignmentFlag.AlignCenter)
+        # Don't expand the label
 
         self.layout = qtw.QVBoxLayout(self)
         self.layout.addWidget(self.hello_world_label)
 
-        # Bring to foreground
-        self.raise_()
+        self.figure = Figure()
+        self.canvas = FigureCanvas(self.figure)
+        self.canvas.setSizePolicy(qtw.QSizePolicy.Expanding, qtw.QSizePolicy.Expanding)
+        self.layout.addWidget(self.canvas)
 
-        # Stay on top
-        self.setWindowFlag(qtc.Qt.WindowType.WindowStaysOnTopHint, True)
+        ax = self.figure.subplots()
+
+        self._parent.plot_stats(ax)
 
 
-
-class TrainingAnalyzer():
+class TrainingAnalyzer(gui.UmaApp):
     training_tracker = None
-    app = None
+    packets = None
 
-    def __init__(self, training_tracker: TrainingTracker):
+    def __init__(self, training_tracker: TrainingTracker, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.training_tracker = training_tracker
+        self.packets = self.training_tracker.load_packets()
 
-        app = qtw.QApplication([])
-        gui = TrainingAnalyzerGui(self.training_tracker)
-        gui.show()
-        app.exec_()
+
+    def plot_stats(self, ax: plt.Axes):
+        cur_turn = 0
+        in_packets = []
+
+        speed = []
+        stamina = []
+        power = []
+        guts = []
+        wisdom = []
+        skill_points = []
+        energy = []
+        motivation = []
+        fans = []
+
+
+        def unpack_stats(packet: dict):
+            speed.append(packet['chara_info']['speed'])
+            stamina.append(packet['chara_info']['stamina'])
+            power.append(packet['chara_info']['power'])
+            guts.append(packet['chara_info']['guts'])
+            wisdom.append(packet['chara_info']['wiz'])
+            skill_points.append(packet['chara_info']['skill_point'])
+            energy.append(packet['chara_info']['vital'])
+            motivation.append(packet['chara_info']['motivation'])
+            fans.append(packet['chara_info']['fans'])
+
+        for packet in self.packets:
+            if packet['_direction'] == 1:
+                in_packets.append(packet)
+                # Incoming packet
+                chara_info = packet.get('chara_info')
+                if chara_info is None:
+                    continue
+                turn = chara_info.get('turn')
+                if not turn:
+                    continue
+                if turn > cur_turn:
+                    cur_turn = turn
+                    unpack_stats(packet)
+        if len(in_packets) > 1:
+            unpack_stats(in_packets[-1])
+        # Plot
+        x = list(range(1, len(speed) + 1))
+
+        ax.plot(x, speed, label="Speed", color="#31B3FF")
+        ax.plot(x, stamina, label="Stamina", color="#FF3F26")
+        ax.plot(x, power, label="Power", color="#FFA217")
+        ax.plot(x, guts, label="Guts", color="#FF72A5")
+        ax.plot(x, wisdom, label="Wisdom", color="#10C88D")
+
+        ax.legend()
+        ax.set_xticks(x, minor=True)
+        ax.set_xlim(1, len(speed))
+        # Show all x-axis grid lines
+        ax.xaxis.grid(True, which='both')
+        # Make grid lines lighter
+        ax.grid(color='#CCCCCC', linestyle='-', linewidth=1, alpha=0.5, which='both')
+        # Make the y-axis show intervals of 100
+        ax.yaxis.set_major_locator(ticker.MultipleLocator(100))
+
 
 
 def main():
