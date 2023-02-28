@@ -2,6 +2,7 @@ import time
 from loguru import logger
 import util
 
+
 class GameWindow():
     # Object to be shared with Threader and holds functions to manipulate the game window.
     carrotjuicer_maximized_trigger = False

@@ -4,18 +4,14 @@ import time
 import os
 import sys
 import threading
-import tkinter as tk  # Delet
-from tkinter import ttk
-from tkinter import messagebox
 from urllib.parse import urlparse
 import requests
 from loguru import logger
 import dmm
 import util
+import gui
 
-VERSION = "1.2.1"
-
-choice = 1
+VERSION = "1.2.0"
 
 def parse_version(version_string: str):
     """Convert version string to tuple."""
@@ -75,6 +71,8 @@ def upgrade(umasettings):
 
 
 def auto_update(umasettings, script_version, skip_version):
+    logger.info("Checking for updates...")
+
     # Don't update if we're running from script.
     if util.is_script:
         logger.info("Skipping auto-update because you are running the script version.")
@@ -83,7 +81,10 @@ def auto_update(umasettings, script_version, skip_version):
     # Check if we're coming from an update
     if os.path.exists("update.tmp"):
         os.remove("update.tmp")
-        messagebox.showinfo(title="Update complete!", message="Uma Launcher updated successfully.")
+        # Show update complete message using QtWidgets
+        app = gui.UmaApp()
+        app.run(gui.UmaInfoPopup("Update complete!", "Uma Launcher updated successfully."))
+        app.close()
 
     response = requests.get("https://api.github.com/repos/KevinVG207/UmaLauncher/releases")
     if not response.ok:
@@ -106,6 +107,7 @@ def auto_update(umasettings, script_version, skip_version):
         return True
 
     release_version = parse_version(latest_release['tag_name'][1:])
+    logger.info(f"Latest release: {vstr(release_version)}")
 
     # Check if update is needed
     if release_version <= script_version:
@@ -119,33 +121,12 @@ def auto_update(umasettings, script_version, skip_version):
 
     logger.info("Newer version found. Asking user to update.")
 
-    # Ask user to update
-    root = tk.Tk()
-    root.iconbitmap(util.get_asset("favicon.ico"))
-    root.wm_title(f"Version {vstr(release_version)}")
-    root.wm_attributes("-topmost", 1)
-    def return_and_kill(value):
-        global choice
-        choice = value
-        root.destroy()
+    choice = [1]  # Default to no
+    app = gui.UmaApp()
+    app.run(gui.UmaUpdateConfirm(app, latest_release, vstr(release_version), choice))
+    choice = choice[-1]
 
-    label = tk.Label(root, text=f"""A new version of Uma Launcher was found.\nVersion: {'Pre-release ' if latest_release.get('prerelease', False) else ''}{vstr(release_version)}\nUpdate now?""")
-    label.grid(row=0, column=0, columnspan=3, padx=(10,10), pady=(10,5))
-
-    btn_yes = ttk.Button(root, text="Yes", command=lambda: return_and_kill(0))
-    btn_yes.grid(row=1, column=0, columnspan=1, padx=(10,5), pady=(5, 10))
-
-    btn_no = ttk.Button(root, text="No", command=lambda: return_and_kill(1))
-    btn_no.grid(row=1, column=1, columnspan=1, padx=(5,5), pady=(5, 10))
-
-    btn_skip = ttk.Button(root, text="Skip this version", command=lambda: return_and_kill(2))
-    btn_skip.grid(row=1, column=2, columnspan=1, padx=(5,10), pady=(5, 10))
-
-    root.resizable(False, False)
-    root.eval('tk::PlaceWindow . center')
-    root.lift()
-
-    root.mainloop()
+    logger.debug(f"User choice: {choice}")
 
     # No
     if choice == 1:
@@ -162,42 +143,15 @@ def auto_update(umasettings, script_version, skip_version):
     update_thread = threading.Thread(target=update_object.run)
     update_thread.start()
 
-    # Create updater window
-    root = tk.Tk()
-
-    def on_closing():
-        # Don't allow closing
-        pass
-
-    def check_if_done():
-        # Check if done
-        if update_object.close_me:
-            root.destroy()
-            return
-        root.after(250, check_if_done)
-
-    root.wm_attributes("-topmost", 1)
-    root.iconbitmap(util.get_asset("favicon.ico"))
-    root.title = "Now updating"
-    label = tk.Label(root, text="Please wait while Uma Launcher updates...")
-    label.grid(row=0, column=0, columnspan=3, padx=(20,20), pady=(20,20))
-
-    root.protocol("WM_DELETE_WINDOW", on_closing)
-    root.overrideredirect(True)
-
-    root.resizable(False, False)
-    root.eval('tk::PlaceWindow . center')
-    root.lift()
-
-    root.after(250, check_if_done)
-
-    logger.debug("Starting update window.")
-    root.mainloop()
+    # Show updater window
+    app = gui.UmaApp()
+    app.run(gui.UmaUpdatePopup(app, update_object))
 
     logger.debug("Update window closed: Update failed.")
     if os.path.exists("update.tmp"):
         os.remove("update.tmp")
-    util.show_alert_box("Error downloading update.", "Could not download the latest version. Check your internet connection.\nUma Launcher will now close.")
+    app = gui.UmaApp()
+    app.run(gui.UmaInfoPopup("Update failed.", "Could not update. Please check your internet connection.\nUma Launcher will now close.", gui.ICONS.Critical))
     return False
 
 
