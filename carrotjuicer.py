@@ -4,6 +4,7 @@ import glob
 import traceback
 import math
 import json
+import pickle
 from subprocess import CREATE_NO_WINDOW
 import msgpack
 import numpy as np
@@ -17,6 +18,7 @@ from selenium.common.exceptions import NoSuchWindowException
 from screenstate import ScreenState, Location
 import util
 import mdb
+import training_tracker
 
 SCENARIO_DICT = {
     1: "URA Finals",
@@ -35,6 +37,8 @@ class CarrotJuicer():
     should_stop = False
     last_browser_rect = None
     reset_browser = False
+    last_training_id = None
+    training_tracker = None
 
     _browser_list = None
 
@@ -57,6 +61,7 @@ class CarrotJuicer():
             except PermissionError:
                 logger.warning("Could not delete geckodriver.log because it is already in use!")
                 return
+
 
     def restart_time(self):
         self.start_time = math.floor(time.time() * 1000)
@@ -90,6 +95,10 @@ class CarrotJuicer():
     def to_json(self, packet, out_name="packet.json"):
         with open(out_name, 'w', encoding='utf-8') as f:
             f.write(json.dumps(packet, indent=4, ensure_ascii=False))
+
+    def to_python_dict_file(self, packet, out_name="packet.py"):
+        with open(out_name, 'w', encoding='utf-8') as f:
+            f.write("packet = " + str(packet))
 
     def firefox_setup(self, helper_url):
         firefox_service = FirefoxService()
@@ -226,12 +235,9 @@ class CarrotJuicer():
             self.threader.settings.set("browser_position", [self.last_browser_rect['x'], self.last_browser_rect['y'], self.last_browser_rect['width'], self.last_browser_rect['height']])
             self.last_browser_rect = None
 
-
     def handle_response(self, message):
         data = self.load_response(message)
         # logger.info(json.dumps(data))
-        if self.threader.settings.loaded_settings.get("save_packet", False):
-            self.to_json(data, "packet_in.json")
 
         try:
             if 'data' not in data:
@@ -240,8 +246,15 @@ class CarrotJuicer():
 
             data = data['data']
 
+            if self.threader.settings.loaded_settings.get("save_packet", False):
+                self.to_python_dict_file(data, "packet_in.py")
+                self.to_json(data, "packet_in.json")
+
             # Run ended
             if 'single_mode_factor_select_common' in data:
+                if self.training_tracker:
+                    self.training_tracker.write_previous_packet()
+                    self.training_tracker = None
                 self.close_browser()
                 return
 
@@ -258,7 +271,15 @@ class CarrotJuicer():
 
             # Gametora
             if 'chara_info' in data:
-                logger.debug("chara_info in data")
+                # Inside training run.
+
+                training_id = data['chara_info']['start_time']
+                if not self.training_tracker or not self.training_tracker.training_id_matches(training_id):
+                    if self.training_tracker:
+                        self.training_tracker.write_previous_packet()
+                    self.training_tracker = training_tracker.TrainingTracker(training_id)
+
+                self.training_tracker.add_response(data)
 
                 # Training info
                 outfit_id = data['chara_info']['card_id']
@@ -383,6 +404,7 @@ class CarrotJuicer():
         # logger.info(json.dumps(data))
 
         if self.threader.settings.loaded_settings.get("save_packet", False):
+            self.to_python_dict_file(data, "packet_out.py")
             self.to_json(data, "packet_out.json")
 
         try:

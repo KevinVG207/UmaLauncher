@@ -10,6 +10,7 @@ ff_profile/parent.lock
 chr_profile/*
 edg_profile/*
 node_modules/*
+training_logs/*
 package-lock.json
 screenshot.png
 umasettings*.json
@@ -20,3 +21,6 @@ sandbox.py
 packet.json
 version.rc
 *.json
+*.exe_
+*.csv
+*.gz
