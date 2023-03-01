@@ -5,8 +5,8 @@ from loguru import logger
 import PyQt5.QtCore as qtc
 import PyQt5.QtWidgets as qtw
 import matplotlib.pyplot as plt
-import matplotlib.ticker as ticker
-from matplotlib.backends.backend_qt5agg import FigureCanvas
+from matplotlib import ticker
+from matplotlib.backends.backend_qt5agg import FigureCanvas # pylint: disable=no-name-in-module
 from matplotlib.figure import Figure
 import gui
 
@@ -63,6 +63,7 @@ class TrainingTracker():
 
 
     def add_request(self, request: dict):
+        logger.debug("Adding request.")
         request['_direction'] = 0
 
         # Remove keys that should not be saved
@@ -74,6 +75,7 @@ class TrainingTracker():
 
 
     def add_response(self, response: dict):
+        logger.debug("Adding response.")
         response['_direction'] = 1
         self.add_packet(response)
 

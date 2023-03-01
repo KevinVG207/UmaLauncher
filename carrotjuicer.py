@@ -39,6 +39,7 @@ class CarrotJuicer():
     reset_browser = False
     last_training_id = None
     training_tracker = None
+    previous_request = None
 
     _browser_list = None
 
@@ -278,6 +279,9 @@ class CarrotJuicer():
                         self.training_tracker.write_previous_packet()
                     self.training_tracker = training_tracker.TrainingTracker(training_id)
 
+                if self.previous_request:
+                    self.training_tracker.add_request(self.previous_request)
+                    self.previous_request = None
                 self.training_tracker.add_response(data)
 
                 # Training info
@@ -405,16 +409,17 @@ class CarrotJuicer():
         if self.threader.settings.loaded_settings.get("save_packet", False):
             self.to_json(data, "packet_out.json")
 
+        self.previous_request = data
+
         try:
             # Watching a concert
             if "live_theater_save_info" in data:
                 self.start_concert(data['live_theater_save_info']['music_id'])
                 return
-            
+
             if "music_id" in data:
                 self.start_concert(data['music_id'])
                 return
-
 
             if 'start_chara' in data:
                 # Packet is a request to start a training
