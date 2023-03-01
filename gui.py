@@ -12,7 +12,6 @@ class UmaApp():
     def __init__(self):
         self.app = qtw.QApplication([])
         self.app.setWindowIcon(qtg.QIcon(util.get_asset("favicon.ico")))
-        # self.app.setQuitOnLastWindowClosed(False)
 
         self.init_app()
 
@@ -20,8 +19,12 @@ class UmaApp():
         pass
 
     def run(self, main_widget: qtw.QWidget):
+
+        font = main_widget.font()
+        font.setPointSizeF(8.75)
+        main_widget.setFont(font)
+
         self.main_widget = main_widget
-        self.main_widget.show()
         self.app.exec_()
 
     def close(self):
@@ -42,15 +45,17 @@ class UmaMainWidget(qtw.QWidget):
         # Init unique
         self.init_ui(*args, **kwargs)
 
-        self.show()
+        # Generate geometry before showing, otherwise centering doesn't work
+        self.adjustSize()
 
-        # Center widget to primary screen
+        # Center widget to primary screen        
         screen = qtw.QDesktopWidget().primaryScreen()
         screen_size = qtw.QDesktopWidget().screenGeometry(screen)
         self.move(screen_size.center() - self.rect().center())
 
         self.raise_()
 
+        self.show()
 
 
     def init_ui(self, *args, **kwargs):
@@ -141,7 +146,6 @@ class UmaUpdatePopup(UmaMainWidget):
         self.timer.setInterval(250)
         self.timer.timeout.connect(self._update)
         self.timer.start()
-        self.show()
 
     @qtc.pyqtSlot()
     def _update(self):
