@@ -1,6 +1,9 @@
 import os
 import json
 import gzip
+import re
+from dataclasses import dataclass, field
+from enum import Enum
 from loguru import logger
 import PyQt5.QtCore as qtc
 import PyQt5.QtWidgets as qtw
@@ -9,6 +12,8 @@ from matplotlib import ticker
 from matplotlib.backends.backend_qt5agg import FigureCanvas # pylint: disable=no-name-in-module
 from matplotlib.figure import Figure
 import gui
+import mdb
+import util
 
 
 class TrainingTracker():
@@ -132,14 +137,164 @@ class TrainingAnalyzerGui(gui.UmaMainWidget):
         self._parent.plot_stats(ax)
 
 
+class ActionType(Enum):
+    Unknown = -1
+    Start = 0
+    End = 1
+    Training = 2
+    Event = 3
+    Race = 4
+    SkillHint = 5
+
+class CommandType(Enum):
+    Speed = 101
+    Stamina = 105
+    Power = 102
+    Guts = 103
+    Wisdom = 106
+
+@dataclass
+class TrainingAction():
+    """Represents a single training action.
+    d = delta.
+    """
+    scenario_id: int
+    turn: int
+    speed: int
+    stamina: int
+    power: int
+    guts: int
+    wisdom: int
+    skill_pt: int
+    energy: int
+    motivation: int
+    fans: int
+    skill: set
+    skillhint: set
+    status: set
+
+    action_type: ActionType = ActionType.Unknown
+    text: str = ''
+    dspeed: int = 0
+    dstamina: int = 0
+    dpower: int = 0
+    dguts: int = 0
+    dwisdom: int = 0
+    dskill_pt: int = 0
+    denergy: int = 0
+    dmotivation: int = 0
+    dfans: int = 0
+    add_skill: set = field(default_factory=set)
+    remove_skill: set = field(default_factory=set)
+    add_skillhint: set = field(default_factory=set)
+    remove_skillhint: set = field(default_factory=set)
+    add_status: set = field(default_factory=set)
+    remove_status: set = field(default_factory=set)
+
+
 class TrainingAnalyzer(gui.UmaApp):
     training_tracker = None
     packets = None
+    chara_names_dict = util.get_character_name_dict()
 
     def __init__(self, training_tracker: TrainingTracker, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.training_tracker = training_tracker
         self.packets = self.training_tracker.load_packets()
+        self.to_csv()
+
+
+    def to_csv(self):
+        action_list = []
+        
+        # Grab req/resp pairs
+        prev_resp = None
+        for i in range(0, len(self.packets), 2):
+            req = self.packets[i]
+            resp = self.packets[i+1]
+
+            chara_info = resp['chara_info']
+
+            # Create base action
+            action = TrainingAction(
+                scenario_id=chara_info['scenario_id'],
+                turn=chara_info['turn'],
+                speed=chara_info['speed'],
+                stamina=chara_info['stamina'],
+                power=chara_info['power'],
+                guts=chara_info['guts'],
+                wisdom=chara_info['wiz'],
+                skill_pt=chara_info['skill_point'],
+                energy=chara_info['vital'],
+                motivation=chara_info['motivation'],
+                fans=chara_info['fans'],
+                skill=set(tuple(item) for item in chara_info['skill_array']),
+                skillhint=set(tuple(item) for item in chara_info['skill_tips_array']),
+                status=set(chara_info['chara_effect_id_array'])
+            )
+
+            # Calculate deltas
+            if action_list:
+                prev_action = action_list[-1]
+                action.dspeed = action.speed - prev_action.speed
+                action.dstamina = action.stamina - prev_action.stamina
+                action.dpower = action.power - prev_action.power
+                action.dguts = action.guts - prev_action.guts
+                action.dwisdom = action.wisdom - prev_action.wisdom
+                action.dskill_pt = action.skill_pt - prev_action.skill_pt
+                action.denergy = action.energy - prev_action.energy
+                action.dmotivation = action.motivation - prev_action.motivation
+                action.dfans = action.fans - prev_action.fans
+                action.add_skill = action.skill - prev_action.skill
+                action.remove_skill = prev_action.skill - action.skill
+                action.add_skillhint = action.skillhint - prev_action.skillhint
+                action.remove_skillhint = prev_action.skillhint - action.skillhint
+                action.add_status = action.status - prev_action.status
+                action.remove_status = prev_action.status - action.status
+
+
+            # Determine action type
+            self.determine_action_type(req, resp, action, prev_resp)
+
+            # Add to list
+            action_list.append(action)
+
+            prev_resp = resp
+        return
+
+    def determine_action_type(self, req: dict, resp: dict, action: TrainingAction, prev_resp: dict):
+
+        # Start of run
+        if 'start_chara' in req:
+            action.action_type = ActionType.Start
+            return
+
+        # Event requested by client
+        if 'event_id' in req:
+            story_id = prev_resp['unchecked_event_array'][0]['story_id']
+
+            # If story_id matches regex with group
+            match = re.match(r'80(\d{4})003', str(story_id))
+            if match:
+                # Skill hint
+                action.action_type = ActionType.SkillHint
+                action.text = self.chara_names_dict[int(match.group(1))]
+                action.action_type = ActionType.SkillHint
+                return
+
+            action.action_type = ActionType.Event
+            # This is assuming there is only ever one event in unchecked_event_array.
+            action.text = mdb.get_event_title(story_id)
+            return
+        
+        if 'command_type' in req:
+            if str(req['command_id'])[0] == '1':
+                # Training
+                action.action_type = ActionType.Training
+                action.text = CommandType(req['command_id']).name
+                return
+        
+        return
 
 
     def plot_stats(self, ax: plt.Axes):
@@ -205,7 +360,7 @@ class TrainingAnalyzer(gui.UmaApp):
 
 
 def main():
-    TrainingTracker('2023_02_28_21_57_35').analyze()
+    TrainingTracker('2023_03_03_00_13_55').analyze()
 
 if __name__ == "__main__":
     main()

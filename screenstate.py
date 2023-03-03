@@ -117,7 +117,7 @@ class ScreenStateHandler():
         self.threader = threader
 
         self.get_available_icons()
-        self.get_character_name_dict()
+        self.chara_names_dict = util.get_character_name_dict()
         self.screen_state = ScreenState(self)
 
         dmm_handle = util.get_window_handle("DMM GAME PLAYER", type=util.LAZY)
@@ -148,20 +148,6 @@ class ScreenStateHandler():
                 music_icons.append(name)
         self.available_chara_icons = chara_icons
         self.available_music_icons = music_icons
-
-
-    def get_character_name_dict(self):
-        chara_dict = {}
-        logger.info("Requesting character names.")
-        response = requests.get("https://umapyoi.net/api/v1/character/names")
-        if not response.ok:
-            util.show_alert_box("UmaLauncher: Internet error.", "Cannot download the character names for the Discord Rich Presence. Please check your internet connection.")
-            return chara_dict
-
-        for character in response.json():
-            chara_dict[character['game_id']] = character['name']
-
-        self.chara_names_dict = chara_dict
 
 
     def get_screenshot(self, debug=False):

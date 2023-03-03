@@ -5,6 +5,7 @@ import threading
 import math
 import os
 import sys
+import requests
 from pywintypes import error as pywinerror  # pylint: disable=no-name-in-module
 from loguru import logger
 from PIL import Image
@@ -177,3 +178,22 @@ def log_set_trace():
     log_reset()
     logger.add("log.log", rotation="1 week", compression="zip", retention="1 month", encoding='utf-8', level="TRACE")
     return
+
+downloaded_chara_dict = None
+
+def get_character_name_dict():
+    global downloaded_chara_dict
+
+    if not downloaded_chara_dict:
+        chara_dict = {}
+        logger.info("Requesting character names.")
+        response = requests.get("https://umapyoi.net/api/v1/character/names")
+        if not response.ok:
+            show_alert_box("UmaLauncher: Internet error.", "Cannot download the character names for the Discord Rich Presence. Please check your internet connection.")
+            return chara_dict
+
+        for character in response.json():
+            chara_dict[character['game_id']] = character['name']
+
+        downloaded_chara_dict = chara_dict
+    return downloaded_chara_dict

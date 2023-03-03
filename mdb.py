@@ -1,5 +1,6 @@
 import sqlite3
 import os
+from loguru import logger
 
 DB_PATH = os.path.expandvars("%userprofile%\\appdata\\locallow\\Cygames\\umamusume\\master\\master.mdb")
 
@@ -17,7 +18,13 @@ def get_event_title(story_id):
             """SELECT text FROM text_data t JOIN single_mode_story_data s ON t."index" = s.story_id WHERE category = 181 AND t."index" = ? OR s.short_story_id = ? LIMIT 1""",
             (story_id, story_id)
         )
-        event_title = cursor.fetchone()[0]
+        row = cursor.fetchone()
+        if row is None:
+            event_title = ""
+            logger.warning(f"Event title not found for story_id: {story_id}")
+        else:
+            event_title = row[0]
+
     return event_title
 
 def get_song_title(song_id):
