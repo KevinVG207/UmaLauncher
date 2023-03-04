@@ -12,6 +12,22 @@ from PIL import Image
 
 window_handle = None
 
+SCENARIO_DICT = {
+    1: "URA Finals",
+    2: "Aoharu Cup",
+    3: "Grand Live",
+    4: "Make a New Track",
+    5: "Grand Masters",
+}
+
+MOTIVATION_DICT = {
+    5: "Very High",
+    4: "High",
+    3: "Normal",
+    2: "Low",
+    1: "Very Low"
+}
+
 unpack_dir = os.getcwd()
 is_script = True
 if hasattr(sys, "_MEIPASS"):

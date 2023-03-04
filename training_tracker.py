@@ -85,8 +85,14 @@ class TrainingTracker():
         self.add_packet(response)
 
 
+    def get_training_path(self):
+        return str(os.path.join(self.training_log_folder, self.training_id))
+
     def get_sav_path(self):
-        return str(os.path.join(self.training_log_folder, self.training_id)) + ".gz"
+        return self.get_training_path() + ".gz"
+    
+    def get_csv_path(self):
+        return self.get_training_path() + ".csv"
 
 
     def write_previous_packet(self):
@@ -175,6 +181,7 @@ class TrainingAction():
 
     action_type: ActionType = ActionType.Unknown
     text: str = ''
+    choice: int = 0
     dspeed: int = 0
     dstamina: int = 0
     dpower: int = 0
@@ -187,7 +194,6 @@ class TrainingAction():
     add_skill: set = field(default_factory=set)
     remove_skill: set = field(default_factory=set)
     add_skillhint: set = field(default_factory=set)
-    remove_skillhint: set = field(default_factory=set)
     add_status: set = field(default_factory=set)
     remove_status: set = field(default_factory=set)
 
@@ -228,8 +234,8 @@ class TrainingAnalyzer(gui.UmaApp):
                 energy=chara_info['vital'],
                 motivation=chara_info['motivation'],
                 fans=chara_info['fans'],
-                skill=set(tuple(item) for item in chara_info['skill_array']),
-                skillhint=set(tuple(item) for item in chara_info['skill_tips_array']),
+                skill={tuple(item.values()) for item in chara_info['skill_array']},
+                skillhint={tuple(item.values()) for item in chara_info['skill_tips_array']},
                 status=set(chara_info['chara_effect_id_array'])
             )
 
@@ -248,7 +254,6 @@ class TrainingAnalyzer(gui.UmaApp):
                 action.add_skill = action.skill - prev_action.skill
                 action.remove_skill = prev_action.skill - action.skill
                 action.add_skillhint = action.skillhint - prev_action.skillhint
-                action.remove_skillhint = prev_action.skillhint - action.skillhint
                 action.add_status = action.status - prev_action.status
                 action.remove_status = prev_action.status - action.status
 
@@ -260,7 +265,56 @@ class TrainingAnalyzer(gui.UmaApp):
             action_list.append(action)
 
             prev_resp = resp
-        return
+        
+        # Write to CSV
+        with open(self.training_tracker.get_csv_path(), 'w', encoding='utf-8') as csvfile:
+            headers = [
+                    ("Scenario", lambda x: util.SCENARIO_DICT.get(x.scenario_id), "Unknown"),
+                    ("Turn", lambda x: x.turn),
+                    ("Action", lambda x: x.action_type.name),
+                    ("Text", lambda x: x.text),
+                    ("Choice", lambda x: x.choice),
+                    ("SPD", lambda x: x.speed),
+                    ("STA", lambda x: x.stamina),
+                    ("POW", lambda x: x.power),
+                    ("GUT", lambda x: x.guts),
+                    ("INT", lambda x: x.wisdom),
+                    ("SKLPT", lambda x: x.skill_pt),
+                    ("ERG", lambda x: x.energy),
+                    ("MOT", lambda x: util.MOTIVATION_DICT.get(x.motivation, "Unknown")),
+                    ("FAN", lambda x: x.fans),
+
+                    ("ΔSPD", lambda x: x.dspeed),
+                    ("ΔSTA", lambda x: x.dstamina),
+                    ("ΔPOW", lambda x: x.dpower),
+                    ("ΔGUT", lambda x: x.dguts),
+                    ("ΔINT", lambda x: x.dwisdom),
+                    ("ΔSKLPT", lambda x: x.dskill_pt),
+                    ("ΔERG", lambda x: x.denergy),
+                    ("ΔMOT", lambda x: x.dmotivation),
+                    ("ΔFAN", lambda x: x.dfans),
+                    ("Skills Added", lambda x: "|".join([mdb.get_skill_name(skill[0]) + f" LVL{skill[1]}" for skill in x.add_skill])),
+                    ("Skills Removed", lambda x: "|".join([mdb.get_skill_name(skill[0]) + f" LVL{skill[1]}" for skill in x.remove_skill])),
+                    ("Skill Hints Added", lambda x: "|".join([mdb.get_skill_hint_name(skillhint[0], skillhint[1]) + f" LVL{skillhint[2]}" for skillhint in x.add_skillhint])),
+                    ("Statuses Added", lambda x: "|".join([mdb.get_status_name(status) for status in x.add_status])),
+                    ("Statuses Removed", lambda x: "|".join([mdb.get_status_name(status) for status in x.remove_status])),
+                ]
+            
+            out_rows = []
+
+            header_row = ",".join([header[0] for header in headers])
+            out_rows.append(header_row)
+
+            def remove_zero(value):
+                if value == 0 or value == "0":
+                    return ""
+                return value
+
+            for action in action_list:
+                row = ",".join([str(remove_zero(header[1](action))) for header in headers])
+                out_rows.append(row)
+            
+            csvfile.write("\n".join(out_rows))
 
     def determine_action_type(self, req: dict, resp: dict, action: TrainingAction, prev_resp: dict):
 
@@ -285,6 +339,7 @@ class TrainingAnalyzer(gui.UmaApp):
             action.action_type = ActionType.Event
             # This is assuming there is only ever one event in unchecked_event_array.
             action.text = mdb.get_event_title(story_id)
+            action.choice = req['choice_number']
             return
         
         if 'command_type' in req:

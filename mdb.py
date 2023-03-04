@@ -35,3 +35,30 @@ def get_song_title(song_id):
         )
         song_title = cursor.fetchone()[0]
     return song_title
+
+def get_status_name(status_id):
+    with Connection() as (_, cursor):
+        cursor.execute(
+            """SELECT text FROM text_data WHERE category = 142 AND "index" = ? LIMIT 1""",
+            (status_id,)
+        )
+        status_name = cursor.fetchone()[0]
+    return status_name
+
+def get_skill_name(skill_id):
+    with Connection() as (_, cursor):
+        cursor.execute(
+            """SELECT text FROM text_data WHERE category = 47 AND "index" = ? LIMIT 1""",
+            (skill_id,)
+        )
+        skill_name = cursor.fetchone()[0]
+    return skill_name
+
+def get_skill_hint_name(group_id, rarity):
+    with Connection() as (_, cursor):
+        cursor.execute(
+            """SELECT td.text FROM skill_data sd INNER JOIN text_data td ON sd.id = td."index" AND td.category = 47 WHERE sd.group_id = ? AND sd.rarity = ? LIMIT 1""",
+            (group_id, rarity)
+        )
+        skill_hint_name = cursor.fetchone()[0]
+    return skill_hint_name

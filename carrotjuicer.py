@@ -20,14 +20,6 @@ import util
 import mdb
 import training_tracker
 
-SCENARIO_DICT = {
-    1: "URA Finals",
-    2: "Aoharu Cup",
-    3: "Grand Live",
-    4: "Make a New Track",
-    5: "Grand Masters",
-}
-
 class CarrotJuicer():
     start_time = None
     browser = None
@@ -300,7 +292,7 @@ class CarrotJuicer():
                     new_state.sub = f"{data['chara_info']['speed']} {data['chara_info']['stamina']} {data['chara_info']['power']} {data['chara_info']['guts']} {data['chara_info']['wiz']} | {data['chara_info']['skill_point']}"
 
                     scenario_id = data['chara_info']['scenario_id']
-                    scenario_name = SCENARIO_DICT.get(scenario_id, None)
+                    scenario_name = util.SCENARIO_DICT.get(scenario_id, None)
                     if not scenario_name:
                         logger.error(f"Scenario ID not found in scenario dict: {scenario_id}")
                         scenario_name = "You are now breathing manually."
