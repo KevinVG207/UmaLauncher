@@ -230,7 +230,7 @@ class CarrotJuicer():
 
     def handle_response(self, message):
         data = self.load_response(message)
-        # logger.info(json.dumps(data))
+        logger.info(json.dumps(data))
 
         try:
             if 'data' not in data:
@@ -308,6 +308,8 @@ class CarrotJuicer():
                 # Training event.
                 logger.debug("Training event detected")
                 event_data = data['unchecked_event_array'][0]
+                event_title = mdb.get_event_title(event_data['story_id'])
+                logger.debug(f"Event title: {event_title}")
                 # TODO: Check if there can be multiple events??
                 if len(data['unchecked_event_array']) > 1:
                     logger.warning(f"Packet has more than 1 unchecked event! {message}")
@@ -319,8 +321,6 @@ class CarrotJuicer():
                 )
 
                 if len(event_data['event_contents_info']['choice_array']) > 1:
-
-                    event_title = mdb.get_event_title(event_data['story_id'])
 
                     logger.debug(f"Event title determined: {event_title}")
 
@@ -396,7 +396,7 @@ class CarrotJuicer():
 
     def handle_request(self, message):
         data = self.load_request(message)
-        # logger.info(json.dumps(data))
+        logger.info(json.dumps(data))
 
         if self.threader.settings.loaded_settings.get("save_packet", False):
             self.to_json(data, "packet_out.json")

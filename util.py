@@ -9,6 +9,7 @@ import requests
 from pywintypes import error as pywinerror  # pylint: disable=no-name-in-module
 from loguru import logger
 from PIL import Image
+import mdb
 
 window_handle = None
 
@@ -26,6 +27,22 @@ MOTIVATION_DICT = {
     3: "Normal",
     2: "Low",
     1: "Very Low"
+}
+
+SUPPORT_CARD_RARITY_DICT = {
+    1: "R",
+    2: "SR",
+    3: "SSR"
+}
+
+SUPPORT_CARD_TYPE_DICT = {
+    (101, 1): "Speed",
+    (105, 1): "Stamina",
+    (102, 1): "Power",
+    (103, 1): "Guts",
+    (106, 1): "Wisdom",
+    (0, 2): "Friend",
+    (0, 3): "Group"
 }
 
 unpack_dir = os.getcwd()
@@ -201,7 +218,7 @@ def get_character_name_dict():
     global downloaded_chara_dict
 
     if not downloaded_chara_dict:
-        chara_dict = {}
+        chara_dict = mdb.get_chara_name_dict()
         logger.info("Requesting character names.")
         response = requests.get("https://umapyoi.net/api/v1/character/names")
         if not response.ok:

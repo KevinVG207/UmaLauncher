@@ -2,6 +2,7 @@ import os
 import json
 import gzip
 import re
+import time
 from dataclasses import dataclass, field
 from enum import Enum
 from loguru import logger
@@ -144,13 +145,22 @@ class TrainingAnalyzerGui(gui.UmaMainWidget):
 
 
 class ActionType(Enum):
-    Unknown = -1
-    Start = 0
-    End = 1
-    Training = 2
-    Event = 3
-    Race = 4
-    SkillHint = 5
+    """Represents the type of action that was taken in the training scenario.
+    Negative values are actions that may be ignored."""
+    AfterRace = -2
+    BeforeRace = -1
+    Unknown = 0
+    Start = 1
+    End = 2
+    Training = 3
+    Event = 4
+    Race = 5
+    SkillHint = 6
+    BuySkill = 7
+    Rest = 8
+    Outing = 9
+    Infirmary = 10
+    GoddessWisdom = 11
 
 class CommandType(Enum):
     Speed = 101
@@ -158,13 +168,18 @@ class CommandType(Enum):
     Power = 102
     Guts = 103
     Wisdom = 106
+    SummerSpeed = 601
+    SummerStamina = 602
+    SummerPower = 603
+    SummerGuts = 604
+    SummerWisdom = 605
+
 
 @dataclass
 class TrainingAction():
     """Represents a single training action.
     d = delta.
     """
-    scenario_id: int
     turn: int
     speed: int
     stamina: int
@@ -181,7 +196,7 @@ class TrainingAction():
 
     action_type: ActionType = ActionType.Unknown
     text: str = ''
-    choice: int = 0
+    value: int = 0
     dspeed: int = 0
     dstamina: int = 0
     dpower: int = 0
@@ -202,17 +217,39 @@ class TrainingAnalyzer(gui.UmaApp):
     training_tracker = None
     packets = None
     chara_names_dict = util.get_character_name_dict()
+    last_turn = 0
+    scenario_id = None
+    card_id = None
+    chara_id = None
+    support_cards = None
+    last_program_id = None
+    next_action_type = None
+    gm_effect_active = False
+    event_title_dict = mdb.get_event_title_dict()
+    race_program_name_dict = mdb.get_race_program_name_dict()
+    skill_name_dict = mdb.get_skill_name_dict()
+    skill_hint_name_dict = mdb.get_skill_hint_name_dict()
+    status_name_dict = mdb.get_status_name_dict()
+    outfit_name_dict = mdb.get_outfit_name_dict()
+    support_card_string_dict = mdb.get_support_card_string_dict()
 
     def __init__(self, training_tracker: TrainingTracker, *args, **kwargs):
+        self.last_program_id = None
+        self.next_action_type = None
+        self.gm_effect_active = False
         super().__init__(*args, **kwargs)
         self.training_tracker = training_tracker
         self.packets = self.training_tracker.load_packets()
+
+        t1 = time.perf_counter()
         self.to_csv()
+        t2 = time.perf_counter()
+        logger.debug(f"CSV generation took {t2-t1:0.4f} seconds")
 
 
     def to_csv(self):
         action_list = []
-        
+
         # Grab req/resp pairs
         prev_resp = None
         for i in range(0, len(self.packets), 2):
@@ -221,10 +258,16 @@ class TrainingAnalyzer(gui.UmaApp):
 
             chara_info = resp['chara_info']
 
+            if self.last_turn == 0:
+                # First turn, set all static values.
+                self.scenario_id = chara_info['scenario_id']
+                self.card_id = chara_info['card_id']
+                self.chara_id = int(str(self.card_id)[:4])
+                self.support_cards = chara_info['support_card_array']
+
             # Create base action
             action = TrainingAction(
-                scenario_id=chara_info['scenario_id'],
-                turn=chara_info['turn'],
+                turn=req['current_turn'] if 'current_turn' in req else chara_info['turn'],
                 speed=chara_info['speed'],
                 stamina=chara_info['stamina'],
                 power=chara_info['power'],
@@ -238,6 +281,13 @@ class TrainingAnalyzer(gui.UmaApp):
                 skillhint={tuple(item.values()) for item in chara_info['skill_tips_array']},
                 status=set(chara_info['chara_effect_id_array'])
             )
+
+            # Determine if turn changed
+            if action.turn > self.last_turn:
+                self.last_turn = action.turn
+                # Reset some values
+                self.gm_effect_active = False
+
 
             # Calculate deltas
             if action_list:
@@ -265,15 +315,31 @@ class TrainingAnalyzer(gui.UmaApp):
             action_list.append(action)
 
             prev_resp = resp
-        
+
         # Write to CSV
+        scenario_str = util.SCENARIO_DICT.get(self.scenario_id, 'Unknown')
+        chara_str = f"{self.chara_names_dict.get(self.chara_id, 'Unknown')} - {self.outfit_name_dict[self.card_id]}"
+        support_1_str = f"{self.support_cards[0]['support_card_id']} - {self.support_card_string_dict[self.support_cards[0]['support_card_id']]}"
+        support_2_str = f"{self.support_cards[1]['support_card_id']} - {self.support_card_string_dict[self.support_cards[1]['support_card_id']]}"
+        support_3_str = f"{self.support_cards[2]['support_card_id']} - {self.support_card_string_dict[self.support_cards[2]['support_card_id']]}"
+        support_4_str = f"{self.support_cards[3]['support_card_id']} - {self.support_card_string_dict[self.support_cards[3]['support_card_id']]}"
+        support_5_str = f"{self.support_cards[4]['support_card_id']} - {self.support_card_string_dict[self.support_cards[4]['support_card_id']]}"
+        support_6_str = f"{self.support_cards[5]['support_card_id']} - {self.support_card_string_dict[self.support_cards[5]['support_card_id']]}"
+
         with open(self.training_tracker.get_csv_path(), 'w', encoding='utf-8') as csvfile:
             headers = [
-                    ("Scenario", lambda x: util.SCENARIO_DICT.get(x.scenario_id), "Unknown"),
+                    ("Scenario", lambda _: scenario_str),
+                    ("Chara", lambda _: chara_str),
+                    ("Support 1", lambda _: support_1_str),
+                    ("Support 2", lambda _: support_2_str),
+                    ("Support 3", lambda _: support_3_str),
+                    ("Support 4", lambda _: support_4_str),
+                    ("Support 5", lambda _: support_5_str),
+                    ("Support 6", lambda _: support_6_str),
                     ("Turn", lambda x: x.turn),
                     ("Action", lambda x: x.action_type.name),
                     ("Text", lambda x: x.text),
-                    ("Choice", lambda x: x.choice),
+                    ("Value", lambda x: x.value),
                     ("SPD", lambda x: x.speed),
                     ("STA", lambda x: x.stamina),
                     ("POW", lambda x: x.power),
@@ -293,30 +359,60 @@ class TrainingAnalyzer(gui.UmaApp):
                     ("ΔERG", lambda x: x.denergy),
                     ("ΔMOT", lambda x: x.dmotivation),
                     ("ΔFAN", lambda x: x.dfans),
-                    ("Skills Added", lambda x: "|".join([mdb.get_skill_name(skill[0]) + f" LVL{skill[1]}" for skill in x.add_skill])),
-                    ("Skills Removed", lambda x: "|".join([mdb.get_skill_name(skill[0]) + f" LVL{skill[1]}" for skill in x.remove_skill])),
-                    ("Skill Hints Added", lambda x: "|".join([mdb.get_skill_hint_name(skillhint[0], skillhint[1]) + f" LVL{skillhint[2]}" for skillhint in x.add_skillhint])),
-                    ("Statuses Added", lambda x: "|".join([mdb.get_status_name(status) for status in x.add_status])),
-                    ("Statuses Removed", lambda x: "|".join([mdb.get_status_name(status) for status in x.remove_status])),
+                    ("Skills Added", lambda x: "|".join([self.skill_name_dict[skill[0]] + f" LVL{skill[1]}" for skill in x.add_skill])),
+                    ("Skills Removed", lambda x: "|".join([self.skill_name_dict[skill[0]] + f" LVL{skill[1]}" for skill in x.remove_skill])),
+                    ("Skill Hints Added", lambda x: "|".join([self.skill_hint_name_dict[(skillhint[0], skillhint[1])] + f" LVL{skillhint[2]}" for skillhint in x.add_skillhint])),
+                    ("Statuses Added", lambda x: "|".join([self.status_name_dict[status] for status in x.add_status])),
+                    ("Statuses Removed", lambda x: "|".join([self.status_name_dict[status] for status in x.remove_status])),
                 ]
-            
+
+            # Create CSV
             out_rows = []
 
             header_row = ",".join([header[0] for header in headers])
             out_rows.append(header_row)
 
             def remove_zero(value):
-                if value == 0 or value == "0":
+                if value in (0, '0'):
                     return ""
                 return value
 
             for action in action_list:
+                # Ignore certain actions
+                if action.action_type.value < 0:
+                    continue
+                if action.action_type == ActionType.Unknown:
+                    # Skip action if it does not gain or lose any stats or skills/statuses etc.
+                    if not any([action.dspeed,
+                                action.dstamina,
+                                action.dpower,
+                                action.dguts,
+                                action.dwisdom,
+                                action.dskill_pt,
+                                action.denergy,
+                                action.dmotivation,
+                                action.dfans,
+                                action.add_skill,
+                                action.remove_skill,
+                                action.add_skillhint,
+                                action.add_status,
+                                action.remove_status]):
+                        continue
                 row = ",".join([str(remove_zero(header[1](action))) for header in headers])
                 out_rows.append(row)
             
             csvfile.write("\n".join(out_rows))
 
+
     def determine_action_type(self, req: dict, resp: dict, action: TrainingAction, prev_resp: dict):
+
+        # If next action type is set, use that.
+        if self.next_action_type is not None:
+            action.action_type = self.next_action_type
+            self.next_action_type = None
+            return
+
+        # Request specific:
 
         # Start of run
         if 'start_chara' in req:
@@ -338,17 +434,87 @@ class TrainingAnalyzer(gui.UmaApp):
 
             action.action_type = ActionType.Event
             # This is assuming there is only ever one event in unchecked_event_array.
-            action.text = mdb.get_event_title(story_id)
-            action.choice = req['choice_number']
+            action.text = self.event_title_dict[story_id]
+            action.value = req['choice_number']
             return
-        
+
         if 'command_type' in req:
-            if str(req['command_id'])[0] == '1':
-                # Training
+            # Training
+            if req['command_type'] == 1:
                 action.action_type = ActionType.Training
                 action.text = CommandType(req['command_id']).name
                 return
-        
+
+            # Resting
+            if req['command_type'] == 7:  # and req['command_id'] == 701:
+                action.action_type = ActionType.Rest
+                return
+
+            # Outing
+            if req['command_type'] == 3:
+                action.action_type = ActionType.Outing
+                select_id = req['select_id']
+                chara_id = self.chara_id if select_id == 0 else select_id
+                action.text = self.chara_names_dict[chara_id]
+                return
+
+            # Infirmary
+            if req['command_type'] == 8:
+                action.action_type = ActionType.Infirmary
+                return
+
+        if 'program_id' in req:
+            # Race Requested
+            action.action_type = ActionType.BeforeRace
+            self.last_program_id = req['program_id']
+            action.text = self.race_program_name_dict[self.last_program_id]
+            return
+
+        if 'gain_skill_info_array' in req:
+            # Skill(s) bought
+            action.action_type = ActionType.BuySkill
+            return
+
+        # Response-specific:
+
+        if 'race_reward_info' in resp:
+            # Race Completed
+            action.action_type = ActionType.Race
+            action.text = self.race_program_name_dict[self.last_program_id]
+            action.value = resp['race_reward_info']['result_rank']  # Saving the finishing position here for now.
+            self.next_action_type = ActionType.AfterRace
+            return
+    
+
+        # Grand Masters specific
+        if self.scenario_id == 5:
+            if not 'venus_data_set' in resp:
+                return
+            
+            venus = resp['venus_data_set']
+
+            # Goddess Wisdom
+            if len(venus['venus_spirit_active_effect_info_array']) > 0 and not self.gm_effect_active:
+                self.gm_effect_active = True
+                action.action_type = ActionType.GoddessWisdom
+                goddess_chara_id = venus['venus_spirit_active_effect_info_array'][0]['chara_id']
+                action.text = self.chara_names_dict[goddess_chara_id]
+                action.value = {chara_dict['chara_id']: chara_dict['venus_level'] for chara_dict in venus['venus_chara_info_array']}[goddess_chara_id]
+                return
+
+            # Before venus race.
+            if 'race_start_info' in venus and venus['race_start_info'] is not None:
+                action.action_type = ActionType.BeforeRace
+                self.last_program_id = venus['race_start_info']['program_id']
+                action.text = self.race_program_name_dict[self.last_program_id]
+                return
+            
+            # Venus race results
+            if 'race_reward_info' in venus and venus['race_reward_info'] is not None:
+                action.action_type = ActionType.Race
+                action.text = self.race_program_name_dict[self.last_program_id]
+                return
+
         return
 
 
@@ -415,7 +581,7 @@ class TrainingAnalyzer(gui.UmaApp):
 
 
 def main():
-    TrainingTracker('2023_03_03_00_13_55').analyze()
+    TrainingTracker('2023_03_03_22_21_52').analyze()
 
 if __name__ == "__main__":
     main()
