@@ -180,6 +180,7 @@ class TrainingAction():
     """Represents a single training action.
     d = delta.
     """
+    # TODO: Aptitudes
     turn: int
     speed: int
     stamina: int
@@ -252,9 +253,18 @@ class TrainingAnalyzer(gui.UmaApp):
 
         # Grab req/resp pairs
         prev_resp = None
-        for i in range(0, len(self.packets), 2):
+        # for i in range(0, len(self.packets), 2):
+        i = 0
+        while i < len(self.packets) - 1:
             req = self.packets[i]
             resp = self.packets[i+1]
+
+            # TODO: Increase i and keep looping through the next packet to find a response.
+            # Check if response really is a response
+            if resp['_direction'] != 1:
+                i += 1
+                continue
+            i += 2
 
             chara_info = resp['chara_info']
 
@@ -415,12 +425,13 @@ class TrainingAnalyzer(gui.UmaApp):
         # Request specific:
 
         # Start of run
-        if 'start_chara' in req:
+        if 'start_chara' in req and req['start_chara']:
             action.action_type = ActionType.Start
+            action.text = util.create_gametora_helper_url(self.card_id, self.scenario_id, [item['support_card_id'] for item in self.support_cards])
             return
 
         # Event requested by client
-        if 'event_id' in req:
+        if 'event_id' in req and req['event_id']:
             story_id = prev_resp['unchecked_event_array'][0]['story_id']
 
             # If story_id matches regex with group
@@ -438,7 +449,7 @@ class TrainingAnalyzer(gui.UmaApp):
             action.value = req['choice_number']
             return
 
-        if 'command_type' in req:
+        if 'command_type' in req and req['command_type']:
             # Training
             if req['command_type'] == 1:
                 action.action_type = ActionType.Training
@@ -463,21 +474,21 @@ class TrainingAnalyzer(gui.UmaApp):
                 action.action_type = ActionType.Infirmary
                 return
 
-        if 'program_id' in req:
+        if 'program_id' in req and req['program_id']:
             # Race Requested
             action.action_type = ActionType.BeforeRace
             self.last_program_id = req['program_id']
             action.text = self.race_program_name_dict[self.last_program_id]
             return
 
-        if 'gain_skill_info_array' in req:
+        if 'gain_skill_info_array' in req and req['gain_skill_info_array']:
             # Skill(s) bought
             action.action_type = ActionType.BuySkill
             return
 
         # Response-specific:
 
-        if 'race_reward_info' in resp:
+        if 'race_reward_info' in resp and resp['race_reward_info']:
             # Race Completed
             action.action_type = ActionType.Race
             action.text = self.race_program_name_dict[self.last_program_id]
@@ -488,7 +499,7 @@ class TrainingAnalyzer(gui.UmaApp):
 
         # Grand Masters specific
         if self.scenario_id == 5:
-            if not 'venus_data_set' in resp:
+            if not 'venus_data_set' in resp or resp['venus_data_set'] is None:
                 return
             
             venus = resp['venus_data_set']
@@ -581,7 +592,7 @@ class TrainingAnalyzer(gui.UmaApp):
 
 
 def main():
-    TrainingTracker('2023_03_03_22_21_52').analyze()
+    TrainingTracker('2023_03_09_02_29_40').analyze()
 
 if __name__ == "__main__":
     main()

@@ -4,10 +4,8 @@ import glob
 import traceback
 import math
 import json
-import pickle
 from subprocess import CREATE_NO_WINDOW
 import msgpack
-import numpy as np
 from loguru import logger
 from selenium.common.exceptions import WebDriverException
 from selenium import webdriver
@@ -77,12 +75,7 @@ class CarrotJuicer():
         d = packet_data['start_chara']
         supports = d['support_card_ids'] + [d['friend_support_card_info']['support_card_id']]
 
-        return self.create_gametora_helper_url(d['card_id'], d['scenario_id'], supports)
-
-
-    def create_gametora_helper_url(self, card_id, scenario_id, support_ids):
-        support_ids = list(map(str, support_ids))
-        return f"https://gametora.com/umamusume/training-event-helper?deck={np.base_repr(int(str(card_id) + str(scenario_id)), 36)}-{np.base_repr(int(support_ids[0] + support_ids[1] + support_ids[2]), 36)}-{np.base_repr(int(support_ids[3] + support_ids[4] + support_ids[5]), 36)}".lower()
+        return util.create_gametora_helper_url(d['card_id'], d['scenario_id'], supports)
 
 
     def to_json(self, packet, out_name="packet.json"):
@@ -230,7 +223,11 @@ class CarrotJuicer():
 
     def handle_response(self, message):
         data = self.load_response(message)
-        logger.info(json.dumps(data))
+
+        if self.threader.settings.loaded_settings.get("save_packet", False):
+            logger.debug("Response:")
+            logger.debug(json.dumps(data))
+            self.to_json(data, "packet_in.json")
 
         try:
             if 'data' not in data:
@@ -238,9 +235,6 @@ class CarrotJuicer():
                 return
 
             data = data['data']
-
-            if self.threader.settings.loaded_settings.get("save_packet", False):
-                self.to_json(data, "packet_in.json")
 
             # Run ended
             if 'single_mode_factor_select_common' in data:
@@ -302,7 +296,7 @@ class CarrotJuicer():
 
                 if not self.browser or not self.browser.current_url.startswith("https://gametora.com/umamusume/training-event-helper"):
                     logger.info("GT tab not open, opening tab")
-                    self.open_helper(self.create_gametora_helper_url(outfit_id, scenario_id, supports))
+                    self.open_helper(util.create_gametora_helper_url(outfit_id, scenario_id, supports))
 
             if 'unchecked_event_array' in data and data['unchecked_event_array']:
                 # Training event.
@@ -396,9 +390,10 @@ class CarrotJuicer():
 
     def handle_request(self, message):
         data = self.load_request(message)
-        logger.info(json.dumps(data))
 
         if self.threader.settings.loaded_settings.get("save_packet", False):
+            logger.debug("Request:")
+            logger.debug(json.dumps(data))
             self.to_json(data, "packet_out.json")
 
         self.previous_request = data
