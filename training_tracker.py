@@ -64,8 +64,8 @@ class TrainingTracker():
 
 
     def add_packet(self, packet: dict):
-        self.write_previous_packet()
-        self.previous_packet = packet
+        self.write_packet(packet)
+        # self.previous_packet = packet
 
 
     def add_request(self, request: dict):
@@ -89,18 +89,20 @@ class TrainingTracker():
     def get_training_path(self):
         return str(os.path.join(self.training_log_folder, self.training_id))
 
+
     def get_sav_path(self):
         return self.get_training_path() + ".gz"
-    
+
+
     def get_csv_path(self):
         return self.get_training_path() + ".csv"
 
 
-    def write_previous_packet(self):
+    def write_packet(self, packet: dict):
         # Convert to json string and save with gzip
         # Append to gzip if file exists
         is_first = not os.path.exists(self.get_sav_path())
-        if self.previous_packet is not None:
+        if packet is not None:
             with gzip.open(self.get_sav_path(), 'ab') as f:
                 if not is_first:
                     f.write(','.encode('utf-8'))

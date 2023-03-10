@@ -239,7 +239,6 @@ class CarrotJuicer():
             # Run ended
             if 'single_mode_factor_select_common' in data:
                 if self.training_tracker:
-                    self.training_tracker.write_previous_packet()
                     self.training_tracker = None
                 self.close_browser()
                 return
@@ -261,8 +260,6 @@ class CarrotJuicer():
 
                 training_id = data['chara_info']['start_time']
                 if not self.training_tracker or not self.training_tracker.training_id_matches(training_id):
-                    if self.training_tracker:
-                        self.training_tracker.write_previous_packet()
                     self.training_tracker = training_tracker.TrainingTracker(training_id)
 
                 if self.previous_request:
