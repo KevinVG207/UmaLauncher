@@ -18,6 +18,8 @@ from screenstate import ScreenState, Location
 import util
 import mdb
 
+# TODO: Track amount of trainings on every facility to know when it upgrades next.
+
 SCENARIO_DICT = {
     1: "URA Finals",
     2: "Aoharu Cup",
@@ -35,6 +37,7 @@ class CarrotJuicer():
     should_stop = False
     last_browser_rect = None
     reset_browser = False
+    helper_url = None
 
     _browser_list = None
 
@@ -126,7 +129,7 @@ class CarrotJuicer():
             helper_url=helper_url
         )
 
-    def init_browser(self, helper_url):
+    def init_browser(self):
         driver = None
 
         browser_list = []
@@ -142,36 +145,95 @@ class CarrotJuicer():
         for browser_setup in browser_list:
             try:
                 logger.info("Attempting " + str(browser_setup.__name__))
-                driver = browser_setup(helper_url)
+                driver = browser_setup(self.helper_url)
                 break
             except Exception:
                 pass
         if not driver:
             util.show_alert_box("UmaLauncher: Unable to start browser.", "Selected webbrowser cannot be started. Use the tray icon to select a browser that is installed on your system.")
         return driver
+    
+    def setup_helper_page(self):
+        self.browser.execute_script("""
+        window.UL_OVERLAY = document.createElement("div");
+        window.GT_PAGE = document.getElementById("__next");
+        window.OVERLAY_HEIGHT = "15rem";
+        window.UL_OVERLAY.style.height = OVERLAY_HEIGHT;
+        window.UL_OVERLAY.style.width = "100%";
+        window.UL_OVERLAY.style.position = "fixed";
+        window.UL_OVERLAY.style.top = "0";
+        window.UL_OVERLAY.style.zIndex = 100;
+        window.UL_OVERLAY.style.backgroundColor = "var(--c-bg-main)";
+        window.UL_OVERLAY.style.borderBottom = "2px solid var(--c-topnav)";
+        window.UL_OVERLAY.style.display = "flex";
+        window.UL_OVERLAY.style.alignItems = "center";
+        window.UL_OVERLAY.style.justifyContent = "center";
+        window.UL_OVERLAY.style.flexDirection = "column";
 
-    def open_helper(self, helper_url):
-        self.previous_element = None
+        window.UL_OVERLAY.innerHTML = `
+            <div>Energy: <span id="energy"></span></div>
+            <table id="training-table">
+                <thead>
+                    <tr>
+                        <th>Facility</th>
+                        <th>Speed</th>
+                        <th>Stamina</th>
+                        <th>Power</th>
+                        <th>Guts</th>
+                        <th>Wisdom</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        `;
 
-        if self.browser:
-            self.close_browser()
+        window.UL_DATA = {
+            energy: 100,
+            max_energy: 100,
+            training: {}
+        };
 
-        self.browser = self.init_browser(helper_url)
+        document.body.prepend(window.UL_OVERLAY);
+        window.GT_PAGE.style.paddingTop = OVERLAY_HEIGHT;
 
-        saved_pos = self.threader.settings.get("browser_position")
-        if not saved_pos:
-            self.reset_browser_position()
-        else:
-            logger.debug(saved_pos)
-            self.browser.set_window_rect(*saved_pos)
+        window.update_overlay = function() {
+            var training_metadata_array = [
+                {name: "Speed", command_id: 101},
+                {name: "Stamina", command_id: 105},
+                {name: "Power", command_id: 102},
+                {name: "Guts", command_id: 103},
+                {name: "Wisdom", command_id: 106}
+            ];
 
-        # TODO: Find a way to know if the page is actually finished loading
+            var row_meatdata_array = [
+                {name: "Stat Gain", key: "stats"},
+                {name: "Energy", key: "energy"},
+                {name: "Useful Bond", key: "bond"},
+                {name: "Skillpt Gain", key: "skillpt"},
+                {name: "Fail %", key: "failure_rate"},
+                {name: "Level", key: "level"}
+            ];
 
-        while not self.browser.execute_script("""return document.querySelector("[class^='legal_cookie_banner_wrapper_']")"""):
-            time.sleep(0.25)
-
-        # Hide the cookies banner
-        self.browser.execute_script("""document.querySelectorAll("[class^='legal_cookie_banner_wrapper_']").forEach(e => e.style.display = 'none');""")
+            document.getElementById("energy").innerText = window.UL_DATA.energy + "/" + window.UL_DATA.max_energy;
+            var tbody = document.getElementById("training-table").querySelector("tbody");
+            tbody.innerHTML = "";
+            for (var i = 0; i < row_meatdata_array.length; i++) {
+                var tr = document.createElement("tr");
+                var row_metadata = row_meatdata_array[i];
+                for (var j = 0; j < training_metadata_array.length + 1; j++) {
+                    var td = document.createElement("td");
+                    if (j == 0){
+                        td.innerText = row_metadata.name;
+                    } else {
+                        var training_metadata = training_metadata_array[j - 1];
+                        td.innerText = window.UL_DATA.training[training_metadata.command_id][row_metadata.key];
+                    }
+                    tr.appendChild(td);
+                }
+                tbody.appendChild(tr);
+            }
+        };
+        """)
 
         # Enable dark mode (the only reasonable color scheme)
         self.browser.execute_script("""document.querySelector("[class^='styles_header_settings_']").click()""")
@@ -189,6 +251,32 @@ class CarrotJuicer():
         if not all_cards_enabled:
             self.browser.execute_script("""document.getElementById("allAtOnceCheckbox").click()""")
         self.browser.execute_script("""document.querySelector("[class^='filters_confirm_button_']").click()""")
+
+        while not self.browser.execute_script("""return document.getElementById("adnote");"""):
+            time.sleep(0.25)
+
+        # Hide the cookies banner
+        self.browser.execute_script("""document.getElementById("adnote").style.display = 'none';""")
+        return
+
+    def open_helper(self):
+        self.previous_element = None
+
+        if self.browser:
+            self.close_browser()
+
+        self.browser = self.init_browser()
+
+        saved_pos = self.threader.settings.get("browser_position")
+        if not saved_pos:
+            self.reset_browser_position()
+        else:
+            logger.debug(saved_pos)
+            self.browser.set_window_rect(*saved_pos)
+
+        # TODO: Find a way to know if the page is actually finished loading
+
+        self.setup_helper_page()
 
 
     def reset_browser_position(self):
@@ -230,7 +318,7 @@ class CarrotJuicer():
     def handle_response(self, message):
         data = self.load_response(message)
         # logger.info(json.dumps(data))
-        if self.threader.settings.loaded_settings.get("save_packet", False):
+        if self.threader.settings.get("save_packet"):
             self.to_json(data, "packet_in.json")
 
         try:
@@ -286,7 +374,86 @@ class CarrotJuicer():
 
                 if not self.browser or not self.browser.current_url.startswith("https://gametora.com/umamusume/training-event-helper"):
                     logger.info("GT tab not open, opening tab")
-                    self.open_helper(self.create_gametora_helper_url(outfit_id, scenario_id, supports))
+                    self.helper_url = self.create_gametora_helper_url(outfit_id, scenario_id, supports)
+                    self.open_helper()
+                
+                # Update browser variables
+                # First generate the evaluation dict
+                if 'home_info' in data:
+                    eval_dict = {eval_data['training_partner_id']: eval_data['evaluation'] for eval_data in data['chara_info']['evaluation_info_array']}
+
+                    cur_training = {}
+
+                    all_commands = {}
+                    
+                    # Default commands
+                    for command in data['home_info']['command_info_array']:
+                        all_commands[command['command_id']] = command
+                    
+                    # Grand Masters specific commands
+                    if 'venus_data_set' in data:
+                        for command in data['venus_data_set']['command_info_array']:
+                            all_commands[command['command_id']]['params_inc_dec_info_array'] += command['params_inc_dec_info_array']
+
+                    for command in all_commands.values():
+                        level = command['level']
+                        failure_rate = command['failure_rate']
+                        stats = 0
+                        skillpt = 0
+                        bond = 0
+                        energy = 0
+
+                        for param in command['params_inc_dec_info_array']:
+                            if param['target_type'] < 6:
+                                stats += param['value']
+                            elif param['target_type'] == 30:
+                                skillpt += param['value']
+                            elif param['target_type'] == 10:
+                                energy += param['value']
+                            
+
+                        for training_partner_id in command['training_partner_array']:
+                            # Akikawa is 102
+                            if training_partner_id <= 6 or training_partner_id == 102:
+                                if not training_partner_id in eval_dict:
+                                    logger.error(f"Training partner ID not found in eval dict: {training_partner_id}")
+                                    continue
+                                cur_bond = eval_dict[training_partner_id]
+                                if cur_bond < 80:
+                                    new_bond = cur_bond + 7
+                                    new_bond = min(new_bond, 80)
+                                    effective_bond = new_bond - cur_bond
+                                    bond += effective_bond
+
+                        for tips_partner_id in command['tips_event_partner_array']:
+                            if tips_partner_id <= 6:
+                                if not tips_partner_id in eval_dict:
+                                    logger.error(f"Training partner ID not found in eval dict: {tips_partner_id}")
+                                    continue
+                                cur_bond = eval_dict[tips_partner_id]
+                                if cur_bond < 80:
+                                    new_bond = cur_bond + 5
+                                    new_bond = min(new_bond, 80)
+                                    effective_bond = new_bond - cur_bond
+                                    bond += effective_bond
+
+                        cur_training[command['command_id']] = {
+                            'level': level,
+                            'failure_rate': failure_rate,
+                            'stats': stats,
+                            'skillpt': skillpt,
+                            'bond': bond,
+                            'energy': energy
+                        }
+                    
+                    self.browser.execute_script("""
+                        var energy_data = arguments[0];
+                        window.UL_DATA.energy = energy_data[0];
+                        window.UL_DATA.max_energy = energy_data[1];
+                        var cur_training = arguments[1];
+                        window.UL_DATA.training = cur_training;
+                        window.update_overlay();
+                        """, [data['chara_info']['vital'], data['chara_info']['max_vital']], cur_training)
 
             if 'unchecked_event_array' in data and data['unchecked_event_array']:
                 # Training event.
@@ -362,8 +529,10 @@ class CarrotJuicer():
     def check_browser(self):
         if self.browser:
             try:
-                self.browser.current_url
-                return
+                if self.browser.current_url.startswith("https://gametora.com/umamusume/training-event-helper"):
+                    if not self.browser.execute_script("return window.UL_OVERLAY;"):
+                        self.browser.get(self.helper_url)
+                        self.setup_helper_page()
             except WebDriverException:
                 self.browser.quit()
                 self.browser = None
@@ -382,7 +551,7 @@ class CarrotJuicer():
         data = self.load_request(message)
         # logger.info(json.dumps(data))
 
-        if self.threader.settings.loaded_settings.get("save_packet", False):
+        if self.threader.settings.get("save_packet"):
             self.to_json(data, "packet_out.json")
 
         try:
@@ -399,7 +568,8 @@ class CarrotJuicer():
             if 'start_chara' in data:
                 # Packet is a request to start a training
                 logger.debug("Start of training detected")
-                self.open_helper(self.create_gametora_helper_url_from_start(data))
+                self.helper_url = self.create_gametora_helper_url_from_start(data)
+                self.open_helper()
         except Exception:
             logger.error("ERROR IN HANDLING REQUEST MSGPACK")
             logger.error(data)

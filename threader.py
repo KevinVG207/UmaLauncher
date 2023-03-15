@@ -31,16 +31,16 @@ class Threader():
         self.settings = settings.Settings(self)
 
         self.screenstate = screenstate.ScreenStateHandler(self)
-        self.threads.append(threading.Thread(target=self.screenstate.run))
+        self.threads.append(threading.Thread(target=self.screenstate.run, name="ScreenStateHandler"))
 
         self.carrotjuicer = carrotjuicer.CarrotJuicer(self)
-        self.threads.append(threading.Thread(target=self.carrotjuicer.run))
+        self.threads.append(threading.Thread(target=self.carrotjuicer.run, name="CarrotJuicer"))
 
         self.windowmover = windowmover.WindowMover(self)
-        self.threads.append(threading.Thread(target=self.windowmover.run))
+        self.threads.append(threading.Thread(target=self.windowmover.run, name="WindowMover"))
 
         self.tray = umatray.UmaTray(self)
-        self.threads.append(threading.Thread(target=self.tray.run))
+        self.threads.append(threading.Thread(target=self.tray.run, name="UmaTray"))
 
         for thread in self.threads:
             thread.start()
