@@ -6,7 +6,6 @@ import math
 import json
 from subprocess import CREATE_NO_WINDOW
 import msgpack
-import numpy as np
 from loguru import logger
 from selenium.common.exceptions import WebDriverException
 from selenium import webdriver
@@ -19,14 +18,7 @@ import util
 import mdb
 
 # TODO: Track amount of trainings on every facility to know when it upgrades next.
-
-SCENARIO_DICT = {
-    1: "URA Finals",
-    2: "Aoharu Cup",
-    3: "Grand Live",
-    4: "Make a New Track",
-    5: "Grand Masters",
-}
+import training_tracker
 
 class CarrotJuicer():
     start_time = None
@@ -38,6 +30,9 @@ class CarrotJuicer():
     last_browser_rect = None
     reset_browser = False
     helper_url = None
+    last_training_id = None
+    training_tracker = None
+    previous_request = None
 
     _browser_list = None
 
@@ -61,6 +56,7 @@ class CarrotJuicer():
                 logger.warning("Could not delete geckodriver.log because it is already in use!")
                 return
 
+
     def restart_time(self):
         self.start_time = math.floor(time.time() * 1000)
 
@@ -82,17 +78,16 @@ class CarrotJuicer():
         d = packet_data['start_chara']
         supports = d['support_card_ids'] + [d['friend_support_card_info']['support_card_id']]
 
-        return self.create_gametora_helper_url(d['card_id'], d['scenario_id'], supports)
-
-
-    def create_gametora_helper_url(self, card_id, scenario_id, support_ids):
-        support_ids = list(map(str, support_ids))
-        return f"https://gametora.com/umamusume/training-event-helper?deck={np.base_repr(int(str(card_id) + str(scenario_id)), 36)}-{np.base_repr(int(support_ids[0] + support_ids[1] + support_ids[2]), 36)}-{np.base_repr(int(support_ids[3] + support_ids[4] + support_ids[5]), 36)}".lower()
+        return util.create_gametora_helper_url(d['card_id'], d['scenario_id'], supports)
 
 
     def to_json(self, packet, out_name="packet.json"):
         with open(out_name, 'w', encoding='utf-8') as f:
             f.write(json.dumps(packet, indent=4, ensure_ascii=False))
+
+    # def to_python_dict_file(self, packet, out_name="packet.py"):
+    #     with open(out_name, 'w', encoding='utf-8') as f:
+    #         f.write("packet = " + str(packet))
 
     def firefox_setup(self, helper_url):
         firefox_service = FirefoxService()
@@ -314,11 +309,12 @@ class CarrotJuicer():
             self.threader.settings.set("browser_position", [self.last_browser_rect['x'], self.last_browser_rect['y'], self.last_browser_rect['width'], self.last_browser_rect['height']])
             self.last_browser_rect = None
 
-
     def handle_response(self, message):
         data = self.load_response(message)
-        # logger.info(json.dumps(data))
+
         if self.threader.settings.get("save_packet"):
+            logger.debug("Response:")
+            logger.debug(json.dumps(data))
             self.to_json(data, "packet_in.json")
 
         try:
@@ -330,6 +326,8 @@ class CarrotJuicer():
 
             # Run ended
             if 'single_mode_factor_select_common' in data:
+                if self.training_tracker:
+                    self.training_tracker = None
                 self.close_browser()
                 return
 
@@ -346,7 +344,16 @@ class CarrotJuicer():
 
             # Gametora
             if 'chara_info' in data:
-                logger.debug("chara_info in data")
+                # Inside training run.
+
+                training_id = data['chara_info']['start_time']
+                if not self.training_tracker or not self.training_tracker.training_id_matches(training_id):
+                    self.training_tracker = training_tracker.TrainingTracker(training_id)
+
+                if self.previous_request:
+                    self.training_tracker.add_request(self.previous_request)
+                    self.previous_request = None
+                self.training_tracker.add_response(data)
 
                 # Training info
                 outfit_id = data['chara_info']['card_id']
@@ -364,7 +371,7 @@ class CarrotJuicer():
                     new_state.sub = f"{data['chara_info']['speed']} {data['chara_info']['stamina']} {data['chara_info']['power']} {data['chara_info']['guts']} {data['chara_info']['wiz']} | {data['chara_info']['skill_point']}"
 
                     scenario_id = data['chara_info']['scenario_id']
-                    scenario_name = SCENARIO_DICT.get(scenario_id, None)
+                    scenario_name = util.SCENARIO_DICT.get(scenario_id, None)
                     if not scenario_name:
                         logger.error(f"Scenario ID not found in scenario dict: {scenario_id}")
                         scenario_name = "You are now breathing manually."
@@ -374,7 +381,7 @@ class CarrotJuicer():
 
                 if not self.browser or not self.browser.current_url.startswith("https://gametora.com/umamusume/training-event-helper"):
                     logger.info("GT tab not open, opening tab")
-                    self.helper_url = self.create_gametora_helper_url(outfit_id, scenario_id, supports)
+                    self.helper_url = util.create_gametora_helper_url(outfit_id, scenario_id, supports)
                     self.open_helper()
                 
                 # Update browser variables
@@ -459,6 +466,8 @@ class CarrotJuicer():
                 # Training event.
                 logger.debug("Training event detected")
                 event_data = data['unchecked_event_array'][0]
+                event_title = mdb.get_event_title(event_data['story_id'])
+                logger.debug(f"Event title: {event_title}")
                 # TODO: Check if there can be multiple events??
                 if len(data['unchecked_event_array']) > 1:
                     logger.warning(f"Packet has more than 1 unchecked event! {message}")
@@ -470,8 +479,6 @@ class CarrotJuicer():
                 )
 
                 if len(event_data['event_contents_info']['choice_array']) > 1:
-
-                    event_title = mdb.get_event_title(event_data['story_id'])
 
                     logger.debug(f"Event title determined: {event_title}")
 
@@ -549,21 +556,23 @@ class CarrotJuicer():
 
     def handle_request(self, message):
         data = self.load_request(message)
-        # logger.info(json.dumps(data))
 
         if self.threader.settings.get("save_packet"):
+            logger.debug("Request:")
+            logger.debug(json.dumps(data))
             self.to_json(data, "packet_out.json")
+
+        self.previous_request = data
 
         try:
             # Watching a concert
             if "live_theater_save_info" in data:
                 self.start_concert(data['live_theater_save_info']['music_id'])
                 return
-            
+
             if "music_id" in data:
                 self.start_concert(data['music_id'])
                 return
-
 
             if 'start_chara' in data:
                 # Packet is a request to start a training
