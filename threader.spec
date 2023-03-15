@@ -18,6 +18,8 @@ a = Analysis(
     cipher=block_cipher,
     noarchive=False,
 )
+
+a.datas += Tree('./packed_assets', prefix='packed_assets')
 a.datas += Tree('./ff_profile', prefix='ff_profile')
 
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)

@@ -113,12 +113,20 @@ class ScreenStateHandler():
 
     chara_names_dict = None
 
+    support_mask = None
+
     def __init__(self, threader):
         self.threader = threader
 
         self.get_available_icons()
         self.get_character_name_dict()
         self.screen_state = ScreenState(self)
+
+        # Load the support mask
+        support_mask = Image.open(util.get_asset("./packed_assets/support-mask.png"))
+        tmp = support_mask.convert('L')
+        support_mask.close()
+        self.support_mask = tmp
 
         dmm_handle = util.get_window_handle("DMM GAME PLAYER", type=util.LAZY)
         if dmm_handle:
@@ -307,8 +315,35 @@ class ScreenStateHandler():
             if image:
                 # DETERMINE / ADJUST STATE
                 for main_screen, check_targets in scr.screens.items():
+                    # If streamer mode is enabled, check for support card screen
+                    if self.threader.settings.get("streamer_mode"):
+
+                        max_matches = len(scr.support_cards_screen)
+                        cur_matches = 0
+                        for subscreen, subscr_data in scr.support_cards_screen.items():
+                            pos = subscr_data["pos"]
+                            col = subscr_data["col"]
+                            pixel_color = util.get_position_rgb(image, pos)
+
+                            if util.similar_color(pixel_color, col):
+                                cur_matches += 1
+                        
+                        if cur_matches == max_matches:
+                            # We are on the support screen.
+                            # Crop the screenshot
+                            image_dimensions = image.size
+                            cropped_supports = image.crop((
+                                image_dimensions[0] * scr.support_card_crop[0],
+                                image_dimensions[1] * scr.support_card_crop[1],
+                                image_dimensions[0] * scr.support_card_crop[2],
+                                image_dimensions[1] * scr.support_card_crop[3]
+                            ))
+                            mask = self.support_mask.resize(cropped_supports.size)
+                            cropped_supports.putalpha(mask)
+                            cropped_supports.save("support_cards.png")
+
+                    # Main Menu
                     if main_screen == "Main Menu":
-                        # Main Menu:
                         count = 0
                         tmp_subscr = str()
 

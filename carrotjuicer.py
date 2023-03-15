@@ -8,6 +8,7 @@ from subprocess import CREATE_NO_WINDOW
 import msgpack
 import numpy as np
 from loguru import logger
+from bs4 import BeautifulSoup as bs
 from selenium.common.exceptions import WebDriverException
 from selenium import webdriver
 from selenium.webdriver.firefox.service import Service as FirefoxService
@@ -233,6 +234,10 @@ class CarrotJuicer():
         if self.threader.settings.loaded_settings.get("save_packet", False):
             self.to_json(data, "packet_in.json")
 
+        if self.threader.settings.get('streamer_mode'):
+            # Reset event text
+            open('event_text.txt', 'w').close()
+
         try:
             if 'data' not in data:
                 # logger.info("This packet doesn't have data :)")
@@ -280,7 +285,7 @@ class CarrotJuicer():
                     if not scenario_name:
                         logger.error(f"Scenario ID not found in scenario dict: {scenario_id}")
                         scenario_name = "You are now breathing manually."
-                    new_state.set_chara(chara_id, scenario_name)
+                    new_state.set_chara(chara_id, scenario_name)  # TODO: Outfit names
 
                     self.screen_state_handler.carrotjuicer_state = new_state
 
@@ -296,6 +301,7 @@ class CarrotJuicer():
                 if len(data['unchecked_event_array']) > 1:
                     logger.warning(f"Packet has more than 1 unchecked event! {message}")
 
+                # Reset event popup
                 self.browser.execute_script(
                     """
                     document.querySelectorAll("[class^='compatibility_viewer_item_'][aria-expanded=true]").forEach(e => e.click());
@@ -352,6 +358,39 @@ class CarrotJuicer():
                         """,
                         self.previous_element
                     )
+                    if self.threader.settings.get('streamer_mode') and self.previous_element:
+                        tooltip_html = self.browser.execute_script("""
+                        return document.querySelector("[class^='tooltips_ttable_heading__']").parentElement.innerHTML
+                        """
+                        )
+                        event_text = ""
+                        soup = bs(tooltip_html, 'lxml')
+                        # Loop through all elements in the tooltip
+                        for element in soup.find_all():
+                            if element.has_attr('class'):
+                                # Check if the first class contains _header_
+                                # if "_heading_" in element['class'][0]:
+                                #     event_text = element.text + '\n'
+                                #     continue
+                                if "_ttable_row__" in element['class'][0]:
+                                    if event_text:
+                                        event_text += '\n'
+                                    continue
+                                if "_ttable_cell__" in element['class'][0]:
+                                    sub_text = ""
+                                    for child in element.find_all('div'):
+                                        tmp = child.extract()
+                                        sub_text += tmp.text + '\n'
+
+                                    if element.text:
+                                        event_text += element.text + '\n'
+                                    event_text += sub_text
+                                    continue
+
+                        with open('event_text.txt', 'w', encoding='utf-8') as f:
+                            f.write(event_text)
+
+
         except Exception:
             logger.error("ERROR IN HANDLING RESPONSE MSGPACK")
             logger.error(data)

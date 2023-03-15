@@ -23,6 +23,7 @@ class Settings():
         "_skip_update": None,
         "beta_optin": False,
         "debug_mode": False,
+        "streamer_mode": False,
         "autoclose_dmm": True,
         "tray_items": {
             "Lock game window": True,
