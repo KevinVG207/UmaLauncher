@@ -417,32 +417,37 @@ class CarrotJuicer():
                                 skillpt += param['value']
                             elif param['target_type'] == 10:
                                 energy += param['value']
+                        
+                        def increase_bond(partner_id, amount):
+                            nonlocal bond
+                            if not partner_id in eval_dict:
+                                logger.error(f"Training partner ID not found in eval dict: {partner_id}")
+                                return
                             
+                            # Ignore group and friend type cards
+                            if partner_id <= 6:
+                                support_card_id = data['chara_info']['support_card_array'][partner_id - 1]['support_card_id']
+                                support_card_data = mdb.get_support_card_dict()[support_card_id]
+                                support_card_type = util.SUPPORT_CARD_TYPE_DICT[(support_card_data[1], support_card_data[2])]
+                                if support_card_type in ("Group", "Friend"):
+                                    return
+
+                            cur_bond = eval_dict[partner_id]
+                            if cur_bond < 80:
+                                new_bond = cur_bond + amount
+                                new_bond = min(new_bond, 80)
+                                effective_bond = new_bond - cur_bond
+                                bond += effective_bond
+                            return
 
                         for training_partner_id in command['training_partner_array']:
                             # Akikawa is 102
                             if training_partner_id <= 6 or training_partner_id == 102:
-                                if not training_partner_id in eval_dict:
-                                    logger.error(f"Training partner ID not found in eval dict: {training_partner_id}")
-                                    continue
-                                cur_bond = eval_dict[training_partner_id]
-                                if cur_bond < 80:
-                                    new_bond = cur_bond + 7
-                                    new_bond = min(new_bond, 80)
-                                    effective_bond = new_bond - cur_bond
-                                    bond += effective_bond
+                                increase_bond(training_partner_id, 7)
 
                         for tips_partner_id in command['tips_event_partner_array']:
                             if tips_partner_id <= 6:
-                                if not tips_partner_id in eval_dict:
-                                    logger.error(f"Training partner ID not found in eval dict: {tips_partner_id}")
-                                    continue
-                                cur_bond = eval_dict[tips_partner_id]
-                                if cur_bond < 80:
-                                    new_bond = cur_bond + 5
-                                    new_bond = min(new_bond, 80)
-                                    effective_bond = new_bond - cur_bond
-                                    bond += effective_bond
+                                increase_bond(tips_partner_id, 5)
 
                         cur_training[command['command_id']] = {
                             'level': level,

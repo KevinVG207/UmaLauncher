@@ -4,6 +4,7 @@ from loguru import logger
 import util
 
 DB_PATH = os.path.expandvars("%userprofile%\\appdata\\locallow\\Cygames\\umamusume\\master\\master.mdb")
+SUPPORT_CARD_DICT = {}
 
 class Connection():
     def __init__(self):
@@ -12,7 +13,6 @@ class Connection():
         return self.conn, self.conn.cursor()
     def __exit__(self, type, value, traceback):
         self.conn.close()
-
 
 def create_support_card_string(rarity, command_id, support_card_type, chara_id):
     return f"{util.SUPPORT_CARD_RARITY_DICT[rarity]} {util.SUPPORT_CARD_TYPE_DICT[(command_id, support_card_type)]} {util.get_character_name_dict()[chara_id]}"
@@ -161,14 +161,20 @@ def get_outfit_name_dict():
 
     return {row[0]: row[1] for row in rows}
 
-def get_support_card_string_dict():
-    with Connection() as (_, cursor):
-        cursor.execute(
-            """SELECT id, rarity, command_id, support_card_type, chara_id FROM support_card_data"""
-        )
-        rows = cursor.fetchall()
+def get_support_card_dict():
+    global SUPPORT_CARD_DICT
+    if not SUPPORT_CARD_DICT:
+        with Connection() as (_, cursor):
+            cursor.execute(
+                """SELECT id, rarity, command_id, support_card_type, chara_id FROM support_card_data"""
+            )
+            rows = cursor.fetchall()
+        SUPPORT_CARD_DICT = {row[0]: row[1:] for row in rows}
+    return SUPPORT_CARD_DICT
 
-    return {row[0]: create_support_card_string(*row[1:]) for row in rows}
+def get_support_card_string_dict():
+    support_card_dict = get_support_card_dict()
+    return {id: create_support_card_string(*data) for id, data in support_card_dict.items()}
 
 def get_chara_name_dict():
     with Connection() as (_, cursor):
