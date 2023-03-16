@@ -15,6 +15,8 @@ import util
 import dmm
 import mdb
 
+# TODO: Add outfit name to rich presence during training.
+
 START_TIME = time.time()
 
 class Location(Enum):
