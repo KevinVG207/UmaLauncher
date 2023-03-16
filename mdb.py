@@ -184,3 +184,21 @@ def get_chara_name_dict():
         rows = cursor.fetchall()
 
     return {row[0]: row[1] for row in rows}
+
+def get_mant_item_string_dict():
+    with Connection() as (_, cursor):
+        cursor.execute(
+            """SELECT "index", text FROM text_data WHERE category = 225"""
+        )
+        rows = cursor.fetchall()
+
+    return {row[0]: row[1] for row in rows}
+
+def get_gl_lesson_dict():
+    with Connection() as (_, cursor):
+        cursor.execute(
+            """SELECT s.id, t.text, s.square_type FROM single_mode_live_square s JOIN text_data t ON t."index" = s.square_title_text_id AND t.category = 209"""
+        )
+        rows = cursor.fetchall()
+
+    return {row[0]: (row[1], row[2]) for row in rows}

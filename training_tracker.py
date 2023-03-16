@@ -163,6 +163,9 @@ class ActionType(Enum):
     Outing = 9
     Infirmary = 10
     GoddessWisdom = 11
+    BuyItem = 12
+    UseItem = 13
+    Lesson = 14
 
 class CommandType(Enum):
     Speed = 101
@@ -227,6 +230,7 @@ class TrainingAnalyzer(gui.UmaApp):
     support_cards = None
     last_program_id = None
     last_failure_rates = {}
+    last_mant_shop_items_dict = {}
     next_action_type = None
     gm_effect_active = False
     event_title_dict = mdb.get_event_title_dict()
@@ -236,6 +240,8 @@ class TrainingAnalyzer(gui.UmaApp):
     status_name_dict = mdb.get_status_name_dict()
     outfit_name_dict = mdb.get_outfit_name_dict()
     support_card_string_dict = mdb.get_support_card_string_dict()
+    mant_item_string_dict = mdb.get_mant_item_string_dict()
+    gl_lesson_dict = mdb.get_gl_lesson_dict()
     action_list = []
 
     def __init__(self, training_tracker: TrainingTracker, *args, **kwargs):
@@ -437,6 +443,12 @@ class TrainingAnalyzer(gui.UmaApp):
             action.text = util.create_gametora_helper_url(self.card_id, self.scenario_id, [item['support_card_id'] for item in self.support_cards])
             return
 
+        # Save MANT shop items.
+        if self.scenario_id == 4 and 'free_data_set' in resp:
+            if resp['free_data_set'].get('pick_up_item_info_array'):
+                self.last_mant_shop_items_dict = {item_dict['shop_item_id']: item_dict['item_id']
+                                                  for item_dict in resp['free_data_set']['pick_up_item_info_array']}
+
         # Event requested by client
         if 'event_id' in req and req['event_id']:
             story_id = prev_resp['unchecked_event_array'][0]['story_id']
@@ -533,6 +545,28 @@ class TrainingAnalyzer(gui.UmaApp):
                 action.action_type = ActionType.Race
                 action.text = self.race_program_name_dict[self.last_program_id]
                 return
+        
+        # MANT specific
+        if self.scenario_id == 4:
+            # Buying MANT items.
+            if 'exchange_item_info_array' in req:
+                action.action_type = ActionType.BuyItem
+                action.text = '|'.join(self.mant_item_string_dict[self.last_mant_shop_items_dict[item['shop_item_id']]] for item in req['exchange_item_info_array'])
+                return
+
+            if 'use_item_info_array' in req:
+                action.action_type = ActionType.UseItem
+                action.text = '|'.join(self.mant_item_string_dict[item['item_id']] for item in req['use_item_info_array'])
+                return
+        
+        # Grand Live specific
+        if self.scenario_id == 3:
+            if 'square_id' in req:
+                action.action_type = ActionType.Lesson
+                gl_lesson = self.gl_lesson_dict[req['square_id']]
+                action.text = gl_lesson[0]
+                action.value = gl_lesson[1]
+                return
 
         return
 
@@ -600,7 +634,7 @@ class TrainingAnalyzer(gui.UmaApp):
 
 
 def main():
-    TrainingTracker('aoharu').analyze()
+    TrainingTracker('grand_live').analyze()
 
 if __name__ == "__main__":
     main()
