@@ -397,10 +397,19 @@ class CarrotJuicer():
                     for command in data['home_info']['command_info_array']:
                         all_commands[command['command_id']] = command
                     
-                    # Grand Masters specific commands
-                    if 'venus_data_set' in data:
-                        for command in data['venus_data_set']['command_info_array']:
-                            all_commands[command['command_id']]['params_inc_dec_info_array'] += command['params_inc_dec_info_array']
+                    # Scenario specific commands
+                    scenario_keys = [
+                        'venus_data_set',  # Grand Masters
+                        'live_data_set',  # Grand Live
+                        'free_data_set', # MANT
+                        'team_data_set',  # Aoharu
+                        'ura_data_set'  # URA
+                    ]
+                    for key in scenario_keys:
+                        if key in data and 'command_info_array' in data[key]:
+                            for command in data[key]['command_info_array']:
+                                if 'params_inc_dec_info_array' in command:
+                                    all_commands[command['command_id']]['params_inc_dec_info_array'] += command['params_inc_dec_info_array']
 
                     for command in all_commands.values():
                         level = command['level']
