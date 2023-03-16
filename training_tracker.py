@@ -226,6 +226,7 @@ class TrainingAnalyzer(gui.UmaApp):
     chara_id = None
     support_cards = None
     last_program_id = None
+    last_failure_rates = {}
     next_action_type = None
     gm_effect_active = False
     event_title_dict = mdb.get_event_title_dict()
@@ -235,6 +236,7 @@ class TrainingAnalyzer(gui.UmaApp):
     status_name_dict = mdb.get_status_name_dict()
     outfit_name_dict = mdb.get_outfit_name_dict()
     support_card_string_dict = mdb.get_support_card_string_dict()
+    action_list = []
 
     def __init__(self, training_tracker: TrainingTracker, *args, **kwargs):
         self.last_program_id = None
@@ -251,7 +253,7 @@ class TrainingAnalyzer(gui.UmaApp):
 
 
     def to_csv(self):
-        action_list = []
+        self.action_list = []
 
         # Grab req/resp pairs
         prev_resp = None
@@ -302,8 +304,8 @@ class TrainingAnalyzer(gui.UmaApp):
 
 
             # Calculate deltas
-            if action_list:
-                prev_action = action_list[-1]
+            if self.action_list:
+                prev_action = self.action_list[-1]
                 action.dspeed = action.speed - prev_action.speed
                 action.dstamina = action.stamina - prev_action.stamina
                 action.dpower = action.power - prev_action.power
@@ -324,7 +326,10 @@ class TrainingAnalyzer(gui.UmaApp):
             self.determine_action_type(req, resp, action, prev_resp)
 
             # Add to list
-            action_list.append(action)
+            self.action_list.append(action)
+
+            if 'home_info' in resp:
+                self.last_failure_rates = {command['command_id']: command['failure_rate'] for command in resp['home_info']['command_info_array']}
 
             prev_resp = resp
 
@@ -389,7 +394,7 @@ class TrainingAnalyzer(gui.UmaApp):
                     return ""
                 return value
 
-            for action in action_list:
+            for action in self.action_list:
                 # Ignore certain actions
                 if action.action_type.value < 0:
                     continue
@@ -412,7 +417,7 @@ class TrainingAnalyzer(gui.UmaApp):
                         continue
                 row = ",".join([str(remove_zero(header[1](action))) for header in headers])
                 out_rows.append(row)
-            
+
             csvfile.write("\n".join(out_rows))
 
 
@@ -456,6 +461,7 @@ class TrainingAnalyzer(gui.UmaApp):
             if req['command_type'] == 1:
                 action.action_type = ActionType.Training
                 action.text = CommandType(req['command_id']).name
+                action.value = self.last_failure_rates[req['command_id']]
                 return
 
             # Resting
@@ -497,7 +503,7 @@ class TrainingAnalyzer(gui.UmaApp):
             action.value = resp['race_reward_info']['result_rank']  # Saving the finishing position here for now.
             self.next_action_type = ActionType.AfterRace
             return
-    
+
 
         # Grand Masters specific
         if self.scenario_id == 5:
@@ -521,7 +527,7 @@ class TrainingAnalyzer(gui.UmaApp):
                 self.last_program_id = venus['race_start_info']['program_id']
                 action.text = self.race_program_name_dict[self.last_program_id]
                 return
-            
+
             # Venus race results
             if 'race_reward_info' in venus and venus['race_reward_info'] is not None:
                 action.action_type = ActionType.Race
@@ -594,7 +600,7 @@ class TrainingAnalyzer(gui.UmaApp):
 
 
 def main():
-    TrainingTracker('2023_03_09_02_29_40').analyze()
+    TrainingTracker('aoharu').analyze()
 
 if __name__ == "__main__":
     main()
