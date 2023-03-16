@@ -321,7 +321,7 @@ class CarrotJuicer():
     def handle_response(self, message):
         data = self.load_response(message)
 
-        if self.threader.settings.get("save_packet"):
+        if self.threader.settings.loaded_settings.get("save_packet", False):
             logger.debug("Response:")
             logger.debug(json.dumps(data))
             self.to_json(data, "packet_in.json")
@@ -583,7 +583,7 @@ class CarrotJuicer():
     def handle_request(self, message):
         data = self.load_request(message)
 
-        if self.threader.settings.get("save_packet"):
+        if self.threader.settings.loaded_settings.get("save_packet", False):
             logger.debug("Request:")
             logger.debug(json.dumps(data))
             self.to_json(data, "packet_out.json")
