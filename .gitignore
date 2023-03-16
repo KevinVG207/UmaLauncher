@@ -2,6 +2,7 @@ venv/*
 _release/*
 dist/*
 build/*
+_dump/*
 __pycache__/*
 _ocr/_tmp/*
 _ocr/_raw/*
@@ -10,6 +11,7 @@ ff_profile/parent.lock
 chr_profile/*
 edg_profile/*
 node_modules/*
+training_logs/*
 package-lock.json
 screenshot.png
 umasettings*.json
@@ -20,3 +22,8 @@ sandbox.py
 packet.json
 version.rc
 *.json
+*.exe_
+*.csv
+*.gz
+event_text.txt
+support_cards.png

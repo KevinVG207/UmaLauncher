@@ -2,6 +2,7 @@ import pystray
 import util
 from loguru import logger
 from PIL import Image
+import training_tracker
 
 class UmaTray():
     menu_items = None
@@ -34,6 +35,7 @@ class UmaTray():
         )
         menu_items.append(pystray.MenuItem("Maximize + center game", self.threader.windowmover.try_maximize))
         menu_items.append(pystray.MenuItem("Take screenshot", self.threader.screenstate.screenshot_to_clipboard))
+        menu_items.append(pystray.MenuItem("Export Training CSV", training_tracker.training_csv_dialog))
         menu_items.append(pystray.Menu.SEPARATOR)
         menu_items.append(pystray.MenuItem("Close", lambda: close_clicked(self)))
 

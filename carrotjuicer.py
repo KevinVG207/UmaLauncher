@@ -6,7 +6,6 @@ import math
 import json
 from subprocess import CREATE_NO_WINDOW
 import msgpack
-import numpy as np
 from loguru import logger
 from selenium.common.exceptions import WebDriverException
 from selenium import webdriver
@@ -18,13 +17,8 @@ from screenstate import ScreenState, Location
 import util
 import mdb
 
-SCENARIO_DICT = {
-    1: "URA Finals",
-    2: "Aoharu Cup",
-    3: "Grand Live",
-    4: "Make a New Track",
-    5: "Grand Masters",
-}
+# TODO: Track amount of trainings on every facility to know when it upgrades next.
+import training_tracker
 
 class CarrotJuicer():
     start_time = None
@@ -35,6 +29,10 @@ class CarrotJuicer():
     should_stop = False
     last_browser_rect = None
     reset_browser = False
+    helper_url = None
+    last_training_id = None
+    training_tracker = None
+    previous_request = None
 
     _browser_list = None
 
@@ -58,19 +56,29 @@ class CarrotJuicer():
                 logger.warning("Could not delete geckodriver.log because it is already in use!")
                 return
 
+
     def restart_time(self):
         self.start_time = math.floor(time.time() * 1000)
 
+
     def load_request(self, msg_path):
-        with open(msg_path, "rb") as in_file:
-            packet = msgpack.unpackb(in_file.read()[170:], strict_map_key=False)
-        return packet
+        try:
+            with open(msg_path, "rb") as in_file:
+                return msgpack.unpackb(in_file.read()[170:], strict_map_key=False)
+        except PermissionError:
+            logger.warning("Could not load request because it is already in use!")
+            time.sleep(0.1)
+            return self.load_request(msg_path)
 
 
     def load_response(self, msg_path):
-        with open(msg_path, "rb") as in_file:
-            packet = msgpack.unpackb(in_file.read(), strict_map_key=False)
-        return packet
+        try:
+            with open(msg_path, "rb") as in_file:
+                return msgpack.unpackb(in_file.read(), strict_map_key=False)
+        except PermissionError:
+            logger.warning("Could not load response because it is already in use!")
+            time.sleep(0.1)
+            return self.load_response(msg_path)
 
 
     def create_gametora_helper_url_from_start(self, packet_data):
@@ -79,17 +87,16 @@ class CarrotJuicer():
         d = packet_data['start_chara']
         supports = d['support_card_ids'] + [d['friend_support_card_info']['support_card_id']]
 
-        return self.create_gametora_helper_url(d['card_id'], d['scenario_id'], supports)
-
-
-    def create_gametora_helper_url(self, card_id, scenario_id, support_ids):
-        support_ids = list(map(str, support_ids))
-        return f"https://gametora.com/umamusume/training-event-helper?deck={np.base_repr(int(str(card_id) + str(scenario_id)), 36)}-{np.base_repr(int(support_ids[0] + support_ids[1] + support_ids[2]), 36)}-{np.base_repr(int(support_ids[3] + support_ids[4] + support_ids[5]), 36)}".lower()
+        return util.create_gametora_helper_url(d['card_id'], d['scenario_id'], supports)
 
 
     def to_json(self, packet, out_name="packet.json"):
         with open(out_name, 'w', encoding='utf-8') as f:
             f.write(json.dumps(packet, indent=4, ensure_ascii=False))
+
+    # def to_python_dict_file(self, packet, out_name="packet.py"):
+    #     with open(out_name, 'w', encoding='utf-8') as f:
+    #         f.write("packet = " + str(packet))
 
     def firefox_setup(self, helper_url):
         firefox_service = FirefoxService()
@@ -126,7 +133,7 @@ class CarrotJuicer():
             helper_url=helper_url
         )
 
-    def init_browser(self, helper_url):
+    def init_browser(self):
         driver = None
 
         browser_list = []
@@ -142,36 +149,95 @@ class CarrotJuicer():
         for browser_setup in browser_list:
             try:
                 logger.info("Attempting " + str(browser_setup.__name__))
-                driver = browser_setup(helper_url)
+                driver = browser_setup(self.helper_url)
                 break
             except Exception:
                 pass
         if not driver:
             util.show_alert_box("UmaLauncher: Unable to start browser.", "Selected webbrowser cannot be started. Use the tray icon to select a browser that is installed on your system.")
         return driver
+    
+    def setup_helper_page(self):
+        self.browser.execute_script("""
+        window.UL_OVERLAY = document.createElement("div");
+        window.GT_PAGE = document.getElementById("__next");
+        window.OVERLAY_HEIGHT = "15rem";
+        window.UL_OVERLAY.style.height = OVERLAY_HEIGHT;
+        window.UL_OVERLAY.style.width = "100%";
+        window.UL_OVERLAY.style.position = "fixed";
+        window.UL_OVERLAY.style.top = "0";
+        window.UL_OVERLAY.style.zIndex = 100;
+        window.UL_OVERLAY.style.backgroundColor = "var(--c-bg-main)";
+        window.UL_OVERLAY.style.borderBottom = "2px solid var(--c-topnav)";
+        window.UL_OVERLAY.style.display = "flex";
+        window.UL_OVERLAY.style.alignItems = "center";
+        window.UL_OVERLAY.style.justifyContent = "center";
+        window.UL_OVERLAY.style.flexDirection = "column";
 
-    def open_helper(self, helper_url):
-        self.previous_element = None
+        window.UL_OVERLAY.innerHTML = `
+            <div>Energy: <span id="energy"></span></div>
+            <table id="training-table">
+                <thead>
+                    <tr>
+                        <th>Facility</th>
+                        <th>Speed</th>
+                        <th>Stamina</th>
+                        <th>Power</th>
+                        <th>Guts</th>
+                        <th>Wisdom</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        `;
 
-        if self.browser:
-            self.close_browser()
+        window.UL_DATA = {
+            energy: 100,
+            max_energy: 100,
+            training: {}
+        };
 
-        self.browser = self.init_browser(helper_url)
+        document.body.prepend(window.UL_OVERLAY);
+        window.GT_PAGE.style.paddingTop = OVERLAY_HEIGHT;
 
-        saved_pos = self.threader.settings.get("browser_position")
-        if not saved_pos:
-            self.reset_browser_position()
-        else:
-            logger.debug(saved_pos)
-            self.browser.set_window_rect(*saved_pos)
+        window.update_overlay = function() {
+            var training_metadata_array = [
+                {name: "Speed", command_id: 101},
+                {name: "Stamina", command_id: 105},
+                {name: "Power", command_id: 102},
+                {name: "Guts", command_id: 103},
+                {name: "Wisdom", command_id: 106}
+            ];
 
-        # TODO: Find a way to know if the page is actually finished loading
+            var row_meatdata_array = [
+                {name: "Stat Gain", key: "stats"},
+                {name: "Energy", key: "energy"},
+                {name: "Useful Bond", key: "bond"},
+                {name: "Skillpt Gain", key: "skillpt"},
+                {name: "Fail %", key: "failure_rate"},
+                {name: "Level", key: "level"}
+            ];
 
-        while not self.browser.execute_script("""return document.querySelector("[class^='legal_cookie_banner_wrapper_']")"""):
-            time.sleep(0.25)
-
-        # Hide the cookies banner
-        self.browser.execute_script("""document.querySelectorAll("[class^='legal_cookie_banner_wrapper_']").forEach(e => e.style.display = 'none');""")
+            document.getElementById("energy").innerText = window.UL_DATA.energy + "/" + window.UL_DATA.max_energy;
+            var tbody = document.getElementById("training-table").querySelector("tbody");
+            tbody.innerHTML = "";
+            for (var i = 0; i < row_meatdata_array.length; i++) {
+                var tr = document.createElement("tr");
+                var row_metadata = row_meatdata_array[i];
+                for (var j = 0; j < training_metadata_array.length + 1; j++) {
+                    var td = document.createElement("td");
+                    if (j == 0){
+                        td.innerText = row_metadata.name;
+                    } else {
+                        var training_metadata = training_metadata_array[j - 1];
+                        td.innerText = window.UL_DATA.training[training_metadata.command_id][row_metadata.key];
+                    }
+                    tr.appendChild(td);
+                }
+                tbody.appendChild(tr);
+            }
+        };
+        """)
 
         # Enable dark mode (the only reasonable color scheme)
         self.browser.execute_script("""document.querySelector("[class^='styles_header_settings_']").click()""")
@@ -189,6 +255,32 @@ class CarrotJuicer():
         if not all_cards_enabled:
             self.browser.execute_script("""document.getElementById("allAtOnceCheckbox").click()""")
         self.browser.execute_script("""document.querySelector("[class^='filters_confirm_button_']").click()""")
+
+        while not self.browser.execute_script("""return document.getElementById("adnote");"""):
+            time.sleep(0.25)
+
+        # Hide the cookies banner
+        self.browser.execute_script("""document.getElementById("adnote").style.display = 'none';""")
+        return
+
+    def open_helper(self):
+        self.previous_element = None
+
+        if self.browser:
+            self.close_browser()
+
+        self.browser = self.init_browser()
+
+        saved_pos = self.threader.settings.get("browser_position")
+        if not saved_pos:
+            self.reset_browser_position()
+        else:
+            logger.debug(saved_pos)
+            self.browser.set_window_rect(*saved_pos)
+
+        # TODO: Find a way to know if the page is actually finished loading
+
+        self.setup_helper_page()
 
 
     def reset_browser_position(self):
@@ -226,11 +318,12 @@ class CarrotJuicer():
             self.threader.settings.set("browser_position", [self.last_browser_rect['x'], self.last_browser_rect['y'], self.last_browser_rect['width'], self.last_browser_rect['height']])
             self.last_browser_rect = None
 
-
     def handle_response(self, message):
         data = self.load_response(message)
-        # logger.info(json.dumps(data))
-        if self.threader.settings.loaded_settings.get("save_packet", False):
+
+        if self.threader.settings.get("save_packet"):
+            logger.debug("Response:")
+            logger.debug(json.dumps(data))
             self.to_json(data, "packet_in.json")
 
         try:
@@ -242,6 +335,8 @@ class CarrotJuicer():
 
             # Run ended
             if 'single_mode_factor_select_common' in data:
+                if self.training_tracker:
+                    self.training_tracker = None
                 self.close_browser()
                 return
 
@@ -258,7 +353,19 @@ class CarrotJuicer():
 
             # Gametora
             if 'chara_info' in data:
-                logger.debug("chara_info in data")
+                # Inside training run.
+
+                training_id = data['chara_info']['start_time']
+                if not self.training_tracker or not self.training_tracker.training_id_matches(training_id):
+                    self.training_tracker = training_tracker.TrainingTracker(training_id)
+
+                should_track = self.threader.settings.get_tray_setting("Track trainings")
+                if self.previous_request:
+                    if should_track:
+                        self.training_tracker.add_request(self.previous_request)
+                    self.previous_request = None
+                if should_track:
+                    self.training_tracker.add_response(data)
 
                 # Training info
                 outfit_id = data['chara_info']['card_id']
@@ -276,7 +383,7 @@ class CarrotJuicer():
                     new_state.sub = f"{data['chara_info']['speed']} {data['chara_info']['stamina']} {data['chara_info']['power']} {data['chara_info']['guts']} {data['chara_info']['wiz']} | {data['chara_info']['skill_point']}"
 
                     scenario_id = data['chara_info']['scenario_id']
-                    scenario_name = SCENARIO_DICT.get(scenario_id, None)
+                    scenario_name = util.SCENARIO_DICT.get(scenario_id, None)
                     if not scenario_name:
                         logger.error(f"Scenario ID not found in scenario dict: {scenario_id}")
                         scenario_name = "You are now breathing manually."
@@ -286,12 +393,107 @@ class CarrotJuicer():
 
                 if not self.browser or not self.browser.current_url.startswith("https://gametora.com/umamusume/training-event-helper"):
                     logger.info("GT tab not open, opening tab")
-                    self.open_helper(self.create_gametora_helper_url(outfit_id, scenario_id, supports))
+                    self.helper_url = util.create_gametora_helper_url(outfit_id, scenario_id, supports)
+                    self.open_helper()
+                
+                # Update browser variables
+                # First generate the evaluation dict
+                if 'home_info' in data:
+                    eval_dict = {eval_data['training_partner_id']: eval_data['evaluation'] for eval_data in data['chara_info']['evaluation_info_array']}
+
+                    cur_training = {}
+
+                    all_commands = {}
+                    
+                    # Default commands
+                    for command in data['home_info']['command_info_array']:
+                        all_commands[command['command_id']] = command
+                    
+                    # Scenario specific commands
+                    scenario_keys = [
+                        'venus_data_set',  # Grand Masters
+                        'live_data_set',  # Grand Live
+                        'free_data_set', # MANT
+                        'team_data_set',  # Aoharu
+                        'ura_data_set'  # URA
+                    ]
+                    for key in scenario_keys:
+                        if key in data and 'command_info_array' in data[key]:
+                            for command in data[key]['command_info_array']:
+                                if 'params_inc_dec_info_array' in command:
+                                    all_commands[command['command_id']]['params_inc_dec_info_array'] += command['params_inc_dec_info_array']
+
+                    for command in all_commands.values():
+                        level = command['level']
+                        failure_rate = command['failure_rate']
+                        stats = 0
+                        skillpt = 0
+                        bond = 0
+                        energy = 0
+
+                        for param in command['params_inc_dec_info_array']:
+                            if param['target_type'] < 6:
+                                stats += param['value']
+                            elif param['target_type'] == 30:
+                                skillpt += param['value']
+                            elif param['target_type'] == 10:
+                                energy += param['value']
+                        
+                        def increase_bond(partner_id, amount):
+                            nonlocal bond
+                            if not partner_id in eval_dict:
+                                logger.error(f"Training partner ID not found in eval dict: {partner_id}")
+                                return
+                            
+                            # Ignore group and friend type cards
+                            if partner_id <= 6:
+                                support_card_id = data['chara_info']['support_card_array'][partner_id - 1]['support_card_id']
+                                support_card_data = mdb.get_support_card_dict()[support_card_id]
+                                support_card_type = util.SUPPORT_CARD_TYPE_DICT[(support_card_data[1], support_card_data[2])]
+                                if support_card_type in ("Group", "Friend"):
+                                    return
+
+                            cur_bond = eval_dict[partner_id]
+                            if cur_bond < 80:
+                                new_bond = cur_bond + amount
+                                new_bond = min(new_bond, 80)
+                                effective_bond = new_bond - cur_bond
+                                bond += effective_bond
+                            return
+
+                        for training_partner_id in command['training_partner_array']:
+                            # Akikawa is 102
+                            if training_partner_id <= 6 or training_partner_id == 102:
+                                increase_bond(training_partner_id, 7)
+
+                        for tips_partner_id in command['tips_event_partner_array']:
+                            if tips_partner_id <= 6:
+                                increase_bond(tips_partner_id, 5)
+
+                        cur_training[command['command_id']] = {
+                            'level': level,
+                            'failure_rate': failure_rate,
+                            'stats': stats,
+                            'skillpt': skillpt,
+                            'bond': bond,
+                            'energy': energy
+                        }
+                    
+                    self.browser.execute_script("""
+                        var energy_data = arguments[0];
+                        window.UL_DATA.energy = energy_data[0];
+                        window.UL_DATA.max_energy = energy_data[1];
+                        var cur_training = arguments[1];
+                        window.UL_DATA.training = cur_training;
+                        window.update_overlay();
+                        """, [data['chara_info']['vital'], data['chara_info']['max_vital']], cur_training)
 
             if 'unchecked_event_array' in data and data['unchecked_event_array']:
                 # Training event.
                 logger.debug("Training event detected")
                 event_data = data['unchecked_event_array'][0]
+                event_title = mdb.get_event_title(event_data['story_id'])
+                logger.debug(f"Event title: {event_title}")
                 # TODO: Check if there can be multiple events??
                 if len(data['unchecked_event_array']) > 1:
                     logger.warning(f"Packet has more than 1 unchecked event! {message}")
@@ -303,8 +505,6 @@ class CarrotJuicer():
                 )
 
                 if len(event_data['event_contents_info']['choice_array']) > 1:
-
-                    event_title = mdb.get_event_title(event_data['story_id'])
 
                     logger.debug(f"Event title determined: {event_title}")
 
@@ -362,8 +562,10 @@ class CarrotJuicer():
     def check_browser(self):
         if self.browser:
             try:
-                self.browser.current_url
-                return
+                if self.browser.current_url.startswith("https://gametora.com/umamusume/training-event-helper"):
+                    if not self.browser.execute_script("return window.UL_OVERLAY;"):
+                        self.browser.get(self.helper_url)
+                        self.setup_helper_page()
             except WebDriverException:
                 self.browser.quit()
                 self.browser = None
@@ -380,26 +582,29 @@ class CarrotJuicer():
 
     def handle_request(self, message):
         data = self.load_request(message)
-        # logger.info(json.dumps(data))
 
-        if self.threader.settings.loaded_settings.get("save_packet", False):
+        if self.threader.settings.get("save_packet"):
+            logger.debug("Request:")
+            logger.debug(json.dumps(data))
             self.to_json(data, "packet_out.json")
+
+        self.previous_request = data
 
         try:
             # Watching a concert
             if "live_theater_save_info" in data:
                 self.start_concert(data['live_theater_save_info']['music_id'])
                 return
-            
+
             if "music_id" in data:
                 self.start_concert(data['music_id'])
                 return
 
-
             if 'start_chara' in data:
                 # Packet is a request to start a training
                 logger.debug("Start of training detected")
-                self.open_helper(self.create_gametora_helper_url_from_start(data))
+                self.helper_url = self.create_gametora_helper_url_from_start(data)
+                self.open_helper()
         except Exception:
             logger.error("ERROR IN HANDLING REQUEST MSGPACK")
             logger.error(data)

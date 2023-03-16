@@ -2,10 +2,6 @@ import time
 from loguru import logger
 import util
 
-# TODO: Fix resize during concert
-# Catch the first resize during concert?
-# Trigger an event when user interacts with resize?
-# On resize, check how big the change is?
 
 class GameWindow():
     # Object to be shared with Threader and holds functions to manipulate the game window.

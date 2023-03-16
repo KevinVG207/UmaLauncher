@@ -31,16 +31,16 @@ class Threader():
         self.settings = settings.Settings(self)
 
         self.screenstate = screenstate.ScreenStateHandler(self)
-        self.threads.append(threading.Thread(target=self.screenstate.run))
+        self.threads.append(threading.Thread(target=self.screenstate.run, name="ScreenStateHandler"))
 
         self.carrotjuicer = carrotjuicer.CarrotJuicer(self)
-        self.threads.append(threading.Thread(target=self.carrotjuicer.run))
+        self.threads.append(threading.Thread(target=self.carrotjuicer.run, name="CarrotJuicer"))
 
         self.windowmover = windowmover.WindowMover(self)
-        self.threads.append(threading.Thread(target=self.windowmover.run))
+        self.threads.append(threading.Thread(target=self.windowmover.run, name="WindowMover"))
 
         self.tray = umatray.UmaTray(self)
-        self.threads.append(threading.Thread(target=self.tray.run))
+        self.threads.append(threading.Thread(target=self.tray.run, name="UmaTray"))
 
         for thread in self.threads:
             thread.start()
@@ -52,10 +52,16 @@ class Threader():
 
     def stop(self):
         logger.info("=== Closing launcher ===")
-        self.tray.stop()
-        self.carrotjuicer.stop()
-        self.screenstate.stop()
-        self.windowmover.stop()
+        if self.tray:
+            self.tray.stop()
+        if self.carrotjuicer:
+            self.carrotjuicer.stop()
+        if self.screenstate:
+            self.screenstate.stop()
+        if self.windowmover:
+            self.windowmover.stop()
+
+        logger.info("=== Launcher closed ===")
 
 @logger.catch
 def main():
