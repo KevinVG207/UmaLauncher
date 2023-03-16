@@ -152,6 +152,7 @@ def auto_update(umasettings, script_version, skip_version):
         os.remove("update.tmp")
     app = gui.UmaApp()
     app.run(gui.UmaInfoPopup("Update failed.", "Could not update. Please check your internet connection.\nUma Launcher will now close.", gui.ICONS.Critical))
+    app.close()
     return False
 
 

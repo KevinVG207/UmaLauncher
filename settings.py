@@ -1,7 +1,7 @@
 import os
 import json
 import copy
-import tkinter
+import tkinter  #🤮
 import traceback
 from tkinter import filedialog
 from loguru import logger
@@ -28,6 +28,7 @@ class Settings():
             "Lock game window": True,
             "Discord rich presence": True,
             "Enable CarrotJuicer": True,
+            "Track trainings": True
         },
         "game_install_path": "%userprofile%/Umamusume",
         "game_position": {

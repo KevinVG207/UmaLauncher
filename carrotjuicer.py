@@ -60,16 +60,25 @@ class CarrotJuicer():
     def restart_time(self):
         self.start_time = math.floor(time.time() * 1000)
 
+
     def load_request(self, msg_path):
-        with open(msg_path, "rb") as in_file:
-            packet = msgpack.unpackb(in_file.read()[170:], strict_map_key=False)
-        return packet
+        try:
+            with open(msg_path, "rb") as in_file:
+                return msgpack.unpackb(in_file.read()[170:], strict_map_key=False)
+        except PermissionError:
+            logger.warning("Could not load request because it is already in use!")
+            time.sleep(0.1)
+            return self.load_request(msg_path)
 
 
     def load_response(self, msg_path):
-        with open(msg_path, "rb") as in_file:
-            packet = msgpack.unpackb(in_file.read(), strict_map_key=False)
-        return packet
+        try:
+            with open(msg_path, "rb") as in_file:
+                return msgpack.unpackb(in_file.read(), strict_map_key=False)
+        except PermissionError:
+            logger.warning("Could not load response because it is already in use!")
+            time.sleep(0.1)
+            return self.load_response(msg_path)
 
 
     def create_gametora_helper_url_from_start(self, packet_data):
@@ -350,10 +359,13 @@ class CarrotJuicer():
                 if not self.training_tracker or not self.training_tracker.training_id_matches(training_id):
                     self.training_tracker = training_tracker.TrainingTracker(training_id)
 
+                should_track = self.threader.settings.get_tray_setting("Track trainings")
                 if self.previous_request:
-                    self.training_tracker.add_request(self.previous_request)
+                    if should_track:
+                        self.training_tracker.add_request(self.previous_request)
                     self.previous_request = None
-                self.training_tracker.add_response(data)
+                if should_track:
+                    self.training_tracker.add_response(data)
 
                 # Training info
                 outfit_id = data['chara_info']['card_id']

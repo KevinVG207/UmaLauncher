@@ -3,6 +3,9 @@ import json
 import gzip
 import re
 import time
+import traceback
+import tkinter  #🤮
+from tkinter import filedialog
 from dataclasses import dataclass, field
 from enum import Enum
 from loguru import logger
@@ -116,8 +119,17 @@ class TrainingTracker():
 
     def analyze(self):
         app = TrainingAnalyzer(self)
-        app.run(TrainingAnalyzerGui(app))
+        # app.run(TrainingAnalyzerGui(app))
+        app.set_training_tracker(self)
+        app.to_csv()
         app.close()
+
+    def to_csv_list(self):
+        app = TrainingAnalyzer(self)
+        csv_list = app.to_csv_list()
+        app.close()
+        return csv_list
+
 
 
 class TrainingAnalyzerGui(gui.UmaMainWidget):
@@ -218,7 +230,6 @@ class TrainingAction():
 class TrainingAnalyzer(gui.UmaApp):
     training_tracker = None
     packets = None
-    chara_names_dict = util.get_character_name_dict()
     last_turn = 0
     scenario_id = None
     card_id = None
@@ -229,6 +240,8 @@ class TrainingAnalyzer(gui.UmaApp):
     last_mant_shop_items_dict = {}
     next_action_type = None
     gm_effect_active = False
+    action_list = []
+    chara_names_dict = util.get_character_name_dict()
     event_title_dict = mdb.get_event_title_dict()
     race_program_name_dict = mdb.get_race_program_name_dict()
     skill_name_dict = mdb.get_skill_name_dict()
@@ -238,23 +251,27 @@ class TrainingAnalyzer(gui.UmaApp):
     support_card_string_dict = mdb.get_support_card_string_dict()
     mant_item_string_dict = mdb.get_mant_item_string_dict()
     gl_lesson_dict = mdb.get_gl_lesson_dict()
-    action_list = []
 
-    def __init__(self, training_tracker: TrainingTracker, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def set_training_tracker(self, training_tracker):
+        self.training_tracker = training_tracker
+        self.packets = None
+        self.last_turn = 0
+        self.scenario_id = None
+        self.card_id = None
+        self.chara_id = None
+        self.support_cards = None
         self.last_program_id = None
+        self.last_failure_rates = {}
+        self.last_mant_shop_items_dict = {}
         self.next_action_type = None
         self.gm_effect_active = False
-        super().__init__(*args, **kwargs)
-        self.training_tracker = training_tracker
+        self.action_list = []
         self.packets = self.training_tracker.load_packets()
 
-        t1 = time.perf_counter()
-        self.to_csv()
-        t2 = time.perf_counter()
-        logger.debug(f"CSV generation took {t2-t1:0.4f} seconds")
-
-
-    def to_csv(self):
+    def to_csv_list(self):
         self.action_list = []
 
         # Grab req/resp pairs
@@ -345,82 +362,89 @@ class TrainingAnalyzer(gui.UmaApp):
         support_5_str = f"{self.support_cards[4]['support_card_id']} - {self.support_card_string_dict[self.support_cards[4]['support_card_id']]}"
         support_6_str = f"{self.support_cards[5]['support_card_id']} - {self.support_card_string_dict[self.support_cards[5]['support_card_id']]}"
 
-        with open(self.training_tracker.get_csv_path(), 'w', encoding='utf-8') as csvfile:
-            headers = [
-                    ("Scenario", lambda _: scenario_str),
-                    ("Chara", lambda _: chara_str),
-                    ("Support 1", lambda _: support_1_str),
-                    ("Support 2", lambda _: support_2_str),
-                    ("Support 3", lambda _: support_3_str),
-                    ("Support 4", lambda _: support_4_str),
-                    ("Support 5", lambda _: support_5_str),
-                    ("Support 6", lambda _: support_6_str),
-                    ("Turn", lambda x: x.turn),
-                    ("Action", lambda x: x.action_type.name),
-                    ("Text", lambda x: x.text),
-                    ("Value", lambda x: x.value),
-                    ("SPD", lambda x: x.speed),
-                    ("STA", lambda x: x.stamina),
-                    ("POW", lambda x: x.power),
-                    ("GUT", lambda x: x.guts),
-                    ("INT", lambda x: x.wisdom),
-                    ("SKLPT", lambda x: x.skill_pt),
-                    ("ERG", lambda x: x.energy),
-                    ("MOT", lambda x: util.MOTIVATION_DICT.get(x.motivation, "Unknown")),
-                    ("FAN", lambda x: x.fans),
+        headers = [
+                ("Scenario", lambda _: scenario_str),
+                ("Chara", lambda _: chara_str),
+                ("Support 1", lambda _: support_1_str),
+                ("Support 2", lambda _: support_2_str),
+                ("Support 3", lambda _: support_3_str),
+                ("Support 4", lambda _: support_4_str),
+                ("Support 5", lambda _: support_5_str),
+                ("Support 6", lambda _: support_6_str),
+                ("Turn", lambda x: x.turn),
+                ("Action", lambda x: x.action_type.name),
+                ("Text", lambda x: x.text),
+                ("Value", lambda x: x.value),
+                ("SPD", lambda x: x.speed),
+                ("STA", lambda x: x.stamina),
+                ("POW", lambda x: x.power),
+                ("GUT", lambda x: x.guts),
+                ("INT", lambda x: x.wisdom),
+                ("SKLPT", lambda x: x.skill_pt),
+                ("ERG", lambda x: x.energy),
+                ("MOT", lambda x: util.MOTIVATION_DICT.get(x.motivation, "Unknown")),
+                ("FAN", lambda x: x.fans),
 
-                    ("ΔSPD", lambda x: x.dspeed),
-                    ("ΔSTA", lambda x: x.dstamina),
-                    ("ΔPOW", lambda x: x.dpower),
-                    ("ΔGUT", lambda x: x.dguts),
-                    ("ΔINT", lambda x: x.dwisdom),
-                    ("ΔSKLPT", lambda x: x.dskill_pt),
-                    ("ΔERG", lambda x: x.denergy),
-                    ("ΔMOT", lambda x: x.dmotivation),
-                    ("ΔFAN", lambda x: x.dfans),
-                    ("Skills Added", lambda x: "|".join([self.skill_name_dict[skill[0]] + f" LVL{skill[1]}" for skill in x.add_skill])),
-                    ("Skills Removed", lambda x: "|".join([self.skill_name_dict[skill[0]] + f" LVL{skill[1]}" for skill in x.remove_skill])),
-                    ("Skill Hints Added", lambda x: "|".join([self.skill_hint_name_dict[(skillhint[0], skillhint[1])] + f" LVL{skillhint[2]}" for skillhint in x.add_skillhint])),
-                    ("Statuses Added", lambda x: "|".join([self.status_name_dict[status] for status in x.add_status])),
-                    ("Statuses Removed", lambda x: "|".join([self.status_name_dict[status] for status in x.remove_status])),
-                ]
+                ("ΔSPD", lambda x: x.dspeed),
+                ("ΔSTA", lambda x: x.dstamina),
+                ("ΔPOW", lambda x: x.dpower),
+                ("ΔGUT", lambda x: x.dguts),
+                ("ΔINT", lambda x: x.dwisdom),
+                ("ΔSKLPT", lambda x: x.dskill_pt),
+                ("ΔERG", lambda x: x.denergy),
+                ("ΔMOT", lambda x: x.dmotivation),
+                ("ΔFAN", lambda x: x.dfans),
+                ("Skills Added", lambda x: "|".join([self.skill_name_dict[skill[0]] + f" LVL{skill[1]}" for skill in x.add_skill])),
+                ("Skills Removed", lambda x: "|".join([self.skill_name_dict[skill[0]] + f" LVL{skill[1]}" for skill in x.remove_skill])),
+                ("Skill Hints Added", lambda x: "|".join([self.skill_hint_name_dict[(skillhint[0], skillhint[1])] + f" LVL{skillhint[2]}" for skillhint in x.add_skillhint])),
+                ("Statuses Added", lambda x: "|".join([self.status_name_dict[status] for status in x.add_status])),
+                ("Statuses Removed", lambda x: "|".join([self.status_name_dict[status] for status in x.remove_status])),
+            ]
 
-            # Create CSV
-            out_rows = []
+        # Create CSV
+        out_rows = []
 
-            header_row = ",".join([header[0] for header in headers])
-            out_rows.append(header_row)
+        header_row = ",".join([header[0] for header in headers])
+        out_rows.append(header_row)
 
-            def remove_zero(value):
-                if value in (0, '0'):
-                    return ""
-                return value
+        def remove_zero(value):
+            if value in (0, '0'):
+                return ""
+            return value
 
-            for action in self.action_list:
-                # Ignore certain actions
-                if action.action_type.value < 0:
+        for action in self.action_list:
+            # Ignore certain actions
+            if action.action_type.value < 0:
+                continue
+            if action.action_type == ActionType.Unknown:
+                # Skip action if it does not gain or lose any stats or skills/statuses etc.
+                if not any([action.dspeed,
+                            action.dstamina,
+                            action.dpower,
+                            action.dguts,
+                            action.dwisdom,
+                            action.dskill_pt,
+                            action.denergy,
+                            action.dmotivation,
+                            action.dfans,
+                            action.add_skill,
+                            action.remove_skill,
+                            action.add_skillhint,
+                            action.add_status,
+                            action.remove_status]):
                     continue
-                if action.action_type == ActionType.Unknown:
-                    # Skip action if it does not gain or lose any stats or skills/statuses etc.
-                    if not any([action.dspeed,
-                                action.dstamina,
-                                action.dpower,
-                                action.dguts,
-                                action.dwisdom,
-                                action.dskill_pt,
-                                action.denergy,
-                                action.dmotivation,
-                                action.dfans,
-                                action.add_skill,
-                                action.remove_skill,
-                                action.add_skillhint,
-                                action.add_status,
-                                action.remove_status]):
-                        continue
-                row = ",".join([str(remove_zero(header[1](action))) for header in headers])
-                out_rows.append(row)
+            row = ",".join([str(remove_zero(header[1](action))) for header in headers])
+            out_rows.append(row)
 
-            csvfile.write("\n".join(out_rows))
+        return out_rows
+
+
+    def to_csv(self):
+        t1 = time.perf_counter()
+        with open(self.training_tracker.get_csv_path(), 'w', encoding='utf-8') as csvfile:
+            csvfile.write("\n".join(self.to_csv_list()))
+        t2 = time.perf_counter()
+        logger.debug(f"CSV generation took {t2-t1:0.4f} seconds")
 
 
     def determine_action_type(self, req: dict, resp: dict, action: TrainingAction, prev_resp: dict):
@@ -628,9 +652,80 @@ class TrainingAnalyzer(gui.UmaApp):
         ax.yaxis.set_major_locator(ticker.MultipleLocator(100))
 
 
+def combine_trainings(training_paths, output_file_path):
+    csvs = []
+    training_analyzer = TrainingAnalyzer()
+    for training_path in training_paths:
+        try:
+            training_path_only, training_name = os.path.split(training_path)
+            training_name, _ = os.path.splitext(training_name)
+            training_analyzer.set_training_tracker(TrainingTracker(training_name, training_path_only))
+            csvs.append(training_analyzer.to_csv_list())
+        except Exception:
+            logger.error(traceback.format_exc())
+            util.show_alert_box("Error", f"Error while generating CSV for {training_path}")
+            return False
+
+    with open(output_file_path, 'w', encoding='utf-8') as csv_file:
+        logger.debug(output_file_path)
+        first = True
+        for i, rows in enumerate(csvs):
+            header = True
+            for j, row in enumerate(rows):
+                if len(training_paths) > 1:
+                    if header:
+                        header = False
+                        if not first:
+                            continue
+                        first = False
+                        rows[j] = "Run," + row
+                    else:
+                        rows[j] = f"{i + 1}," + row
+            csv_file.write("\n".join(rows))
+    return True
+
+
+def training_csv_dialog():
+    root = tkinter.Tk()
+    root.withdraw()
+    training_paths = filedialog.askopenfilenames(initialdir="training_logs", title="Select training log(s)", filetypes=(("Training logs", "*.gz"),))
+    if not training_paths:
+        app = gui.UmaApp()
+        app.run(gui.UmaInfoPopup("Could not create CSV", "No file(s) selected.", gui.ICONS.Warning))
+        app.close()
+        return
+
+    output_file_path = filedialog.asksaveasfilename(initialdir="training_logs", title="Select output file", filetypes=(("CSV", "*.csv"),))
+
+    if not output_file_path:
+        app = gui.UmaApp()
+        app.run(gui.UmaInfoPopup("Could not create CSV", "No output file given.", gui.ICONS.Warning))
+        app.close()
+        return
+
+    root.destroy()
+
+    if not output_file_path.endswith(".csv"):
+        output_file_path += ".csv"
+
+    if not combine_trainings(training_paths, output_file_path):
+        return
+    app = gui.UmaApp()
+    app.run(gui.UmaInfoPopup("Success", "CSV successfully created. 😊", gui.ICONS.Information))
+    app.close()
+    return
+
 
 def main():
-    TrainingTracker('2023_03_17_03_58_38').analyze()
+    # TrainingTracker('2023_03_17_03_58_38').analyze()
+    names = [
+        r"e:\OneDrive - HAN\python\umalauncher\training_logs\2023_03_17_03_58_38.gz",
+        r"e:\OneDrive - HAN\python\umalauncher\training_logs\mant.gz",
+        r"e:\OneDrive - HAN\python\umalauncher\training_logs\aoharu.gz",
+        r"e:\OneDrive - HAN\python\umalauncher\training_logs\grand_live.gz",
+    ]
+    combine_trainings(names, "training_logs/combined.csv")
+    print("a")
 
 if __name__ == "__main__":
     main()
