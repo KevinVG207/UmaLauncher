@@ -155,7 +155,7 @@ def get_status_name_dict():
 def get_outfit_name_dict():
     with Connection() as (_, cursor):
         cursor.execute(
-            """SELECT "index", text FROM text_data WHERE category = 14"""
+            """SELECT "index", text FROM text_data WHERE category = 5"""
         )
         rows = cursor.fetchall()
 

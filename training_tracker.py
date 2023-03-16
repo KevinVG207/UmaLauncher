@@ -20,7 +20,6 @@ import util
 class TrainingTracker():
     training_log_folder = None
     training_id = None
-    previous_packet = None
 
     request_remove_keys = [
         "viewer_id",
@@ -40,8 +39,6 @@ class TrainingTracker():
 
 
     def __init__(self, training_id: str, training_log_folder: str="training_logs"):
-        self.previous_packet = None
-
         self.training_log_folder = training_log_folder
 
         # Create training_logs folder if it doesn't exist.
@@ -65,7 +62,6 @@ class TrainingTracker():
 
     def add_packet(self, packet: dict):
         self.write_packet(packet)
-        # self.previous_packet = packet
 
 
     def add_request(self, request: dict):
@@ -106,7 +102,7 @@ class TrainingTracker():
             with gzip.open(self.get_sav_path(), 'ab') as f:
                 if not is_first:
                     f.write(','.encode('utf-8'))
-                f.write(json.dumps(self.previous_packet, ensure_ascii=False).encode('utf-8'))
+                f.write(json.dumps(packet, ensure_ascii=False).encode('utf-8'))
 
 
     def load_packets(self):
@@ -271,9 +267,9 @@ class TrainingAnalyzer(gui.UmaApp):
 
             # TODO: Increase i and keep looping through the next packet to find a response.
             # Check if response really is a response
-            if resp['_direction'] != 1:
+            while resp['_direction'] != 1:
                 i += 1
-                continue
+                resp = self.packets[i+1]
             i += 2
 
             chara_info = resp['chara_info']
@@ -634,7 +630,7 @@ class TrainingAnalyzer(gui.UmaApp):
 
 
 def main():
-    TrainingTracker('grand_live').analyze()
+    TrainingTracker('2023_03_17_03_58_38').analyze()
 
 if __name__ == "__main__":
     main()
