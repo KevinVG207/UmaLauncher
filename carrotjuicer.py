@@ -173,6 +173,7 @@ class CarrotJuicer():
         window.UL_OVERLAY.style.alignItems = "center";
         window.UL_OVERLAY.style.justifyContent = "center";
         window.UL_OVERLAY.style.flexDirection = "column";
+        window.UL_OVERLAY.style.fontSize = "0.9rem";
 
         window.UL_OVERLAY.innerHTML = `
             <div>Energy: <span id="energy"></span></div>
@@ -187,13 +188,14 @@ class CarrotJuicer():
                         <th>Wisdom</th>
                     </tr>
                 </thead>
-                <tbody></tbody>
+                <tbody id="table-body"></tbody>
             </table>
         `;
 
         window.UL_DATA = {
             energy: 100,
             max_energy: 100,
+            cur_stats: [0, 0, 0, 0, 0],
             training: {}
         };
 
@@ -219,8 +221,21 @@ class CarrotJuicer():
             ];
 
             document.getElementById("energy").innerText = window.UL_DATA.energy + "/" + window.UL_DATA.max_energy;
-            var tbody = document.getElementById("training-table").querySelector("tbody");
+
+            var tbody = document.getElementById("training-table").querySelector("#table-body");
             tbody.innerHTML = "";
+
+            var tr = document.createElement("tr");
+            var td = document.createElement("td");
+            td.innerText = "Current";
+            tr.appendChild(td);
+            tbody.appendChild(tr);
+            for (var i = 0; i < training_metadata_array.length; i++) {
+                var td = document.createElement("td");
+                td.innerText = window.UL_DATA.cur_stats[i];
+                tr.appendChild(td);
+            }
+
             for (var i = 0; i < row_meatdata_array.length; i++) {
                 var tr = document.createElement("tr");
                 var row_metadata = row_meatdata_array[i];
@@ -503,11 +518,14 @@ class CarrotJuicer():
                         var energy_data = arguments[0];
                         window.UL_DATA.energy = energy_data[0];
                         window.UL_DATA.max_energy = energy_data[1];
-                        var cur_training = arguments[1];
+                        window.UL_DATA.cur_stats = arguments[1];
+                        var cur_training = arguments[2];
                         window.UL_DATA.training = cur_training;
                         window.update_overlay();
                         """,
-                        [data['chara_info']['vital'], data['chara_info']['max_vital']], cur_training)
+                        [data['chara_info']['vital'], data['chara_info']['max_vital']],
+                        [data['chara_info']['speed'], data['chara_info']['stamina'], data['chara_info']['power'], data['chara_info']['guts'], data['chara_info']['wiz']]
+                        ,cur_training)
 
             if 'unchecked_event_array' in data and data['unchecked_event_array']:
                 # Training event.
