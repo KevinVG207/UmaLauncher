@@ -439,11 +439,11 @@ class CarrotJuicer():
                             elif param['target_type'] == 10:
                                 energy += param['value']
                         
-                        def increase_bond(partner_id, amount):
-                            nonlocal bond
+                        
+                        def calc_bond_gain(partner_id, amount):
                             if not partner_id in eval_dict:
                                 logger.error(f"Training partner ID not found in eval dict: {partner_id}")
-                                return
+                                return 0
                             
                             # Ignore group and friend type cards
                             if partner_id <= 6:
@@ -451,24 +451,44 @@ class CarrotJuicer():
                                 support_card_data = mdb.get_support_card_dict()[support_card_id]
                                 support_card_type = util.SUPPORT_CARD_TYPE_DICT[(support_card_data[1], support_card_data[2])]
                                 if support_card_type in ("Group", "Friend"):
-                                    return
+                                    return 0
 
                             cur_bond = eval_dict[partner_id]
+                            effective_bond = 0
                             if cur_bond < 80:
                                 new_bond = cur_bond + amount
                                 new_bond = min(new_bond, 80)
                                 effective_bond = new_bond - cur_bond
-                                bond += effective_bond
-                            return
+                            return effective_bond
 
                         for training_partner_id in command['training_partner_array']:
                             # Akikawa is 102
                             if training_partner_id <= 6 or training_partner_id == 102:
-                                increase_bond(training_partner_id, 7)
+                                initial_gain = 7
+                                # Add 2 extra bond when charming is active and the partner is not Akikawa
+                                if training_partner_id <= 6 and 8 in data['chara_info'].get('chara_effect_id_array', []):
+                                    initial_gain += 2
+
+                                # Add 2 extra bond when rising star is active and the partner is Akikawa
+                                elif training_partner_id == 102 and 9 in data['chara_info'].get('chara_effect_id_array', []):
+                                    initial_gain += 2
+
+                                bond += calc_bond_gain(training_partner_id, initial_gain)
+
+                        # For bond, first check if blue venus effect is active.
+                        venus_blue_active = False
+                        if 'venus_data_set' in data and len(data['venus_data_set']['venus_spirit_active_effect_info_array']) > 0:
+                            if data['venus_data_set']['venus_spirit_active_effect_info_array'][0]['chara_id'] == 9041:
+                                venus_blue_active = True
 
                         for tips_partner_id in command['tips_event_partner_array']:
+                            bond_gains = []
                             if tips_partner_id <= 6:
-                                increase_bond(tips_partner_id, 5)
+                                bond_gains.append(calc_bond_gain(tips_partner_id, 5))
+                            if not venus_blue_active:
+                                bond += max(bond_gains)
+                            else:
+                                bond += sum(bond_gains)
 
                         cur_training[command['command_id']] = {
                             'level': level,
@@ -486,7 +506,8 @@ class CarrotJuicer():
                         var cur_training = arguments[1];
                         window.UL_DATA.training = cur_training;
                         window.update_overlay();
-                        """, [data['chara_info']['vital'], data['chara_info']['max_vital']], cur_training)
+                        """,
+                        [data['chara_info']['vital'], data['chara_info']['max_vital']], cur_training)
 
             if 'unchecked_event_array' in data and data['unchecked_event_array']:
                 # Training event.

@@ -131,7 +131,6 @@ class TrainingTracker():
         return csv_list
 
 
-
 class TrainingAnalyzerGui(gui.UmaMainWidget):
     training_tracker = None
 
@@ -670,18 +669,21 @@ def combine_trainings(training_paths, output_file_path):
         logger.debug(output_file_path)
         first = True
         for i, rows in enumerate(csvs):
+            if not first:
+                csv_file.write("\n")
             header = True
             for j, row in enumerate(rows):
                 if len(training_paths) > 1:
                     if header:
                         header = False
                         if not first:
+                            rows[j] = ''
                             continue
                         first = False
                         rows[j] = "Run," + row
                     else:
                         rows[j] = f"{i + 1}," + row
-            csv_file.write("\n".join(rows))
+            csv_file.write("\n".join(row for row in rows if row))
     return True
 
 
