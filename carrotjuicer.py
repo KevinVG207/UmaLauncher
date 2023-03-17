@@ -174,6 +174,7 @@ class CarrotJuicer():
         window.UL_OVERLAY.style.justifyContent = "center";
         window.UL_OVERLAY.style.flexDirection = "column";
         window.UL_OVERLAY.style.fontSize = "0.9rem";
+        window.UL_OVERLAY.style.transition = "top 0.5s";
 
         window.UL_OVERLAY.innerHTML = `
             <div>Energy: <span id="energy"></span></div>
@@ -192,15 +193,39 @@ class CarrotJuicer():
             </table>
         `;
 
+        var ul_dropdown = document.createElement("div");
+        ul_dropdown.id = "ul-dropdown";
+        ul_dropdown.style = "position: fixed;right: 0;top: calc(15rem - 2px);width: 3rem;height: 1.6rem;background-color: var(--c-bg-main);text-align: center;z-index: 101;line-height: 1.5rem;border-left: 2px solid var(--c-topnav);border-bottom: 2px solid var(--c-topnav);border-bottom-left-radius: 0.5rem;cursor: pointer;transition: top 0.5s;";
+        ul_dropdown.textContent = "⯅";
+        window.UL_OVERLAY.appendChild(ul_dropdown);
+
+        ul_dropdown.addEventListener("click", function() {
+            if (window.UL_DATA.expanded) {
+                window.UL_DATA.expanded = false;
+                document.getElementById("ul-dropdown").textContent = "⯆";
+                document.getElementById("ul-dropdown").style.top = "-2px";
+                window.GT_PAGE.style.paddingTop = "0";
+                window.UL_OVERLAY.style.top = "-" + OVERLAY_HEIGHT;
+            } else {
+                window.UL_DATA.expanded = true;
+                document.getElementById("ul-dropdown").textContent = "⯅";
+                document.getElementById("ul-dropdown").style.top = "calc(15rem - 2px)";
+                window.GT_PAGE.style.paddingTop = OVERLAY_HEIGHT;
+                window.UL_OVERLAY.style.top = "0";
+            }
+        });
+
         window.UL_DATA = {
             energy: 100,
             max_energy: 100,
             cur_stats: [0, 0, 0, 0, 0],
-            training: {}
+            training: {},
+            expanded: true
         };
 
         document.body.prepend(window.UL_OVERLAY);
         window.GT_PAGE.style.paddingTop = OVERLAY_HEIGHT;
+        window.GT_PAGE.style.transition = "padding-top 0.5s";
 
         window.update_overlay = function() {
             var training_metadata_array = [
