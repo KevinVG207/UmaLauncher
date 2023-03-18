@@ -18,6 +18,7 @@ import util
 import mdb
 
 # TODO: Track amount of trainings on every facility to know when it upgrades next.
+# TODO: Log ALL races by passing race packets to training_tracker.
 import training_tracker
 
 class CarrotJuicer():
@@ -358,6 +359,12 @@ class CarrotJuicer():
             self.threader.settings.set("browser_position", [self.last_browser_rect['x'], self.last_browser_rect['y'], self.last_browser_rect['width'], self.last_browser_rect['height']])
             self.last_browser_rect = None
 
+    def end_training(self):
+        if self.training_tracker:
+            self.training_tracker = None
+        self.close_browser()
+        return
+
     def handle_response(self, message):
         data = self.load_response(message)
 
@@ -375,9 +382,7 @@ class CarrotJuicer():
 
             # Run ended
             if 'single_mode_factor_select_common' in data:
-                if self.training_tracker:
-                    self.training_tracker = None
-                self.close_browser()
+                self.end_training()
                 return
 
             # Concert Theater
@@ -521,14 +526,14 @@ class CarrotJuicer():
                             if data['venus_data_set']['venus_spirit_active_effect_info_array'][0]['chara_id'] == 9041:
                                 venus_blue_active = True
 
+                        bond_gains = [0]
                         for tips_partner_id in command['tips_event_partner_array']:
-                            bond_gains = []
                             if tips_partner_id <= 6:
                                 bond_gains.append(calc_bond_gain(tips_partner_id, 5))
-                            if not venus_blue_active:
-                                bond += max(bond_gains)
-                            else:
-                                bond += sum(bond_gains)
+                        if not venus_blue_active:
+                            bond += max(bond_gains)
+                        else:
+                            bond += sum(bond_gains)
 
                         cur_training[command['command_id']] = {
                             'level': level,
@@ -655,6 +660,11 @@ class CarrotJuicer():
         self.previous_request = data
 
         try:
+            if 'is_force_delete' in data:
+                # Packet is a request to delete a training
+                self.end_training()
+                return
+
             # Watching a concert
             if "live_theater_save_info" in data:
                 self.start_concert(data['live_theater_save_info']['music_id'])
@@ -669,6 +679,8 @@ class CarrotJuicer():
                 logger.debug("Start of training detected")
                 self.helper_url = self.create_gametora_helper_url_from_start(data)
                 self.open_helper()
+                return
+
         except Exception:
             logger.error("ERROR IN HANDLING REQUEST MSGPACK")
             logger.error(data)
