@@ -504,6 +504,11 @@ class TrainingAnalyzer(gui.UmaApp):
 
         # Event requested by client
         if 'event_id' in req and req['event_id']:
+            if not prev_resp:
+                action.action_type = ActionType.Unknown
+                action.text = "Unknown due to missing previous packet. Could be an event or skill hint."
+                return
+
             story_id = prev_resp['unchecked_event_array'][0]['story_id']
 
             # If story_id matches regex with group
@@ -786,10 +791,7 @@ def training_csv_dialog():
 def main():
     # TrainingTracker('2023_03_17_03_58_38').analyze()
     names = [
-        r"e:\OneDrive - HAN\python\umalauncher\training_logs\2023_03_21_01_01_35.gz",
-        # r"e:\OneDrive - HAN\python\umalauncher\training_logs\mant.gz",
-        # r"e:\OneDrive - HAN\python\umalauncher\training_logs\aoharu.gz",
-        # r"e:\OneDrive - HAN\python\umalauncher\training_logs\grand_live.gz",
+        r".\training_logs\2023_03_21_05_26_30.gz",
     ]
     combine_trainings(names, "training_logs/combined.csv")
     print("a")
