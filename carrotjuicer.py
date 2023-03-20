@@ -412,7 +412,7 @@ class CarrotJuicer():
                 return
             
             # Race starts.
-            if 'race_scenario' in data and data['race_scenario']:
+            if 'race_scenario' in data and 'race_start_info' in data and data['race_scenario']:
                 # Currently starting a race. Add packet to training tracker.
                 logger.debug("Race packet received.")
                 self.add_response_to_tracker(data)
