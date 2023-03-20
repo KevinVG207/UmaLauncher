@@ -26,7 +26,7 @@ def get_event_title(story_id):
         row = cursor.fetchone()
         if row is None:
             event_title = "NO EVENT TITLE"
-            logger.warning(f"Event title not found for story_id: {story_id}")
+            logger.warning(f"Event title not found for story_id: {story_id}")  # TODO: Fix stories that aren't found.
         else:
             event_title = row[0]
 

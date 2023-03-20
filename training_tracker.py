@@ -176,6 +176,7 @@ class ActionType(Enum):
     Lesson = 14
     AfterRace = 15
     Continue = 16
+    AoharuRaces = 17
 
 class CommandType(Enum):
     Speed = 101
@@ -525,7 +526,10 @@ class TrainingAnalyzer(gui.UmaApp):
             if req['command_type'] == 1:
                 action.action_type = ActionType.Training
                 action.text = CommandType(req['command_id']).name
-                action.value = self.last_failure_rates[req['command_id']]
+                if req['command_id'] not in self.last_failure_rates:
+                    action.value = -1
+                else:
+                    action.value = self.last_failure_rates[req['command_id']]
                 return
 
             # Resting
@@ -570,14 +574,7 @@ class TrainingAnalyzer(gui.UmaApp):
         
         if 'race_scenario' in resp and resp['race_scenario']:
             # Race Packet
-            race_data = resp['race_start_info']
-            race_scenario = race_data_parser.parse(resp['race_scenario'])
-            action.action_type = ActionType.Race
-            action.text = self.race_program_name_dict[race_data['program_id']]
-            frame_order = race_data['race_horse_data'][0]['frame_order']
-            action.value = race_scenario.horse_result[frame_order-1].finish_order + 1  # Saving the finishing position here for now.
-            self.last_program_id = race_data['program_id']
-            return
+            return self.make_race_action(action, resp)
 
 
         # Grand Masters specific
@@ -602,6 +599,10 @@ class TrainingAnalyzer(gui.UmaApp):
             #     self.last_program_id = venus['race_start_info']['program_id']
             #     action.text = self.race_program_name_dict[self.last_program_id]
             #     return
+
+            # Venus Race Packet
+            if 'race_scenario' in venus and venus['race_scenario']:
+                return self.make_race_action(action, venus)
 
             # Venus race results
             if 'race_reward_info' in venus and venus['race_reward_info'] is not None:
@@ -630,9 +631,29 @@ class TrainingAnalyzer(gui.UmaApp):
                 action.text = gl_lesson[0]
                 action.value = gl_lesson[1]
                 return
+            
+        # Aoharu specific
+        if self.scenario_id == 2:
+            if 'team_race_set_id' in req:
+                action.action_type = ActionType.AoharuRaces
+                results = [0, 0, 0]
+                for race in resp['team_data_set']['race_result_array']:
+                    results[race['win_type']-1] += 1
+                action.text = f"{results[0]} WIN - {results[1]} LOSS - {results[2]} DRAW"
+                return
 
         return
+    
 
+    def make_race_action(self, action: TrainingAction, race_dict: dict):
+        race_data = race_dict['race_start_info']
+        race_scenario = race_data_parser.parse(race_dict['race_scenario'])
+        action.action_type = ActionType.Race
+        action.text = self.race_program_name_dict[race_data['program_id']]
+        frame_order = race_data['race_horse_data'][0]['frame_order']
+        action.value = race_scenario.horse_result[frame_order-1].finish_order + 1  # Saving the finishing position here for now.
+        self.last_program_id = race_data['program_id']
+        return
 
     def plot_stats(self, ax: plt.Axes):
         cur_turn = 0
@@ -765,7 +786,7 @@ def training_csv_dialog():
 def main():
     # TrainingTracker('2023_03_17_03_58_38').analyze()
     names = [
-        r"e:\OneDrive - HAN\python\umalauncher\training_logs\2023_03_20_23_02_27.gz",
+        r"e:\OneDrive - HAN\python\umalauncher\training_logs\2023_03_21_01_01_35.gz",
         # r"e:\OneDrive - HAN\python\umalauncher\training_logs\mant.gz",
         # r"e:\OneDrive - HAN\python\umalauncher\training_logs\aoharu.gz",
         # r"e:\OneDrive - HAN\python\umalauncher\training_logs\grand_live.gz",
