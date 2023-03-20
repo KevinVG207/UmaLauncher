@@ -26,6 +26,7 @@ outcome==1.2.0
 packaging==23.0
 pefile==2023.2.7
 Pillow==9.4.0
+protobuf==4.22.1
 PyAutoGUI==0.9.53
 pycparser==2.21
 PyGetWindow==0.0.9

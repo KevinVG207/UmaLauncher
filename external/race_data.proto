@@ -1,0 +1,96 @@
+syntax = "proto2";
+
+package hakuraku;
+
+message RaceSimulateData {
+    optional RaceSimulateHeaderData header = 1;
+
+    optional float distance_diff_max = 2;
+    optional int32 horse_num = 3;
+    optional int32 horse_frame_size = 4;
+    optional int32 horse_result_size = 5;
+
+    optional int32 __padding_size_1 = 6;
+
+    optional int32 frame_count = 7;
+    optional int32 frame_size = 8;
+    repeated RaceSimulateFrameData frame = 9;
+
+    optional int32 __padding_size_2 = 10;
+
+    repeated RaceSimulateHorseResultData horse_result = 11;
+
+    optional int32 __padding_size_3 = 12;
+
+    optional int32 event_count = 13;
+    message EventDataWrapper {
+        optional int32 event_size = 1; // int16
+        optional RaceSimulateEventData event = 2;
+    }
+    repeated EventDataWrapper event = 14;
+}
+
+message RaceSimulateHeaderData {
+    optional int32 max_length = 1;
+    optional int32 version = 2;
+}
+
+message RaceSimulateFrameData {
+    optional float time = 1;
+    repeated RaceSimulateHorseFrameData horse_frame = 2;
+}
+
+message RaceSimulateHorseFrameData {
+    optional float distance = 1;
+    optional uint32 lane_position = 2; // uint16
+    optional uint32 speed = 3; // uint16
+    optional uint32 hp = 4; // uint16
+    // enum HorseTemptationCalculator.TemptationMode
+    enum TemptationMode {
+        NULL = 0;
+        POSITION_SASHI = 1;
+        POSITION_SENKO = 2;
+        POSITION_NIGE = 3;
+        BOOST = 4;
+    }
+    optional TemptationMode temptation_mode = 5; // sbyte
+    optional int32 block_front_horse_index = 6; // sbyte
+}
+
+message RaceSimulateHorseResultData {
+    optional int32 finish_order = 1;
+    optional float finish_time = 2;
+    optional float finish_diff_time = 3;
+    optional float start_delay_time = 4;
+    optional uint32 guts_order = 5; // byte
+    optional uint32 wiz_order = 6; // byte
+    optional float last_spurt_start_distance = 7;
+    // enum RaceDefine.RunningStyle
+    enum RunningStyle {
+        NONE = 0;
+        NIGE = 1;
+        SENKO = 2;
+        SASHI = 3;
+        OIKOMI = 4;
+    }
+    optional RunningStyle running_style = 8; // byte
+    optional int32 defeat = 9; // enum RaceDefine.DefeatType
+    optional float finish_time_raw = 10;
+}
+
+message RaceSimulateEventData {
+    optional float frame_time = 1;
+    // enum SimulateEventType
+    enum SimulateEventType {
+        SCORE = 0; // Original format uses 0 - it's NOT unspecified!
+        CHALLENGE_MATCH_POINT = 1;
+        NOUSE_2 = 2;
+        SKILL = 3;
+        COMPETE_TOP = 4;
+        COMPETE_FIGHT = 5;
+        RELEASE_CONSERVE_POWER = 6;
+    }
+    optional SimulateEventType type = 2; // byte
+    optional uint32 param_count = 3; // byte
+    repeated int32 param = 4;
+}

@@ -3,7 +3,7 @@ _release/*
 dist/*
 build/*
 _dump/*
-__pycache__/*
+*__pycache__*
 _ocr/_tmp/*
 _ocr/_raw/*
 _ocr/_ref/backup/*
@@ -27,3 +27,4 @@ version.rc
 *.gz
 event_text.txt
 support_cards.png
+sandbox.py

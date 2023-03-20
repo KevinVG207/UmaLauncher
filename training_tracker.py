@@ -18,6 +18,7 @@ from matplotlib.figure import Figure
 import gui
 import mdb
 import util
+from external import race_data_parser
 
 
 class TrainingTracker():
@@ -131,7 +132,6 @@ class TrainingTracker():
         return csv_list
 
 
-
 class TrainingAnalyzerGui(gui.UmaMainWidget):
     training_tracker = None
 
@@ -157,7 +157,7 @@ class TrainingAnalyzerGui(gui.UmaMainWidget):
 class ActionType(Enum):
     """Represents the type of action that was taken in the training scenario.
     Negative values are actions that may be ignored."""
-    AfterRace = -2
+    AfterRace2 = -2
     BeforeRace = -1
     Unknown = 0
     Start = 1
@@ -174,6 +174,9 @@ class ActionType(Enum):
     BuyItem = 12
     UseItem = 13
     Lesson = 14
+    AfterRace = 15
+    Continue = 16
+    AoharuRaces = 17
 
 class CommandType(Enum):
     Speed = 101
@@ -277,50 +280,74 @@ class TrainingAnalyzer(gui.UmaApp):
         # Grab req/resp pairs
         prev_resp = None
         # for i in range(0, len(self.packets), 2):
-        i = 0
-        while i < len(self.packets) - 1:
-            req = self.packets[i]
-            resp = self.packets[i+1]
+        packet_index = 0
+        while packet_index < len(self.packets) - 1:
+            req = self.packets[packet_index]
+            resp = self.packets[packet_index+1]
 
             # TODO: Increase i and keep looping through the next packet to find a response.
             # Check if response really is a response
             while resp['_direction'] != 1:
-                i += 1
-                resp = self.packets[i+1]
-            i += 2
+                packet_index += 1
+                resp = self.packets[packet_index+1]
+            packet_index += 2
 
-            chara_info = resp['chara_info']
+            if 'chara_info' in resp:
+                chara_info = resp['chara_info']
 
-            if self.last_turn == 0:
-                # First turn, set all static values.
-                self.scenario_id = chara_info['scenario_id']
-                self.card_id = chara_info['card_id']
-                self.chara_id = int(str(self.card_id)[:4])
-                self.support_cards = chara_info['support_card_array']
+                if self.last_turn == 0:
+                    # First turn, set all static values.
+                    self.scenario_id = chara_info['scenario_id']
+                    self.card_id = chara_info['card_id']
+                    self.chara_id = int(str(self.card_id)[:4])
+                    self.support_cards = chara_info['support_card_array']
 
-            # Create base action
-            action = TrainingAction(
-                turn=req['current_turn'] if 'current_turn' in req else chara_info['turn'],
-                speed=chara_info['speed'],
-                stamina=chara_info['stamina'],
-                power=chara_info['power'],
-                guts=chara_info['guts'],
-                wisdom=chara_info['wiz'],
-                skill_pt=chara_info['skill_point'],
-                energy=chara_info['vital'],
-                motivation=chara_info['motivation'],
-                fans=chara_info['fans'],
-                skill={tuple(item.values()) for item in chara_info['skill_array']},
-                skillhint={tuple(item.values()) for item in chara_info['skill_tips_array']},
-                status=set(chara_info['chara_effect_id_array'])
-            )
+                # Create base action
+                action = TrainingAction(
+                    turn = req['current_turn'] if 'current_turn' in req else chara_info['turn'],
+                    speed = chara_info['speed'],
+                    stamina = chara_info['stamina'],
+                    power = chara_info['power'],
+                    guts = chara_info['guts'],
+                    wisdom = chara_info['wiz'],
+                    skill_pt = chara_info['skill_point'],
+                    energy = chara_info['vital'],
+                    motivation = chara_info['motivation'],
+                    fans = chara_info['fans'],
+                    skill = {tuple(item.values()) for item in chara_info['skill_array']},
+                    skillhint = {tuple(item.values()) for item in chara_info['skill_tips_array']},
+                    status = set(chara_info['chara_effect_id_array'])
+                )
+            
+            elif 'race_scenario' in resp and resp['race_scenario']:
+                # Race packet
+                this_horse_data = resp['race_start_info']['race_horse_data'][0]
+                action = TrainingAction(
+                    turn = req['current_turn'],
+                    speed = this_horse_data['speed'],
+                    stamina = this_horse_data['stamina'],
+                    power = this_horse_data['pow'],
+                    guts = this_horse_data['guts'],
+                    wisdom = this_horse_data['wiz'],
+                    skill_pt = self.action_list[-1].skill_pt,
+                    energy = self.action_list[-1].energy,
+                    motivation = this_horse_data['motivation'],
+                    fans = this_horse_data['fan_count'],
+                    skill = {tuple(item.values()) for item in this_horse_data['skill_array']},
+                    skillhint = self.action_list[-1].skillhint,
+                    status = self.action_list[-1].status
+                )
+
+            else:
+                # Unknown packet
+                logger.error(f'Unknown response packet type at index {packet_index}: {resp}')
+                continue
 
             # Determine if turn changed
             if action.turn > self.last_turn:
                 self.last_turn = action.turn
                 # Reset some values
                 self.gm_effect_active = False
-
 
             # Calculate deltas
             if self.action_list:
@@ -449,11 +476,11 @@ class TrainingAnalyzer(gui.UmaApp):
 
     def determine_action_type(self, req: dict, resp: dict, action: TrainingAction, prev_resp: dict):
 
-        # If next action type is set, use that.
-        if self.next_action_type is not None:
-            action.action_type = self.next_action_type
-            self.next_action_type = None
-            return
+        # # If next action type is set, use that.
+        # if self.next_action_type is not None:
+        #     action.action_type = self.next_action_type
+        #     self.next_action_type = None
+        #     return
 
         # Request specific:
 
@@ -461,6 +488,12 @@ class TrainingAnalyzer(gui.UmaApp):
         if 'start_chara' in req and req['start_chara']:
             action.action_type = ActionType.Start
             action.text = util.create_gametora_helper_url(self.card_id, self.scenario_id, [item['support_card_id'] for item in self.support_cards])
+            return
+        
+        # Continue after failed race
+        if 'continue_type' in req and req['continue_type']:
+            action.action_type = ActionType.Continue
+            action.value = req['continue_type']
             return
 
         # Save MANT shop items.
@@ -493,7 +526,10 @@ class TrainingAnalyzer(gui.UmaApp):
             if req['command_type'] == 1:
                 action.action_type = ActionType.Training
                 action.text = CommandType(req['command_id']).name
-                action.value = self.last_failure_rates[req['command_id']]
+                if req['command_id'] not in self.last_failure_rates:
+                    action.value = -1
+                else:
+                    action.value = self.last_failure_rates[req['command_id']]
                 return
 
             # Resting
@@ -514,12 +550,12 @@ class TrainingAnalyzer(gui.UmaApp):
                 action.action_type = ActionType.Infirmary
                 return
 
-        if 'program_id' in req and req['program_id']:
-            # Race Requested
-            action.action_type = ActionType.BeforeRace
-            self.last_program_id = req['program_id']
-            action.text = self.race_program_name_dict[self.last_program_id]
-            return
+        # if 'program_id' in req and req['program_id']:
+        #     # Race Requested
+        #     action.action_type = ActionType.BeforeRace
+        #     self.last_program_id = req['program_id']
+        #     action.text = self.race_program_name_dict[self.last_program_id]
+        #     return
 
         if 'gain_skill_info_array' in req and req['gain_skill_info_array']:
             # Skill(s) bought
@@ -530,11 +566,15 @@ class TrainingAnalyzer(gui.UmaApp):
 
         if 'race_reward_info' in resp and resp['race_reward_info']:
             # Race Completed
-            action.action_type = ActionType.Race
+            action.action_type = ActionType.AfterRace
             action.text = self.race_program_name_dict[self.last_program_id]
             action.value = resp['race_reward_info']['result_rank']  # Saving the finishing position here for now.
-            self.next_action_type = ActionType.AfterRace
+            # self.next_action_type = ActionType.AfterRace2
             return
+        
+        if 'race_scenario' in resp and resp['race_scenario']:
+            # Race Packet
+            return self.make_race_action(action, resp)
 
 
         # Grand Masters specific
@@ -553,16 +593,20 @@ class TrainingAnalyzer(gui.UmaApp):
                 action.value = {chara_dict['chara_id']: chara_dict['venus_level'] for chara_dict in venus['venus_chara_info_array']}[goddess_chara_id]
                 return
 
-            # Before venus race.
-            if 'race_start_info' in venus and venus['race_start_info'] is not None:
-                action.action_type = ActionType.BeforeRace
-                self.last_program_id = venus['race_start_info']['program_id']
-                action.text = self.race_program_name_dict[self.last_program_id]
-                return
+            # # Before venus race.
+            # if 'race_start_info' in venus and venus['race_start_info'] is not None:
+            #     action.action_type = ActionType.BeforeRace
+            #     self.last_program_id = venus['race_start_info']['program_id']
+            #     action.text = self.race_program_name_dict[self.last_program_id]
+            #     return
+
+            # Venus Race Packet
+            if 'race_scenario' in venus and venus['race_scenario']:
+                return self.make_race_action(action, venus)
 
             # Venus race results
             if 'race_reward_info' in venus and venus['race_reward_info'] is not None:
-                action.action_type = ActionType.Race
+                action.action_type = ActionType.AfterRace
                 action.text = self.race_program_name_dict[self.last_program_id]
                 return
         
@@ -587,9 +631,29 @@ class TrainingAnalyzer(gui.UmaApp):
                 action.text = gl_lesson[0]
                 action.value = gl_lesson[1]
                 return
+            
+        # Aoharu specific
+        if self.scenario_id == 2:
+            if 'team_race_set_id' in req:
+                action.action_type = ActionType.AoharuRaces
+                results = [0, 0, 0]
+                for race in resp['team_data_set']['race_result_array']:
+                    results[race['win_type']-1] += 1
+                action.text = f"{results[0]} WIN - {results[1]} LOSS - {results[2]} DRAW"
+                return
 
         return
+    
 
+    def make_race_action(self, action: TrainingAction, race_dict: dict):
+        race_data = race_dict['race_start_info']
+        race_scenario = race_data_parser.parse(race_dict['race_scenario'])
+        action.action_type = ActionType.Race
+        action.text = self.race_program_name_dict[race_data['program_id']]
+        frame_order = race_data['race_horse_data'][0]['frame_order']
+        action.value = race_scenario.horse_result[frame_order-1].finish_order + 1  # Saving the finishing position here for now.
+        self.last_program_id = race_data['program_id']
+        return
 
     def plot_stats(self, ax: plt.Axes):
         cur_turn = 0
@@ -670,18 +734,21 @@ def combine_trainings(training_paths, output_file_path):
         logger.debug(output_file_path)
         first = True
         for i, rows in enumerate(csvs):
+            if not first:
+                csv_file.write("\n")
             header = True
             for j, row in enumerate(rows):
                 if len(training_paths) > 1:
                     if header:
                         header = False
                         if not first:
+                            rows[j] = ''
                             continue
                         first = False
                         rows[j] = "Run," + row
                     else:
                         rows[j] = f"{i + 1}," + row
-            csv_file.write("\n".join(rows))
+            csv_file.write("\n".join(row for row in rows if row))
     return True
 
 
@@ -719,10 +786,10 @@ def training_csv_dialog():
 def main():
     # TrainingTracker('2023_03_17_03_58_38').analyze()
     names = [
-        r"e:\OneDrive - HAN\python\umalauncher\training_logs\2023_03_17_03_58_38.gz",
-        r"e:\OneDrive - HAN\python\umalauncher\training_logs\mant.gz",
-        r"e:\OneDrive - HAN\python\umalauncher\training_logs\aoharu.gz",
-        r"e:\OneDrive - HAN\python\umalauncher\training_logs\grand_live.gz",
+        r"e:\OneDrive - HAN\python\umalauncher\training_logs\2023_03_21_01_01_35.gz",
+        # r"e:\OneDrive - HAN\python\umalauncher\training_logs\mant.gz",
+        # r"e:\OneDrive - HAN\python\umalauncher\training_logs\aoharu.gz",
+        # r"e:\OneDrive - HAN\python\umalauncher\training_logs\grand_live.gz",
     ]
     combine_trainings(names, "training_logs/combined.csv")
     print("a")
