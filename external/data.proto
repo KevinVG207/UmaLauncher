@@ -1,0 +1,117 @@
+syntax = "proto2";
+
+package hakuraku;
+
+message UMDatabase {
+    optional string version = 1;
+
+    repeated Chara chara = 2;
+    repeated Card card = 9;
+    repeated SupportCard support_card = 11;
+    repeated SuccessionRelation succession_relation = 3;
+    repeated RaceInstance race_instance = 4;
+    repeated WinsSaddle wins_saddle = 5;
+
+    repeated SpecialCaseRace special_case_race = 6;
+
+    repeated Skill skill = 7;
+
+    repeated TeamStadiumScoreBonus team_stadium_score_bonus = 8;
+
+    repeated Story story = 10;
+}
+
+message Chara {
+    optional int32 id = 1;
+    optional string name = 2;
+    optional string cast_name = 3;
+}
+
+message Card {
+    optional int32 id = 1;
+    optional string name = 2;
+}
+
+message SupportCard {
+    optional int32 id = 1;
+    optional string name = 2;
+    optional int32 chara_id = 3;
+}
+
+message SuccessionRelation {
+    optional int32 relation_type = 1;
+    optional int32 relation_point = 2;
+
+    message Member {
+        optional int32 id = 1;
+        optional int32 chara_id = 2;
+    }
+    repeated Member member = 3;
+}
+
+message RaceInstance {
+    optional int32 id = 1;
+    optional string name = 2;
+    optional int32 distance = 3;
+
+    enum GroundType {
+        UNKNOWN_GROUND_TYPE = 0;
+        TURF = 1;
+        DIRT = 2;
+    }
+    optional GroundType ground_type = 4;
+}
+
+message WinsSaddle {
+    optional int32 id = 1;
+    optional string name = 2;
+    repeated int32 race_instance_id = 3;
+    optional int32 priority = 4;
+    optional int32 group_id = 5;
+    enum WinSaddleType {
+        SPECIAL = 0;
+        G3 = 1;
+        G2 = 2;
+        G1 = 3;
+    }
+    optional WinSaddleType type = 6;
+}
+
+message SpecialCaseRace {
+    optional int32 race_instance_id = 1;
+    optional int32 program_group = 2;
+
+    enum RacePermission {
+        UNKNOWN_RACE_PERMISSION = 0;
+        FIRST_YEAR = 1;
+        SECOND_YEAR = 2;
+        SECOND_OR_THIRD_YEAR = 3;
+        THIRD_YEAR = 4;
+        EX = 5;
+    }
+    optional RacePermission race_permission = 3;
+
+    // This shouldn't belong here. But it's anyway temporary.
+    repeated int32 chara_id = 4;
+}
+
+message Skill {
+    optional int32 id = 1;
+    optional string name = 2;
+    optional sint32 grade_value = 3;
+
+    // Known tags:
+    // 10[1-4]: running style restricted
+    // 20[1-4]: distance type restricted
+    repeated string tag_id = 4;
+}
+
+message TeamStadiumScoreBonus {
+    optional int32 id = 1;
+    optional string name = 2;
+}
+
+message Story {
+    optional int32 id = 1;
+    optional string name = 2;
+}

@@ -230,11 +230,11 @@ class CarrotJuicer():
 
         window.update_overlay = function() {
             var training_metadata_array = [
-                {name: "Speed", command_id: 101},
-                {name: "Stamina", command_id: 105},
-                {name: "Power", command_id: 102},
-                {name: "Guts", command_id: 103},
-                {name: "Wisdom", command_id: 106}
+                {name: "Speed", command_id: [101, 601]},
+                {name: "Stamina", command_id: [105, 602]},
+                {name: "Power", command_id: [102, 603]},
+                {name: "Guts", command_id: [103, 604]},
+                {name: "Wisdom", command_id: [106, 605]}
             ];
 
             var row_meatdata_array = [
@@ -267,11 +267,17 @@ class CarrotJuicer():
                 var row_metadata = row_meatdata_array[i];
                 for (var j = 0; j < training_metadata_array.length + 1; j++) {
                     var td = document.createElement("td");
+                    console.log(window.UL_DATA.training)
                     if (j == 0){
                         td.innerText = row_metadata.name;
                     } else {
                         var training_metadata = training_metadata_array[j - 1];
-                        td.innerText = window.UL_DATA.training[training_metadata.command_id][row_metadata.key];
+                        console.log(training_metadata.command_id)
+                        for (var k = 0; k < training_metadata.command_id.length; k++) {
+                            if (training_metadata.command_id[k] in window.UL_DATA.training) {
+                                td.innerText = window.UL_DATA.training[training_metadata.command_id[k]][row_metadata.key];
+                            }
+                        }
                     }
                     tr.appendChild(td);
                 }
@@ -364,6 +370,15 @@ class CarrotJuicer():
             self.training_tracker = None
         self.close_browser()
         return
+    
+    def add_response_to_tracker(self, data):
+        should_track = self.threader.settings.get_tray_setting("Track trainings")
+        if self.previous_request:
+            if should_track:
+                self.training_tracker.add_request(self.previous_request)
+            self.previous_request = None
+        if should_track:
+            self.training_tracker.add_response(data)
 
     def handle_response(self, message):
         data = self.load_response(message)
@@ -395,6 +410,14 @@ class CarrotJuicer():
 
                     self.screen_state_handler.carrotjuicer_state = new_state
                 return
+            
+            # Race starts.
+            if 'race_scenario' in data and data['race_scenario']:
+                # Currently starting a race. Add packet to training tracker.
+                logger.debug("Race packet received.")
+                self.add_response_to_tracker(data)
+                return
+
 
             # Gametora
             if 'chara_info' in data:
@@ -404,13 +427,8 @@ class CarrotJuicer():
                 if not self.training_tracker or not self.training_tracker.training_id_matches(training_id):
                     self.training_tracker = training_tracker.TrainingTracker(training_id)
 
-                should_track = self.threader.settings.get_tray_setting("Track trainings")
-                if self.previous_request:
-                    if should_track:
-                        self.training_tracker.add_request(self.previous_request)
-                    self.previous_request = None
-                if should_track:
-                    self.training_tracker.add_response(data)
+                # Add request to tracker
+                self.add_response_to_tracker(data)
 
                 # Training info
                 outfit_id = data['chara_info']['card_id']
@@ -439,6 +457,7 @@ class CarrotJuicer():
                 if not self.browser or not self.browser.current_url.startswith("https://gametora.com/umamusume/training-event-helper"):
                     logger.info("GT tab not open, opening tab")
                     self.helper_url = util.create_gametora_helper_url(outfit_id, scenario_id, supports)
+                    logger.debug(f"Helper URL: {self.helper_url}")
                     self.open_helper()
                 
                 # Update browser variables
@@ -678,6 +697,7 @@ class CarrotJuicer():
                 # Packet is a request to start a training
                 logger.debug("Start of training detected")
                 self.helper_url = self.create_gametora_helper_url_from_start(data)
+                logger.debug(f"Helper URL: {self.helper_url}")
                 self.open_helper()
                 return
 
