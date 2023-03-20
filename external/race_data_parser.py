@@ -2,7 +2,8 @@ import base64
 import gzip
 import struct
 import sys
-sys.path.append('external')
+import util
+sys.path.append(util.get_asset('external'))
 
 import race_data_pb2
 
