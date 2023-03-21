@@ -221,6 +221,7 @@ class CarrotJuicer():
             max_energy: 100,
             cur_stats: [0, 0, 0, 0, 0],
             training: {},
+            max_training: {},
             expanded: true
         };
 
@@ -267,15 +268,25 @@ class CarrotJuicer():
                 var row_metadata = row_meatdata_array[i];
                 for (var j = 0; j < training_metadata_array.length + 1; j++) {
                     var td = document.createElement("td");
-                    console.log(window.UL_DATA.training)
                     if (j == 0){
                         td.innerText = row_metadata.name;
                     } else {
                         var training_metadata = training_metadata_array[j - 1];
-                        console.log(training_metadata.command_id)
                         for (var k = 0; k < training_metadata.command_id.length; k++) {
                             if (training_metadata.command_id[k] in window.UL_DATA.training) {
-                                td.innerText = window.UL_DATA.training[training_metadata.command_id[k]][row_metadata.key];
+                                var value = window.UL_DATA.training[training_metadata.command_id[k]][row_metadata.key]
+                                if (value > 0 && row_metadata.key in window.UL_DATA.max_training && value == window.UL_DATA.max_training[row_metadata.key]) {
+                                    td.style.color = "lightgreen";
+                                    td.style.fontWeight = "bold";
+                                } else if (row_metadata.key == "failure_rate") {
+                                    if (value >= 30) {
+                                        td.style.color = "red";
+                                    } else if (value > 0) {
+                                        td.style.color = "orange";
+                                    }
+                                    value = value + "%";
+                                }
+                                td.innerText = value;
                             }
                         }
                     }
@@ -487,6 +498,9 @@ class CarrotJuicer():
                                 if 'params_inc_dec_info_array' in command:
                                     all_commands[command['command_id']]['params_inc_dec_info_array'] += command['params_inc_dec_info_array']
 
+                    max_stats = 0
+                    max_skillpt = 0
+                    max_bond = 0
                     for command in all_commands.values():
                         level = command['level']
                         failure_rate = command['failure_rate']
@@ -519,7 +533,12 @@ class CarrotJuicer():
 
                             cur_bond = eval_dict[partner_id]
                             effective_bond = 0
-                            if cur_bond < 80:
+
+                            usefulness_cutoff = 81
+                            if partner_id == 102:
+                                usefulness_cutoff = 61
+
+                            if cur_bond < usefulness_cutoff:
                                 new_bond = cur_bond + amount
                                 new_bond = min(new_bond, 80)
                                 effective_bond = new_bond - cur_bond
@@ -554,6 +573,13 @@ class CarrotJuicer():
                         else:
                             bond += sum(bond_gains)
 
+                        if stats > max_stats:
+                            max_stats = stats
+                        if skillpt > max_skillpt:
+                            max_skillpt = skillpt
+                        if bond > max_bond:
+                            max_bond = bond
+
                         cur_training[command['command_id']] = {
                             'level': level,
                             'failure_rate': failure_rate,
@@ -568,13 +594,19 @@ class CarrotJuicer():
                         window.UL_DATA.energy = energy_data[0];
                         window.UL_DATA.max_energy = energy_data[1];
                         window.UL_DATA.cur_stats = arguments[1];
-                        var cur_training = arguments[2];
-                        window.UL_DATA.training = cur_training;
+                        window.UL_DATA.training = arguments[2];
+                        window.UL_DATA.max_training = arguments[3];
                         window.update_overlay();
                         """,
                         [data['chara_info']['vital'], data['chara_info']['max_vital']],
-                        [data['chara_info']['speed'], data['chara_info']['stamina'], data['chara_info']['power'], data['chara_info']['guts'], data['chara_info']['wiz']]
-                        ,cur_training)
+                        [data['chara_info']['speed'], data['chara_info']['stamina'], data['chara_info']['power'], data['chara_info']['guts'], data['chara_info']['wiz']],
+                        cur_training,
+                        {
+                            'bond': max_bond,
+                            'skillpt': max_skillpt,
+                            'stats': max_stats
+                        }
+                    )
 
             if 'unchecked_event_array' in data and data['unchecked_event_array']:
                 # Training event.
@@ -645,7 +677,7 @@ class CarrotJuicer():
             logger.error(data)
             logger.error(traceback.format_exc())
             util.show_alert_box("UmaLauncher: Error in response msgpack.", "This should not happen. You may contact the developer about this issue.")
-            self.close_browser()
+            # self.close_browser()
 
     def check_browser(self):
         if self.browser:
@@ -706,7 +738,7 @@ class CarrotJuicer():
             logger.error(data)
             logger.error(traceback.format_exc())
             util.show_alert_box("UmaLauncher: Error in request msgpack.", "This should not happen. You may contact the developer about this issue.")
-            self.close_browser()
+            # self.close_browser()
 
 
     def process_message(self, message: str):
