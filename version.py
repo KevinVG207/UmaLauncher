@@ -11,7 +11,7 @@ import dmm
 import util
 import gui
 
-VERSION = "1.3.3"
+VERSION = "1.3.4"
 
 def parse_version(version_string: str):
     """Convert version string to tuple."""
