@@ -461,7 +461,7 @@ class CarrotJuicer():
                     if not scenario_name:
                         logger.error(f"Scenario ID not found in scenario dict: {scenario_id}")
                         scenario_name = "You are now breathing manually."
-                    new_state.set_chara(chara_id, scenario_name)
+                    new_state.set_chara(chara_id, outfit_id=outfit_id, small_text=scenario_name)
 
                     self.screen_state_handler.carrotjuicer_state = new_state
 

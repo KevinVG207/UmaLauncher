@@ -49,7 +49,7 @@ class ScreenState:
             "small_image": self.small_image,
         }
 
-    def set_chara(self, chara_id, small_text=None):
+    def set_chara(self, chara_id, outfit_id=None, small_text=None):
         chara_icon = f"chara_{chara_id}"
         if chara_icon not in self.handler.available_chara_icons:
             chara_icon = self.handler.fallback_chara_icon
@@ -61,6 +61,9 @@ class ScreenState:
         self.large_image = chara_icon
         if chara_id in self.handler.chara_names_dict:
             self.large_text = self.handler.chara_names_dict[chara_id]
+            if outfit_id:
+                if outfit_id in self.handler.outfit_names_dict:
+                    self.large_text += f" {self.handler.outfit_names_dict[outfit_id]}"
         else:
             self.large_text = None
 
@@ -114,12 +117,14 @@ class ScreenStateHandler():
     fallback_music_icon = "music_0000"
 
     chara_names_dict = None
+    outfit_names_dict = None
 
     def __init__(self, threader):
         self.threader = threader
 
         self.get_available_icons()
         self.chara_names_dict = util.get_character_name_dict()
+        self.outfit_names_dict = util.get_outfit_name_dict()
         self.screen_state = ScreenState(self)
 
         dmm_handle = util.get_window_handle("DMM GAME PLAYER", type=util.LAZY)
