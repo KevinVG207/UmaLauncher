@@ -250,7 +250,7 @@ class TrainingAnalyzer(gui.UmaApp):
     skill_name_dict = mdb.get_skill_name_dict()
     skill_hint_name_dict = mdb.get_skill_hint_name_dict()
     status_name_dict = mdb.get_status_name_dict()
-    outfit_name_dict = mdb.get_outfit_name_dict()
+    outfit_name_dict = util.get_outfit_name_dict()
     support_card_string_dict = mdb.get_support_card_string_dict()
     mant_item_string_dict = mdb.get_mant_item_string_dict()
     gl_lesson_dict = mdb.get_gl_lesson_dict()

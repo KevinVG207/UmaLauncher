@@ -220,10 +220,10 @@ def get_character_name_dict():
 
     if not downloaded_chara_dict:
         chara_dict = mdb.get_chara_name_dict()
-        logger.info("Requesting character names.")
+        logger.info("Requesting character names from umapyoi.net")
         response = requests.get("https://umapyoi.net/api/v1/character/names")
         if not response.ok:
-            show_alert_box("UmaLauncher: Internet error.", "Cannot download the character names for the Discord Rich Presence. Please check your internet connection.")
+            show_alert_box("UmaLauncher: Internet error.", "Cannot download the character names from umapyoi.net for the Discord Rich Presence. Please check your internet connection.")
             return chara_dict
 
         for character in response.json():
@@ -232,6 +232,23 @@ def get_character_name_dict():
         downloaded_chara_dict = chara_dict
     return downloaded_chara_dict
 
+downloaded_outfit_dict = None
+def get_outfit_name_dict():
+    global downloaded_outfit_dict
+
+    if not downloaded_outfit_dict:
+        outfit_dict = mdb.get_outfit_name_dict()
+        logger.info("Requesting outfit names from umapyoi.net")
+        response = requests.get("https://umapyoi.net/api/v1/outfit")
+        if not response.ok:
+            show_alert_box("UmaLauncher: Internet error.", "Cannot download the outfit names from umapyoi.net for the Discord Rich Presence. Please check your internet connection.")
+            return outfit_dict
+
+        for outfit in response.json():
+            outfit_dict[outfit['id']] = outfit['title']
+
+        downloaded_outfit_dict = outfit_dict
+    return downloaded_outfit_dict
 
 def create_gametora_helper_url(card_id, scenario_id, support_ids):
     support_ids = list(map(str, support_ids))
