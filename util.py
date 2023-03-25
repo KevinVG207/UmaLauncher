@@ -1,16 +1,47 @@
+import os
+import sys
+from loguru import logger
+
+unpack_dir = os.getcwd()
+is_script = True
+if hasattr(sys, "_MEIPASS"):
+    unpack_dir = sys._MEIPASS
+    is_script = False
+    os.chdir(os.path.dirname(os.path.abspath(sys.argv[0])))
+is_debug = is_script
+
+def log_reset():
+    logger.remove()
+    if is_script:
+        logger.add(sys.stderr, level="TRACE")
+    return
+
+def log_set_info():
+    log_reset()
+    logger.add("log.log", rotation="1 week", compression="zip", retention="1 month", encoding='utf-8', level="INFO")
+    return
+
+def log_set_trace():
+    log_reset()
+    logger.add("log.log", rotation="1 week", compression="zip", retention="1 month", encoding='utf-8', level="TRACE")
+    return
+
+if is_script:
+    log_set_trace()
+    logger.debug("Running from script, enabling debug logging.")
+else:
+    log_set_info()
+
 import win32api
 import win32gui
 import win32con
-import threading
 import math
-import os
-import sys
 import requests
 from pywintypes import error as pywinerror  # pylint: disable=no-name-in-module
-from loguru import logger
 from PIL import Image
 import numpy as np
 import mdb
+import gui
 
 window_handle = None
 
@@ -46,13 +77,6 @@ SUPPORT_CARD_TYPE_DICT = {
     (0, 3): "Group"
 }
 
-unpack_dir = os.getcwd()
-is_script = True
-if hasattr(sys, "_MEIPASS"):
-    unpack_dir = sys._MEIPASS
-    is_script = False
-is_debug = is_script
-
 def get_asset(asset_path):
     return os.path.join(unpack_dir, asset_path)
 
@@ -61,19 +85,28 @@ def get_width_from_height(height, portrait):
         return math.ceil((height * 0.5626065430) - 6.2123937177)
     return math.ceil((height * 1.7770777107) - 52.7501897551)
 
-def _show_alert_box(error, message):
-    win32api.MessageBox(
-        None,
-        message,
-        error,
-        48
-    )
+def _show_alert_box(error, message, icon):
+    app = gui.UmaApp()
+    app.run(gui.UmaInfoPopup(error, message, icon))
+    app.close()
 
 
-def show_alert_box(error, message):
+def show_error_box(error, message):
     logger.error(f"{error}")
     logger.error(f"{message}")
-    threading.Thread(target=_show_alert_box, args=(error, message), daemon=False).start()
+    _show_alert_box(error, message, gui.ICONS.Critical)
+
+
+def show_warning_box(error, message):
+    logger.warning(f"{error}")
+    logger.warning(f"{message}")
+    _show_alert_box(error, message, gui.ICONS.Warning)
+
+
+def show_info_box(error, message):
+    logger.info(f"{error}")
+    logger.info(f"{message}")
+    _show_alert_box(error, message, gui.ICONS.Information)
 
 
 def _get_window_exact(hwnd: int, query: str):
@@ -197,22 +230,6 @@ def is_minimized(handle):
         # Default to it being minimized as to not save the game window.
         return True
 
-def log_reset():
-    logger.remove()
-    if is_script:
-        logger.add(sys.stderr, level="TRACE")
-    return
-
-def log_set_info():
-    log_reset()
-    logger.add("log.log", rotation="1 week", compression="zip", retention="1 month", encoding='utf-8', level="INFO")
-    return
-
-def log_set_trace():
-    log_reset()
-    logger.add("log.log", rotation="1 week", compression="zip", retention="1 month", encoding='utf-8', level="TRACE")
-    return
-
 downloaded_chara_dict = None
 
 def get_character_name_dict():
@@ -220,10 +237,10 @@ def get_character_name_dict():
 
     if not downloaded_chara_dict:
         chara_dict = mdb.get_chara_name_dict()
-        logger.info("Requesting character names.")
+        logger.info("Requesting character names from umapyoi.net")
         response = requests.get("https://umapyoi.net/api/v1/character/names")
         if not response.ok:
-            show_alert_box("UmaLauncher: Internet error.", "Cannot download the character names for the Discord Rich Presence. Please check your internet connection.")
+            show_warning_box("Uma Launcher: Internet error.", "Cannot download the character names from umapyoi.net for the Discord Rich Presence. Please check your internet connection.")
             return chara_dict
 
         for character in response.json():
@@ -232,6 +249,23 @@ def get_character_name_dict():
         downloaded_chara_dict = chara_dict
     return downloaded_chara_dict
 
+downloaded_outfit_dict = None
+def get_outfit_name_dict():
+    global downloaded_outfit_dict
+
+    if not downloaded_outfit_dict:
+        outfit_dict = mdb.get_outfit_name_dict()
+        logger.info("Requesting outfit names from umapyoi.net")
+        response = requests.get("https://umapyoi.net/api/v1/outfit")
+        if not response.ok:
+            show_warning_box("Uma Launcher: Internet error.", "Cannot download the outfit names from umapyoi.net for the Discord Rich Presence. Please check your internet connection.")
+            return outfit_dict
+
+        for outfit in response.json():
+            outfit_dict[outfit['id']] = outfit['title']
+
+        downloaded_outfit_dict = outfit_dict
+    return downloaded_outfit_dict
 
 def create_gametora_helper_url(card_id, scenario_id, support_ids):
     support_ids = list(map(str, support_ids))

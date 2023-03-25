@@ -155,7 +155,7 @@ class CarrotJuicer():
             except Exception:
                 pass
         if not driver:
-            util.show_alert_box("UmaLauncher: Unable to start browser.", "Selected webbrowser cannot be started. Use the tray icon to select a browser that is installed on your system.")
+            util.show_warning_box("Uma Launcher: Unable to start browser.", "Selected webbrowser cannot be started. Use the tray icon to select a browser that is installed on your system.")
         return driver
     
     def setup_helper_page(self):
@@ -461,7 +461,7 @@ class CarrotJuicer():
                     if not scenario_name:
                         logger.error(f"Scenario ID not found in scenario dict: {scenario_id}")
                         scenario_name = "You are now breathing manually."
-                    new_state.set_chara(chara_id, scenario_name)
+                    new_state.set_chara(chara_id, outfit_id=outfit_id, small_text=scenario_name)
 
                     self.screen_state_handler.carrotjuicer_state = new_state
 
@@ -676,7 +676,7 @@ class CarrotJuicer():
             logger.error("ERROR IN HANDLING RESPONSE MSGPACK")
             logger.error(data)
             logger.error(traceback.format_exc())
-            util.show_alert_box("UmaLauncher: Error in response msgpack.", "This should not happen. You may contact the developer about this issue.")
+            util.show_warning_box("Uma Launcher: Error in response msgpack.", "This should not happen. You may contact the developer about this issue.")
             # self.close_browser()
 
     def check_browser(self):
@@ -737,7 +737,7 @@ class CarrotJuicer():
             logger.error("ERROR IN HANDLING REQUEST MSGPACK")
             logger.error(data)
             logger.error(traceback.format_exc())
-            util.show_alert_box("UmaLauncher: Error in request msgpack.", "This should not happen. You may contact the developer about this issue.")
+            util.show_warning_box("Uma Launcher: Error in request msgpack.", "This should not happen. You may contact the developer about this issue.")
             # self.close_browser()
 
 
@@ -776,7 +776,7 @@ class CarrotJuicer():
 
         if not msg_path:
             logger.error("Packet intercept enabled but no carrotjuicer path found")
-            util.show_alert_box("UmaLauncher: No game install path found.", "This should not happen. Please add the game install path to umasettings.json")
+            util.show_error_box("Uma Launcher: No game install path found.", "This should not happen. Please add the game install path to umasettings.json")
             return
 
         msg_path = os.path.join(msg_path, "CarrotJuicer")

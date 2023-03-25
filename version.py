@@ -11,7 +11,7 @@ import dmm
 import util
 import gui
 
-VERSION = "1.3.4"
+VERSION = "1.3.5"
 
 def parse_version(version_string: str):
     """Convert version string to tuple."""
@@ -81,10 +81,7 @@ def auto_update(umasettings, script_version, skip_version):
     # Check if we're coming from an update
     if os.path.exists("update.tmp"):
         os.remove("update.tmp")
-        # Show update complete message using QtWidgets
-        app = gui.UmaApp()
-        app.run(gui.UmaInfoPopup("Update complete!", "Uma Launcher updated successfully."))
-        app.close()
+        util.show_info_box("Update complete!", "Uma Launcher updated successfully.")
 
     response = requests.get("https://api.github.com/repos/KevinVG207/UmaLauncher/releases")
     if not response.ok:
@@ -103,7 +100,7 @@ def auto_update(umasettings, script_version, skip_version):
         break
     if not latest_release:
         logger.error("Could not find a release in the API response?")
-        util.show_alert_box("Update Error", "Could not update. Please contact the developer if this reoccurs.")
+        util.show_error_box("Update Error", "Could not update. Please contact the developer if this reoccurs.")
         return True
 
     release_version = parse_version(latest_release['tag_name'][1:])
@@ -150,9 +147,7 @@ def auto_update(umasettings, script_version, skip_version):
     logger.debug("Update window closed: Update failed.")
     if os.path.exists("update.tmp"):
         os.remove("update.tmp")
-    app = gui.UmaApp()
-    app.run(gui.UmaInfoPopup("Update failed.", "Could not update. Please check your internet connection.\nUma Launcher will now close.", gui.ICONS.Critical))
-    app.close()
+    util.show_error_box("Update failed.", "Could not update. Please check your internet connection.\nUma Launcher will now close.")
     return False
 
 
@@ -171,7 +166,7 @@ class Updater():
                 parsed = urlparse(download_url)
                 if parsed.scheme != "https":
                     logger.error(f"Download URL is not HTTPS! {download_url}")
-                    util.show_alert_box("Update failed.", "Please contact the developer if this error reoccurs.")
+                    util.show_error_box("Update failed.", "Please contact the developer if this error reoccurs.")
                     self.close_me = True
                     return
                 try:

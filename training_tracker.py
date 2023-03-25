@@ -3,9 +3,10 @@ import json
 import gzip
 import re
 import time
+import threading
 import traceback
-import tkinter  #🤮
-from tkinter import filedialog
+import win32gui
+import win32con
 from dataclasses import dataclass, field
 from enum import Enum
 from loguru import logger
@@ -230,7 +231,7 @@ class TrainingAction():
     remove_status: set = field(default_factory=set)
 
 
-class TrainingAnalyzer(gui.UmaApp):
+class TrainingAnalyzer():
     training_tracker = None
     packets = None
     last_turn = 0
@@ -250,13 +251,13 @@ class TrainingAnalyzer(gui.UmaApp):
     skill_name_dict = mdb.get_skill_name_dict()
     skill_hint_name_dict = mdb.get_skill_hint_name_dict()
     status_name_dict = mdb.get_status_name_dict()
-    outfit_name_dict = mdb.get_outfit_name_dict()
+    outfit_name_dict = util.get_outfit_name_dict()
     support_card_string_dict = mdb.get_support_card_string_dict()
     mant_item_string_dict = mdb.get_mant_item_string_dict()
     gl_lesson_dict = mdb.get_gl_lesson_dict()
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self):
+        pass
 
     def set_training_tracker(self, training_tracker):
         self.training_tracker = training_tracker
@@ -721,70 +722,120 @@ class TrainingAnalyzer(gui.UmaApp):
         ax.yaxis.set_major_locator(ticker.MultipleLocator(100))
 
 
+class TrainingCombiner:
+    training_paths = None
+    output_file_path = None
+    result = None
+
+    def __init__(self, training_paths, output_file_path, result: list):
+        self.training_paths = training_paths
+        self.output_file_path = output_file_path
+        self.result = result
+
+    def combine(self):
+        csvs = []
+        training_analyzer = TrainingAnalyzer()
+        for training_path in self.training_paths:
+            try:
+                training_path_only, training_name = os.path.split(training_path)
+                training_name, _ = os.path.splitext(training_name)
+                training_analyzer.set_training_tracker(TrainingTracker(training_name, training_path_only))
+                csvs.append(training_analyzer.to_csv_list())
+            except Exception:
+                logger.error(traceback.format_exc())
+                util.show_error_box("Error", f"Error while generating CSV for {training_path}")
+                self.result.append(False)
+                logger.debug("Error while generating CSV for %s", training_path)
+                return
+
+        with open(self.output_file_path, 'w', encoding='utf-8') as csv_file:
+            first = True
+            for i, rows in enumerate(csvs):
+                if not first:
+                    csv_file.write("\n")
+                header = True
+                for j, row in enumerate(rows):
+                    if len(self.training_paths) > 1:
+                        if header:
+                            header = False
+                            if not first:
+                                rows[j] = ''
+                                continue
+                            first = False
+                            rows[j] = "Run," + row
+                        else:
+                            rows[j] = f"{i + 1}," + row
+                csv_file.write("\n".join(row for row in rows if row))
+        self.result.append(True)
+        logger.debug("Finished generating CSV for %s", self.output_file_path)
+        return
+
+
 def combine_trainings(training_paths, output_file_path):
-    csvs = []
-    training_analyzer = TrainingAnalyzer()
-    for training_path in training_paths:
+    result = []
+    
+    combiner = TrainingCombiner(training_paths, output_file_path, result)
+    combiner_thread = threading.Thread(target=combiner.combine)
+    logger.debug("Starting thread to generate CSV")
+    combiner_thread.start()
+
+    logger.debug("Starting GUI")
+    app = gui.UmaApp()
+    logger.debug("Running popup")
+    app.run(gui.UmaBorderlessPopup(app, "Creating CSV", "Creating CSV...", combiner_thread, result))
+    logger.debug("Finished popup")
+
+    return result[0]
+
+
+def training_csv_dialog(training_paths=None):
+    if training_paths is None:
         try:
-            training_path_only, training_name = os.path.split(training_path)
-            training_name, _ = os.path.splitext(training_name)
-            training_analyzer.set_training_tracker(TrainingTracker(training_name, training_path_only))
-            csvs.append(training_analyzer.to_csv_list())
-        except Exception:
-            logger.error(traceback.format_exc())
-            util.show_alert_box("Error", f"Error while generating CSV for {training_path}")
-            return False
+            training_paths, _, _ = win32gui.GetOpenFileNameW(
+                InitialDir="training_logs",
+                Title="Select training log(s)",
+                Flags=win32con.OFN_ALLOWMULTISELECT | win32con.OFN_FILEMUSTEXIST | win32con.OFN_EXPLORER,
+                DefExt="gz",
+                Filter="Training logs (*.gz)\0*.gz\0\0"
+            )
 
-    with open(output_file_path, 'w', encoding='utf-8') as csv_file:
-        logger.debug(output_file_path)
-        first = True
-        for i, rows in enumerate(csvs):
-            if not first:
-                csv_file.write("\n")
-            header = True
-            for j, row in enumerate(rows):
-                if len(training_paths) > 1:
-                    if header:
-                        header = False
-                        if not first:
-                            rows[j] = ''
-                            continue
-                        first = False
-                        rows[j] = "Run," + row
-                    else:
-                        rows[j] = f"{i + 1}," + row
-            csv_file.write("\n".join(row for row in rows if row))
-    return True
+            training_paths = training_paths.split("\0")
+            if len(training_paths) > 1:
+                dir_path = training_paths[0]
+                training_paths = [os.path.join(dir_path, training_path) for training_path in training_paths[1:]]
 
+        except util.pywinerror:
+            util.show_error_box("Error", "No file(s) selected.")
+            return
 
-def training_csv_dialog():
-    root = tkinter.Tk()
-    root.withdraw()
-    training_paths = filedialog.askopenfilenames(initialdir="training_logs", title="Select training log(s)", filetypes=(("Training logs", "*.gz"),))
-    if not training_paths:
-        app = gui.UmaApp()
-        app.run(gui.UmaInfoPopup("Could not create CSV", "No file(s) selected.", gui.ICONS.Warning))
-        app.close()
+    # Check if all files end with .gz
+    # If not, show error message
+    for training_path in training_paths:
+        if not training_path.endswith(".gz"):
+            util.show_error_box("Error", "All chosen files must be .gz (gzip) files.")
+            return
+
+    try:
+        output_file_path, _, _ = win32gui.GetSaveFileNameW(
+            InitialDir="training_logs",
+            Title="Select output file",
+            Flags=win32con.OFN_EXPLORER | win32con.OFN_OVERWRITEPROMPT | win32con.OFN_PATHMUSTEXIST,
+            File="training",
+            DefExt="csv",
+            Filter="CSV (*.csv)\0*.csv\0\0"
+        )
+
+    except util.pywinerror:
+        util.show_error_box("Error", "No output file given.")
         return
-
-    output_file_path = filedialog.asksaveasfilename(initialdir="training_logs", title="Select output file", filetypes=(("CSV", "*.csv"),))
-
-    if not output_file_path:
-        app = gui.UmaApp()
-        app.run(gui.UmaInfoPopup("Could not create CSV", "No output file given.", gui.ICONS.Warning))
-        app.close()
-        return
-
-    root.destroy()
 
     if not output_file_path.endswith(".csv"):
         output_file_path += ".csv"
 
     if not combine_trainings(training_paths, output_file_path):
         return
-    app = gui.UmaApp()
-    app.run(gui.UmaInfoPopup("Success", "CSV successfully created. 😊", gui.ICONS.Information))
-    app.close()
+
+    util.show_info_box("Success", "CSV successfully created.")
     return
 
 
