@@ -1,9 +1,9 @@
 import os
 import json
 import copy
-import tkinter  #🤮
+import sys
+from win32com.shell import shell
 import traceback
-from tkinter import filedialog
 from loguru import logger
 import util
 import version
@@ -58,20 +58,25 @@ class Settings():
 
         # Check if the game install path is correct.
         for folder_tuple in [
-            ('game_install_path', "umamusume.exe", "Please choose the game's installation folder. (Where umamusume.exe is located.)")
+            ('game_install_path', "umamusume.exe", "Please choose the game's installation folder.\n(Where umamusume.exe is located.)", "Selected folder does not include umamusume.exe.\nPlease try again.")
         ]:
             self.make_user_choose_folder(*folder_tuple)
 
         logger.info(self.loaded_settings)
 
-    def make_user_choose_folder(self, setting, file_to_verify, title):
-        while not os.path.exists(os.path.join(self.get(setting), file_to_verify)):
-            root = tkinter.Tk()
-            root.withdraw()
-            file_path = filedialog.askdirectory(title=title)
-            if file_path:
-                self.set(setting, file_path)
-            root.destroy()
+    def make_user_choose_folder(self, setting, file_to_verify, title, error):
+        if not os.path.exists(os.path.join(self.get(setting), file_to_verify)):
+            pidl, _, _ = shell.SHBrowseForFolder(None, None, title)
+            try:
+                selected_directory = shell.SHGetPathFromIDListW(pidl)
+            except:
+                selected_directory = None
+
+            if selected_directory and os.path.exists(os.path.join(selected_directory, file_to_verify)):
+                self.set(setting, selected_directory)
+            else:
+                util.show_alert_box("Error", f"{error} Uma Launcher will now close.")
+                sys.exit()
 
     def save_settings(self):
         with open(self.settings_file, 'w', encoding='utf-8') as f:

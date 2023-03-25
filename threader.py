@@ -1,9 +1,16 @@
+import sys
+if len(sys.argv) > 1:
+    # User dropped file(s) on the launcher.
+    # Use them for CSV generation.
+    import training_tracker
+    training_tracker.training_csv_dialog(sys.argv[1:])
+    sys.exit()
+
 from elevate import elevate
 try:
     elevate()
 except OSError:
     import util
-    import sys
     util.show_alert_box("Launch Error", "Uma Launcher needs administrator privileges to start.")
     sys.exit()
 

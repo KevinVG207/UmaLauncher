@@ -4,8 +4,8 @@ import gzip
 import re
 import time
 import traceback
-import tkinter  #🤮
-from tkinter import filedialog
+import win32gui
+import win32con
 from dataclasses import dataclass, field
 from enum import Enum
 from loguru import logger
@@ -757,17 +757,44 @@ def combine_trainings(training_paths, output_file_path):
     return True
 
 
-def training_csv_dialog():
-    root = tkinter.Tk()
-    root.withdraw()
-    training_paths = filedialog.askopenfilenames(initialdir="training_logs", title="Select training log(s)", filetypes=(("Training logs", "*.gz"),))
-    if not training_paths:
-        app = gui.UmaApp()
-        app.run(gui.UmaInfoPopup("Could not create CSV", "No file(s) selected.", gui.ICONS.Warning))
-        app.close()
-        return
+def training_csv_dialog(training_paths=None):
+    if training_paths is None:
+        training_paths, _, _ = win32gui.GetOpenFileNameW(
+            InitialDir="training_logs",
+            Title="Select training log(s)",
+            Flags=win32con.OFN_ALLOWMULTISELECT | win32con.OFN_FILEMUSTEXIST | win32con.OFN_EXPLORER,
+            DefExt="gz",
+            Filter="Training logs (*.gz)\0*.gz\0\0"
+        )
+        training_paths = training_paths.split("\0")
+        dir_path = training_paths[0]
+        training_paths = [os.path.join(dir_path, training_path) for training_path in training_paths[1:]]
+        if not training_paths:
+            app = gui.UmaApp()
+            app.run(gui.UmaInfoPopup("Could not create CSV", "No file(s) selected.", gui.ICONS.Warning))
+            app.close()
+            return
 
-    output_file_path = filedialog.asksaveasfilename(initialdir="training_logs", title="Select output file", filetypes=(("CSV", "*.csv"),))
+    # Check if all files end with .gz
+    # If not, show error message
+    for training_path in training_paths:
+        if not training_path.endswith(".gz"):
+            util.show_alert_box("Error", "All chosen files must be .gz (gzip) files.")
+            logger.debug(training_path)
+            logger.debug(type(training_path))
+            return
+
+    # with gui.UmaApp() as app:
+    #     app.run(gui.UmaInfoPopup("Could not create CSV", "No file(s) selected.", gui.ICONS.Warning))
+
+    output_file_path, _, _ = win32gui.GetSaveFileNameW(
+        InitialDir="training_logs",
+        Title="Select output file",
+        Flags=win32con.OFN_EXPLORER | win32con.OFN_OVERWRITEPROMPT | win32con.OFN_PATHMUSTEXIST,
+        File="training",
+        DefExt="csv",
+        Filter="CSV (*.csv)\0*.csv\0\0"
+    )
 
     if not output_file_path:
         app = gui.UmaApp()
@@ -775,15 +802,13 @@ def training_csv_dialog():
         app.close()
         return
 
-    root.destroy()
-
     if not output_file_path.endswith(".csv"):
         output_file_path += ".csv"
 
     if not combine_trainings(training_paths, output_file_path):
         return
     app = gui.UmaApp()
-    app.run(gui.UmaInfoPopup("Success", "CSV successfully created. 😊", gui.ICONS.Information))
+    app.run(gui.UmaInfoPopup("Success", "CSV successfully created.", gui.ICONS.Information))
     app.close()
     return
 
