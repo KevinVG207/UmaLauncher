@@ -115,6 +115,42 @@ class UmaUpdateConfirm(UmaMainWidget):
         self._parent.close()
 
 
+class UmaBorderlessPopup(UmaMainWidget):
+    update_object = None
+    timer = None
+
+    def init_ui(self, title, message, update_object, check_target, interval=250, *args, **kwargs):
+        self.update_object = update_object
+        self.check_target = check_target
+
+        self.setWindowTitle(title)
+        self.setWindowFlag(qtc.Qt.WindowType.WindowStaysOnTopHint, True)
+        self.setWindowFlag(qtc.Qt.WindowType.FramelessWindowHint, True)
+        self.layout = qtw.QVBoxLayout()
+        self.setLayout(self.layout)
+        self.label = qtw.QLabel(message)
+        self.label.setWordWrap(False)
+        # Center label text
+        self.label.setAlignment(qtc.Qt.AlignmentFlag.AlignCenter)
+        self.label.setContentsMargins(10, 20, 10, 20)
+        self.layout.addWidget(self.label)
+        # Hide maxminize and minimize buttons
+        self.setWindowFlag(qtc.Qt.WindowType.WindowMaximizeButtonHint, False)
+        self.setWindowFlag(qtc.Qt.WindowType.WindowMinimizeButtonHint, False)
+
+        # Call function every X ms
+        self.timer = qtc.QTimer(self)
+        self.timer.setInterval(interval)
+        self.timer.timeout.connect(self._update)
+        self.timer.start()
+
+    @qtc.pyqtSlot()
+    def _update(self):
+        if len(self.check_target) > 0:
+            self.timer.stop()
+            self._parent.close()
+
+
 class UmaUpdatePopup(UmaMainWidget):
     update_object = None
     timer = None

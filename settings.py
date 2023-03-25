@@ -75,7 +75,7 @@ class Settings():
             if selected_directory and os.path.exists(os.path.join(selected_directory, file_to_verify)):
                 self.set(setting, selected_directory)
             else:
-                util.show_alert_box("Error", f"{error} Uma Launcher will now close.")
+                util.show_error_box("Error", f"{error} Uma Launcher will now close.")
                 sys.exit()
 
     def save_settings(self):

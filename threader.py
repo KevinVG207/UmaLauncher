@@ -1,9 +1,11 @@
+import util
 import sys
-if len(sys.argv) > 1:
+gzips = list([path for path in sys.argv if path.endswith(".gz")])
+if gzips:
     # User dropped file(s) on the launcher.
     # Use them for CSV generation.
     import training_tracker
-    training_tracker.training_csv_dialog(sys.argv[1:])
+    training_tracker.training_csv_dialog(gzips)
     sys.exit()
 
 from elevate import elevate
@@ -11,7 +13,7 @@ try:
     elevate()
 except OSError:
     import util
-    util.show_alert_box("Launch Error", "Uma Launcher needs administrator privileges to start.")
+    util.show_error_box("Launch Error", "Uma Launcher needs administrator privileges to start.")
     sys.exit()
 
 import threading
@@ -72,11 +74,6 @@ class Threader():
 
 @logger.catch
 def main():
-    if util.is_script:
-        util.log_set_trace()
-        logger.debug("Running from script, enabling debug logging.")
-    else:
-        util.log_set_info()
     logger.info("==== Starting Launcher ====")
     Threader()
 

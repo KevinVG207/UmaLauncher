@@ -143,7 +143,7 @@ class ScreenStateHandler():
         logger.info("Requesting Rich Presence assets.")
         response = requests.get("https://discord.com/api/v9/oauth2/applications/954453106765225995/assets")
         if not response.ok:
-            util.show_alert_box("UmaLauncher: Internet error.", "Cannot download the image assets for the Discord Rich Presence. Please check your internet connection.")
+            util.show_warning_box("Uma Launcher: Internet error.", "Cannot download the image assets for the Discord Rich Presence. Please check your internet connection.")
             return chara_icons, music_icons
 
         assets = response.json()
@@ -171,7 +171,6 @@ class ScreenStateHandler():
             return image
         except Exception:
             logger.error("Couldn't get screenshot.")
-            # util.show_alert_box("UmaLauncher: Screenshot error.", "Could not take screenshot. If this keeps occurring, please contact the developer.")
             return None
 
     def screenshot_to_clipboard(self):
@@ -179,7 +178,6 @@ class ScreenStateHandler():
             img = self.get_screenshot()
         except OSError:
             logger.error("Couldn't get screenshot.")
-            # util.show_alert_box("UmaLauncher: Internet error.", "Cannot download the assets for the Discord Rich Presence. Please check your internet connection.")
             return
         output = BytesIO()
         img.convert("RGB").save(output, "BMP")
