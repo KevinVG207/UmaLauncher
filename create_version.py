@@ -6,7 +6,7 @@ def generate():
         output_file="version.rc",
         version=version.VERSION,
         file_description="Uma Launcher",
-        internal_name="UmaLauncher",
+        internal_name="Uma Launcher",
         original_filename="UmaLauncher.exe",
         product_name="Uma Launcher"
     )

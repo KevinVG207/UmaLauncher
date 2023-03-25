@@ -4,7 +4,7 @@ Software that enhances the Uma Musume (DMM Version) experience.
 ## Requirements (Optional)
 - [EXNOA-CarrotJuicer](https://github.com/CNA-Bld/EXNOA-CarrotJuicer)
   - Make sure CarrotJuicer's `version.dll` is located in the same directory as `umamusume.exe`.
-  - While optional, CarrotJuicer allows UmaLauncher to extract information from the network packets the game sends/receives. This information is necessary to determine the current status of the game for the automatic training event helper and Discord rich presence.
+  - While optional, CarrotJuicer allows Uma Launcher to extract information from the network packets the game sends/receives. This information is necessary to determine the current status of the game for the automatic training event helper and Discord rich presence.
 
 ## Usage
 Download the latest release's `UmaLauncher.exe` and run it.
@@ -39,7 +39,7 @@ On first launch or when you change the game's location, you may be asked to sele
   - Change the browser that opens with the automatic training event helper.
 
 ## Disclaimer
-UmaLauncher is in no way associated with Uma Musume, Cygames or DMM.  
+Uma Launcher is in no way associated with Uma Musume, Cygames or DMM.  
 It is the developer's belief that this tool is harmless to the above companies and brands and merely acts as a tool to improve the user experience.  
 
 ## License
