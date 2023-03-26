@@ -63,7 +63,7 @@ class ScreenState:
             self.large_text = self.handler.chara_names_dict[chara_id]
             if outfit_id:
                 if outfit_id in self.handler.outfit_names_dict:
-                    self.large_text += f" {self.handler.outfit_names_dict[outfit_id]}"
+                    self.large_text += f"\n{self.handler.outfit_names_dict[outfit_id]}"
         else:
             self.large_text = None
 
