@@ -1,6 +1,10 @@
 # Uma Launcher
 Software that enhances the Uma Musume (DMM Version) experience.
 
+For questions and feedback, join the Discord server:
+
+[![Uma Launcher Discord server](https://discordapp.com/api/guilds/1089576859349569646/widget.png?style=banner2)](https://discord.gg/9a2YqY8fNE)
+
 ## Requirements (Optional but recommended)
 - [EXNOA-CarrotJuicer](https://github.com/CNA-Bld/EXNOA-CarrotJuicer)
   - Download the latest version: [![Latest release](https://img.shields.io/github/v/release/CNA-Bld/EXNOA-CarrotJuicer)](https://github.com/CNA-Bld/EXNOA-CarrotJuicer/releases/latest)
