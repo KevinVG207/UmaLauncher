@@ -33,6 +33,7 @@ class UmaTray():
                 )
             )
         )
+        menu_items.append(pystray.Menu.SEPARATOR)
         menu_items.append(pystray.MenuItem("Maximize + center game", self.threader.windowmover.try_maximize))
         menu_items.append(pystray.MenuItem("Take screenshot", self.threader.screenstate.screenshot_to_clipboard))
         menu_items.append(pystray.MenuItem("Export Training CSV", lambda: training_tracker.training_csv_dialog()))
