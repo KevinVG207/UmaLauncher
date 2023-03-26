@@ -31,7 +31,7 @@ When a new version of Uma Launcher is available, you will be notified on startup
 ### Better Discord rich presence for Uma Musume
 ![An example of the training rich presence.](assets/rich-presence.png)
 
-*An example of the training rich presence.*
+*An example of the training rich presence during training.*
 - Shows which home screen you're on.
 - Shows training and concert details extracted from the game's packets. **(CarrotJuicer required)**
 - (Still work-in-progress.)
