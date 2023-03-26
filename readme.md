@@ -43,6 +43,7 @@ When a new version of Uma Launcher is available, you will be notified on startup
 *An example of the automatic training event helper scrolling to the training event.*
 - Automatically start a browser window with the current trained character and support cards.
 - Automatically selects and scrolls to event choices when needed.
+- Displays a useful table of the current training facilities' details.
 - Supports Edge, Chrome and Firefox browsers.
 ### Inspect your training runs
 **(CarrotJuicer required)**
