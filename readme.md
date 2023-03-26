@@ -50,7 +50,7 @@ When a new version of Uma Launcher is available, you will be notified on startup
 
 ![An example of the training run CSV, imported into Excel. (Only a subset of columns is shown.)](assets/training-csv-excel.png)
 
-*An example of the training run CSV, imported into Excel. (Only a subset of columns is shown.)*
+*An example of a training run CSV, imported into Excel. (Only a subset of columns is shown.)*
 - With the 'Track trainings' setting enabled, your training runs will be saved as a gzip file in the `training_logs` folder. This folder will be automatically created next to the exe.
 - Use the 'Export Training CSV' option in the tray icon menu to export the training logs to a CSV file.
 - CSVs can be generated without launching the exe by dragging and dropping logs from the `training_logs` folder onto the exe.
