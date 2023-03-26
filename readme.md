@@ -17,7 +17,7 @@ First, read the requirements above. Then download the latest version:
 [![Latest release](https://img.shields.io/github/v/release/KevinVG207/UmaLauncher)](https://github.com/KevinVG207/UmaLauncher/releases/latest)
 
 ## Usage
-Download the latest release's `UmaLauncher.exe` and run it.
+Download the latest release's `UmaLauncher.exe` and run it. Right-click the horseshoe icon in the system tray to change the settings or close Uma Launcher.
 
 On first launch or when you change the game's location, you may be asked to select the installation location for the game if you are not using the default location.
 
