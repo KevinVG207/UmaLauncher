@@ -23,6 +23,19 @@ On first launch or when you change the game's location, you may be asked to sele
 
 When a new version of Uma Launcher is available, you will be notified on startup. You may choose to update, or postpone the update temporarily or permanently.
 
+## Usage with Trainers' Legend G
+If you want to use all features of Uma Launcher together with [Trainers' Legend G](https://github.com/MinamiChiwa/Trainers-Legend-G) (or the [English translation project](https://github.com/noccu/umamusu-translate)), you can do so by adding CarrotJuicer to TLG's config.json file. Follow these steps:
+
+1. Rename CarrotJuicer's `version.dll` to something else, e.g. `carrotjuicer.dll`.
+2. Copy the renamed `carrotjuicer.dll` to the same directory as `umamusume.exe`.
+3. Install TLG and/or the English translation patch as normal.
+4. Make a copy of ``config.json`` in case something goes wrong.
+5. Add `"carrotjuicer.dll"` to the `loadDll` array in TLG's `config.json` file.<br>
+If using using the English translation project, you will need to manually add the `loadDll` array to the config file.<br>
+**Make sure the line before `loadDll` ends in a comma if you add it to the end of the file! See the image below for an example.**<br>
+![An example of the config.json file with carrotjuicer.dll added to loadDll.](assets/tlg-config-help.png)<br>
+*An example of the config.json file with carrotjuicer.dll added to loadDll.*
+
 ## Features
 ### Launch Uma Musume simply by running one file
 - The program automatically launches the game through DMM and closes it without needing any extra interaction.
