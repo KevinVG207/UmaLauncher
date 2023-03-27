@@ -3,7 +3,7 @@ Software that enhances the Uma Musume (DMM Version) experience.
 
 For questions and feedback, join the Discord server:
 
-[![Uma Launcher Discord server](https://discordapp.com/api/guilds/1089576859349569646/widget.png?style=banner2)](https://discord.gg/9a2YqY8fNE)
+[![Uma Launcher Discord server](https://discordapp.com/api/guilds/1089576859349569646/widget.png?style=banner2)](https://discord.gg/wvGHW65C6A)
 
 ## Requirements (Optional but recommended)
 - [EXNOA-CarrotJuicer](https://github.com/CNA-Bld/EXNOA-CarrotJuicer)
@@ -17,7 +17,7 @@ First, read the requirements above. Then download the latest version:
 [![Latest release](https://img.shields.io/github/v/release/KevinVG207/UmaLauncher)](https://github.com/KevinVG207/UmaLauncher/releases/latest)
 
 ## Usage
-Download the latest release's `UmaLauncher.exe` and run it.
+Download the latest release's `UmaLauncher.exe` and run it. Right-click the horseshoe icon in the system tray to change the settings or close Uma Launcher.
 
 On first launch or when you change the game's location, you may be asked to select the installation location for the game if you are not using the default location.
 
@@ -42,7 +42,7 @@ If you want to use all features of Uma Launcher together with [Trainers' Legend 
 ### Better Discord rich presence for Uma Musume
 ![An example of the training rich presence.](assets/rich-presence.png)
 
-*An example of the training rich presence.*
+*An example of the training rich presence during training.*
 - Shows which home screen you're on.
 - Shows training and concert details extracted from the game's packets. **(CarrotJuicer required)**
 - (Still work-in-progress.)
@@ -54,13 +54,14 @@ If you want to use all features of Uma Launcher together with [Trainers' Legend 
 *An example of the automatic training event helper scrolling to the training event.*
 - Automatically start a browser window with the current trained character and support cards.
 - Automatically selects and scrolls to event choices when needed.
+- Displays a useful table of the current training facilities' details.
 - Supports Edge, Chrome and Firefox browsers.
 ### Inspect your training runs
 **(CarrotJuicer required)**
 
 ![An example of the training run CSV, imported into Excel. (Only a subset of columns is shown.)](assets/training-csv-excel.png)
 
-*An example of the training run CSV, imported into Excel. (Only a subset of columns is shown.)*
+*An example of a training run CSV, imported into Excel. (Only a subset of columns is shown.)*
 - With the 'Track trainings' setting enabled, your training runs will be saved as a gzip file in the `training_logs` folder. This folder will be automatically created next to the exe.
 - Use the 'Export Training CSV' option in the tray icon menu to export the training logs to a CSV file.
 - CSVs can be generated without launching the exe by dragging and dropping logs from the `training_logs` folder onto the exe.
