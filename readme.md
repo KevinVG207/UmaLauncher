@@ -29,12 +29,9 @@ If you want to use all features of Uma Launcher together with [Trainers' Legend 
 1. Rename CarrotJuicer's `version.dll` to something else, e.g. `carrotjuicer.dll`.
 2. Copy the renamed `carrotjuicer.dll` to the same directory as `umamusume.exe`.
 3. Install TLG and/or the English translation patch as normal.
-4. Make a copy of ``config.json`` in case something goes wrong.
-5. Add `"carrotjuicer.dll"` **(including quotes)** between the brackets after `loadDll` in TLG's `config.json` file.<br>
-If you are using using the English translation project, you will need to manually add the `loadDll` line to the config file:<br>``"loadDll": ["carrotjuicer.dll"]``<br>
-**Make sure the line before `loadDll` ends in a comma if you add it to the end of the file! See the image below for an example.**<br>
-![An example of the config.json file with carrotjuicer.dll added to loadDll.](assets/tlg-config-help.png)<br>
-*An example of the config.json file with carrotjuicer.dll added to loadDll.*
+4. Make a copy of `config.json` in case something goes wrong.
+5. Patch your existing `config.json` using the [TLG Config Patcher](https://umapyoi.net/tlg-config-patcher) page. (Change the mod DLL if you named it something different.)<br>
+If you understand json files, you can manually add `"carrotjuicer.dll"` to the config file like this:<br>`"loadDll": ["carrotjuicer.dll"]`
 
 ## Features
 ### Launch Uma Musume simply by running one file
