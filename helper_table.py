@@ -140,7 +140,7 @@ def create_helper_table(data) -> str:
             'failure_rate': failure_rate,
             'gained_stats': stats,
             'gained_skillpt': skillpt,
-            'gained_bond': bond,
+            'useful_bond': bond,
             'gained_energy': energy
         }
 

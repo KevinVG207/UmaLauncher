@@ -32,6 +32,7 @@ class Cell():
 class Row():
     long_name = None
     short_name = None
+    description = None
     settings = None
     cells = None
 
@@ -83,11 +84,12 @@ class SettingType(enum.Enum):
     STRING = "str"
 
 class Settings():
-    pass
+    def get_settings_keys(self):
+        return [attr for attr in dir(self) if attr.startswith("s_")]
 
-    def to_json(self):
-        settings = [attr for attr in dir(self) if attr.startswith("s_")]
-        return json.dumps({setting: getattr(self, setting).value for setting in settings})
+    def to_dict(self):
+        settings = self.get_settings_keys()
+        return {setting: getattr(self, setting).value for setting in settings}
 
 @dataclass
 class Setting():

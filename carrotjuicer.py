@@ -224,7 +224,6 @@ class CarrotJuicer():
             document.getElementById("energy").innerText = window.UL_DATA.energy + "/" + window.UL_DATA.max_energy;
 
             document.getElementById("training-table").innerHTML = window.UL_DATA.table;
-            console.log(window.UL_DATA.table);
         };
         """)
 
@@ -403,7 +402,6 @@ class CarrotJuicer():
                     self.open_helper()
                 
                 helper_table = create_helper_table(data)
-                logger.debug(helper_table)
                 if helper_table:
                     self.browser.execute_script("""
                         window.UL_DATA.energy = arguments[0];
