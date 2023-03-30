@@ -16,6 +16,7 @@ from selenium.common.exceptions import NoSuchWindowException
 from screenstate import ScreenState, Location
 import util
 import mdb
+from helper_table import create_helper_table
 
 # TODO: Track amount of trainings on every facility to know when it upgrades next.
 # TODO: Log ALL races by passing race packets to training_tracker.
@@ -160,6 +161,9 @@ class CarrotJuicer():
     
     def setup_helper_page(self):
         self.browser.execute_script("""
+        if (window.UL_OVERLAY) {
+            window.UL_OVERLAY.remove();
+        }
         window.UL_OVERLAY = document.createElement("div");
         window.GT_PAGE = document.getElementById("__next");
         window.OVERLAY_HEIGHT = "15rem";
@@ -180,17 +184,6 @@ class CarrotJuicer():
         window.UL_OVERLAY.innerHTML = `
             <div>Energy: <span id="energy"></span></div>
             <table id="training-table">
-                <thead>
-                    <tr>
-                        <th>Facility</th>
-                        <th>Speed</th>
-                        <th>Stamina</th>
-                        <th>Power</th>
-                        <th>Guts</th>
-                        <th>Wisdom</th>
-                    </tr>
-                </thead>
-                <tbody id="table-body"></tbody>
             </table>
         `;
 
@@ -219,9 +212,7 @@ class CarrotJuicer():
         window.UL_DATA = {
             energy: 100,
             max_energy: 100,
-            cur_stats: [0, 0, 0, 0, 0],
-            training: {},
-            max_training: {},
+            table: "",
             expanded: true
         };
 
@@ -230,70 +221,10 @@ class CarrotJuicer():
         window.GT_PAGE.style.transition = "padding-top 0.5s";
 
         window.update_overlay = function() {
-            var training_metadata_array = [
-                {name: "Speed", command_id: [101, 601]},
-                {name: "Stamina", command_id: [105, 602]},
-                {name: "Power", command_id: [102, 603]},
-                {name: "Guts", command_id: [103, 604]},
-                {name: "Wisdom", command_id: [106, 605]}
-            ];
-
-            var row_meatdata_array = [
-                {name: "Stat Gain", key: "stats"},
-                {name: "Energy", key: "energy"},
-                {name: "Useful Bond", key: "bond"},
-                {name: "Skillpt Gain", key: "skillpt"},
-                {name: "Fail %", key: "failure_rate"},
-                {name: "Level", key: "level"}
-            ];
-
             document.getElementById("energy").innerText = window.UL_DATA.energy + "/" + window.UL_DATA.max_energy;
 
-            var tbody = document.getElementById("training-table").querySelector("#table-body");
-            tbody.innerHTML = "";
-
-            var tr = document.createElement("tr");
-            var td = document.createElement("td");
-            td.innerText = "Current";
-            tr.appendChild(td);
-            tbody.appendChild(tr);
-            for (var i = 0; i < training_metadata_array.length; i++) {
-                var td = document.createElement("td");
-                td.innerText = window.UL_DATA.cur_stats[i];
-                tr.appendChild(td);
-            }
-
-            for (var i = 0; i < row_meatdata_array.length; i++) {
-                var tr = document.createElement("tr");
-                var row_metadata = row_meatdata_array[i];
-                for (var j = 0; j < training_metadata_array.length + 1; j++) {
-                    var td = document.createElement("td");
-                    if (j == 0){
-                        td.innerText = row_metadata.name;
-                    } else {
-                        var training_metadata = training_metadata_array[j - 1];
-                        for (var k = 0; k < training_metadata.command_id.length; k++) {
-                            if (training_metadata.command_id[k] in window.UL_DATA.training) {
-                                var value = window.UL_DATA.training[training_metadata.command_id[k]][row_metadata.key]
-                                if (value > 0 && row_metadata.key in window.UL_DATA.max_training && value == window.UL_DATA.max_training[row_metadata.key]) {
-                                    td.style.color = "lightgreen";
-                                    td.style.fontWeight = "bold";
-                                } else if (row_metadata.key == "failure_rate") {
-                                    if (value >= 30) {
-                                        td.style.color = "red";
-                                    } else if (value > 0) {
-                                        td.style.color = "orange";
-                                    }
-                                    value = value + "%";
-                                }
-                                td.innerText = value;
-                            }
-                        }
-                    }
-                    tr.appendChild(td);
-                }
-                tbody.appendChild(tr);
-            }
+            document.getElementById("training-table").innerHTML = window.UL_DATA.table;
+            console.log(window.UL_DATA.table);
         };
         """)
 
@@ -471,141 +402,18 @@ class CarrotJuicer():
                     logger.debug(f"Helper URL: {self.helper_url}")
                     self.open_helper()
                 
-                # Update browser variables
-                # First generate the evaluation dict
-                if 'home_info' in data:
-                    eval_dict = {eval_data['training_partner_id']: eval_data['evaluation'] for eval_data in data['chara_info']['evaluation_info_array']}
-
-                    cur_training = {}
-
-                    all_commands = {}
-                    
-                    # Default commands
-                    for command in data['home_info']['command_info_array']:
-                        all_commands[command['command_id']] = command
-                    
-                    # Scenario specific commands
-                    scenario_keys = [
-                        'venus_data_set',  # Grand Masters
-                        'live_data_set',  # Grand Live
-                        'free_data_set', # MANT
-                        'team_data_set',  # Aoharu
-                        'ura_data_set'  # URA
-                    ]
-                    for key in scenario_keys:
-                        if key in data and 'command_info_array' in data[key]:
-                            for command in data[key]['command_info_array']:
-                                if 'params_inc_dec_info_array' in command:
-                                    all_commands[command['command_id']]['params_inc_dec_info_array'] += command['params_inc_dec_info_array']
-
-                    max_stats = 0
-                    max_skillpt = 0
-                    max_bond = 0
-                    for command in all_commands.values():
-                        level = command['level']
-                        failure_rate = command['failure_rate']
-                        stats = 0
-                        skillpt = 0
-                        bond = 0
-                        energy = 0
-
-                        for param in command['params_inc_dec_info_array']:
-                            if param['target_type'] < 6:
-                                stats += param['value']
-                            elif param['target_type'] == 30:
-                                skillpt += param['value']
-                            elif param['target_type'] == 10:
-                                energy += param['value']
-                        
-                        
-                        def calc_bond_gain(partner_id, amount):
-                            if not partner_id in eval_dict:
-                                logger.error(f"Training partner ID not found in eval dict: {partner_id}")
-                                return 0
-                            
-                            # Ignore group and friend type cards
-                            if partner_id <= 6:
-                                support_card_id = data['chara_info']['support_card_array'][partner_id - 1]['support_card_id']
-                                support_card_data = mdb.get_support_card_dict()[support_card_id]
-                                support_card_type = util.SUPPORT_CARD_TYPE_DICT[(support_card_data[1], support_card_data[2])]
-                                if support_card_type in ("Group", "Friend"):
-                                    return 0
-
-                            cur_bond = eval_dict[partner_id]
-                            effective_bond = 0
-
-                            usefulness_cutoff = 81
-                            if partner_id == 102:
-                                usefulness_cutoff = 61
-
-                            if cur_bond < usefulness_cutoff:
-                                new_bond = cur_bond + amount
-                                new_bond = min(new_bond, 80)
-                                effective_bond = new_bond - cur_bond
-                            return effective_bond
-
-                        for training_partner_id in command['training_partner_array']:
-                            # Akikawa is 102
-                            if training_partner_id <= 6 or training_partner_id == 102:
-                                initial_gain = 7
-                                # Add 2 extra bond when charming is active and the partner is not Akikawa
-                                if training_partner_id <= 6 and 8 in data['chara_info'].get('chara_effect_id_array', []):
-                                    initial_gain += 2
-
-                                # Add 2 extra bond when rising star is active and the partner is Akikawa
-                                elif training_partner_id == 102 and 9 in data['chara_info'].get('chara_effect_id_array', []):
-                                    initial_gain += 2
-
-                                bond += calc_bond_gain(training_partner_id, initial_gain)
-
-                        # For bond, first check if blue venus effect is active.
-                        venus_blue_active = False
-                        if 'venus_data_set' in data and len(data['venus_data_set']['venus_spirit_active_effect_info_array']) > 0:
-                            if data['venus_data_set']['venus_spirit_active_effect_info_array'][0]['chara_id'] == 9041:
-                                venus_blue_active = True
-
-                        bond_gains = [0]
-                        for tips_partner_id in command['tips_event_partner_array']:
-                            if tips_partner_id <= 6:
-                                bond_gains.append(calc_bond_gain(tips_partner_id, 5))
-                        if not venus_blue_active:
-                            bond += max(bond_gains)
-                        else:
-                            bond += sum(bond_gains)
-
-                        if stats > max_stats:
-                            max_stats = stats
-                        if skillpt > max_skillpt:
-                            max_skillpt = skillpt
-                        if bond > max_bond:
-                            max_bond = bond
-
-                        cur_training[command['command_id']] = {
-                            'level': level,
-                            'failure_rate': failure_rate,
-                            'stats': stats,
-                            'skillpt': skillpt,
-                            'bond': bond,
-                            'energy': energy
-                        }
-                    
+                helper_table = create_helper_table(data)
+                logger.debug(helper_table)
+                if helper_table:
                     self.browser.execute_script("""
-                        var energy_data = arguments[0];
-                        window.UL_DATA.energy = energy_data[0];
-                        window.UL_DATA.max_energy = energy_data[1];
-                        window.UL_DATA.cur_stats = arguments[1];
-                        window.UL_DATA.training = arguments[2];
-                        window.UL_DATA.max_training = arguments[3];
+                        window.UL_DATA.energy = arguments[0];
+                        window.UL_DATA.max_energy = arguments[1];
+                        window.UL_DATA.table = arguments[2];
                         window.update_overlay();
                         """,
-                        [data['chara_info']['vital'], data['chara_info']['max_vital']],
-                        [data['chara_info']['speed'], data['chara_info']['stamina'], data['chara_info']['power'], data['chara_info']['guts'], data['chara_info']['wiz']],
-                        cur_training,
-                        {
-                            'bond': max_bond,
-                            'skillpt': max_skillpt,
-                            'stats': max_stats
-                        }
+                        data['chara_info']['vital'],
+                        data['chara_info']['max_vital'],
+                        helper_table
                     )
 
             if 'unchecked_event_array' in data and data['unchecked_event_array']:
