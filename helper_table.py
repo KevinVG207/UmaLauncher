@@ -1,6 +1,7 @@
 from loguru import logger
 import mdb
 import util
+import gui
 import helper_table_defaults as htd
 
 COMMAND_ID_TO_KEY = {
@@ -156,3 +157,10 @@ class HelperTable():
         table = self.preset.generate_table(game_state)
 
         return table
+
+    def show_preset_menu(self):
+        """Shows a menu to select a preset.
+        """
+
+        app = gui.UmaApp()
+        app.run()

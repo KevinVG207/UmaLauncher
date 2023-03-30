@@ -74,13 +74,15 @@ class Row():
 
 class Preset():
     name = None
-    rows: list[Row] = []
+    rows: None
+    initialized_rows: list[Row] = None
+    default = False
 
     def __init__(self, row_types):
-        self.rows = [row_types[row]() for row in self.rows]
+        self.initialized_rows = [row_types[row]() for row in self.rows]
 
     def __iter__(self):
-        return iter(self.rows)
+        return iter(self.initialized_rows)
     
     def generate_table(self, game_state):
         if not game_state:
@@ -88,7 +90,7 @@ class Preset():
 
         table = [[f"<th>{header}</th>" for header in TABLE_HEADERS]]
 
-        for row in self.rows:
+        for row in self.initialized_rows:
             table.append([cell.to_td() for cell in row.get_cells(game_state)])
 
         table = [f"<tr>{''.join(row)}</tr>" for row in table]

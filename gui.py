@@ -18,11 +18,12 @@ class UmaApp():
     def init_app(self):
         pass
 
-    def run(self, main_widget: qtw.QWidget):
+    def run(self, main_widget: qtw.QWidget, retain_font=False):
 
-        font = main_widget.font()
-        font.setPointSizeF(8.75)
-        main_widget.setFont(font)
+        if not retain_font:
+            font = main_widget.font()
+            font.setPointSizeF(8.75)
+            main_widget.setFont(font)
 
         self.main_widget = main_widget
         self.app.exec_()
@@ -60,6 +61,129 @@ class UmaMainWidget(qtw.QWidget):
 
     def init_ui(self, *args, **kwargs):
         pass
+
+
+class UmaPresetMenu(UmaMainWidget):
+    default_preset = None
+    selected_preset = None
+    preset_list = None
+    row_types_dict = None
+
+    def init_ui(self, selected_preset, default_preset, preset_list, row_types_dict, *args, **kwargs):
+        self.selected_preset = selected_preset
+        self.default_preset = default_preset
+        self.preset_list = preset_list
+        self.row_types_dict = row_types_dict
+
+        self.resize(691, 471)
+        self.setWindowTitle(u"Customize Helper Table")
+        self.grp_preset_catalog = qtw.QGroupBox(self)
+        self.grp_preset_catalog.setObjectName(u"grp_preset_catalog")
+        self.grp_preset_catalog.setGeometry(qtc.QRect(10, 10, 671, 51))
+        sizePolicy = qtw.QSizePolicy(qtw.QSizePolicy.Maximum, qtw.QSizePolicy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.grp_preset_catalog.sizePolicy().hasHeightForWidth())
+        self.grp_preset_catalog.setSizePolicy(sizePolicy)
+        self.grp_preset_catalog.setTitle(u"Preset catalog")
+        self.cmb_select_preset = qtw.QComboBox(self.grp_preset_catalog)
+        self.cmb_select_preset.setObjectName(u"cmb_select_preset")
+        self.cmb_select_preset.setGeometry(qtc.QRect(10, 20, 491, 22))
+        self.but_new_preset = qtw.QPushButton(self.grp_preset_catalog)
+        self.but_new_preset.setObjectName(u"but_new_preset")
+        self.but_new_preset.setGeometry(qtc.QRect(510, 20, 71, 23))
+        self.but_new_preset.setText(u"New")
+        self.but_del_preset = qtw.QPushButton(self.grp_preset_catalog)
+        self.but_del_preset.setObjectName(u"but_del_preset")
+        self.but_del_preset.setGeometry(qtc.QRect(590, 20, 71, 23))
+        self.but_del_preset.setText(u"Delete")
+        self.grp_available_rows = qtw.QGroupBox(self)
+        self.grp_available_rows.setObjectName(u"grp_available_rows")
+        self.grp_available_rows.setGeometry(qtc.QRect(10, 60, 331, 311))
+        self.grp_available_rows.setTitle(u"Available rows")
+        self.lst_available = qtw.QListWidget(self.grp_available_rows)
+
+        for key, row in self.row_types_dict.items():
+            new_item = qtw.QListWidgetItem(self.lst_available)
+            new_item.setText(row.long_name)
+            new_item.setData(qtc.Qt.UserRole, key)
+            new_item.setData(qtc.Qt.UserRole + 1, row)
+            print(new_item.data(qtc.Qt.UserRole))
+            print(new_item.data(qtc.Qt.UserRole + 1))
+
+        self.lst_available.setObjectName(u"lst_available")
+        self.lst_available.setGeometry(qtc.QRect(10, 20, 311, 251))
+        self.btn_copy_to_preset = qtw.QPushButton(self.grp_available_rows)
+        self.btn_copy_to_preset.setObjectName(u"btn_copy_to_preset")
+        self.btn_copy_to_preset.setGeometry(qtc.QRect(10, 280, 311, 23))
+        sizePolicy1 = qtw.QSizePolicy(qtw.QSizePolicy.Maximum, qtw.QSizePolicy.Fixed)
+        sizePolicy1.setHorizontalStretch(0)
+        sizePolicy1.setVerticalStretch(0)
+        sizePolicy1.setHeightForWidth(self.btn_copy_to_preset.sizePolicy().hasHeightForWidth())
+        self.btn_copy_to_preset.setSizePolicy(sizePolicy1)
+        self.btn_copy_to_preset.setText(u"Copy to current preset \u2192")
+        self.grp_current_preset = qtw.QGroupBox(self)
+        self.grp_current_preset.setObjectName(u"grp_current_preset")
+        self.grp_current_preset.setGeometry(qtc.QRect(350, 60, 331, 311))
+        self.grp_current_preset.setTitle(u"Current preset")
+        self.lst_current = qtw.QListWidget(self.grp_current_preset)
+        __qlistwidgetitem1 = qtw.QListWidgetItem(self.lst_current)
+        __qlistwidgetitem1.setText(u"1");
+        self.lst_current.setObjectName(u"lst_current")
+        self.lst_current.setGeometry(qtc.QRect(10, 20, 311, 251))
+        self.lst_current.setDragEnabled(True)
+        self.lst_current.setDragDropMode(qtw.QAbstractItemView.DragDrop)
+        self.lst_current.setDefaultDropAction(qtc.Qt.MoveAction)
+        self.btn_delete_from_preset = qtw.QPushButton(self.grp_current_preset)
+        self.btn_delete_from_preset.setObjectName(u"btn_delete_from_preset")
+        self.btn_delete_from_preset.setGeometry(qtc.QRect(10, 280, 311, 23))
+        self.btn_delete_from_preset.setText(u"Delete from current preset")
+        self.btn_close = qtw.QPushButton(self)
+        self.btn_close.setObjectName(u"btn_close")
+        self.btn_close.setGeometry(qtc.QRect(610, 440, 71, 23))
+        self.btn_close.setText(u"Close")
+        self.btn_apply = qtw.QPushButton(self)
+        self.btn_apply.setObjectName(u"btn_apply")
+        self.btn_apply.setGeometry(qtc.QRect(530, 440, 71, 23))
+        self.btn_apply.setText(u"Apply")
+        self.grp_help = qtw.QGroupBox(self)
+        self.grp_help.setObjectName(u"grp_help")
+        self.grp_help.setGeometry(qtc.QRect(10, 370, 671, 61))
+        self.grp_help.setTitle(u"Help")
+        self.label = qtw.QLabel(self.grp_help)
+        self.label.setObjectName(u"label")
+        self.label.setGeometry(qtc.QRect(10, 20, 651, 31))
+        self.label.setText(u"DESCRIPTION.")
+        self.label.setAlignment(qtc.Qt.AlignLeading|qtc.Qt.AlignLeft|qtc.Qt.AlignTop)
+        self.label.setWordWrap(True)
+
+        self.reload_preset_combobox()
+
+
+    def reload_current_rows(self):
+        self.lst_current.clear()
+        for row_key in self.selected_preset.rows:
+            row = self.row_types_dict[row_key]
+            new_item = qtw.QListWidgetItem(self.lst_current)
+            new_item.setText(row.long_name)
+            new_item.setData(qtc.Qt.UserRole, row_key)
+            new_item.setData(qtc.Qt.UserRole + 1, row)
+
+    def reload_preset_combobox(self):
+        self.cmb_select_preset.clear()
+        self.cmb_select_preset.addItem(self.default_preset.name, -1)
+        set_current_index = False
+        for i, preset in enumerate(self.preset_list):
+            self.cmb_select_preset.addItem(preset.name, i)
+            if preset == self.selected_preset:
+                self.cmb_select_preset.setCurrentIndex(i + 1)
+                set_current_index = True
+                print("Set current index to", i + 1)
+        
+        if not set_current_index:
+            self.cmb_select_preset.setCurrentIndex(0)
+
+        self.reload_current_rows()
 
 
 class UmaUpdateConfirm(UmaMainWidget):
