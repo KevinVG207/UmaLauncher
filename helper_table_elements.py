@@ -1,8 +1,16 @@
 import enum
-import json
 from dataclasses import dataclass
 from loguru import logger
 import gui
+
+TABLE_HEADERS = [
+    "Facility",
+    "Speed",
+    "Stamina",
+    "Power",
+    "Guts",
+    "Wisdom"
+]
 
 class Colors(enum.Enum):
     """Defines the colors used in the helper table.
@@ -38,9 +46,6 @@ class Row():
 
     """Defines a row in the helper table.
     """
-    def __init__(self, game_state):
-        self.cells = self._generate_cells(game_state)
-
     def _generate_cells(self, game_state) -> list[Cell]:
         """Returns a list of cells for this row.
         """
@@ -51,10 +56,10 @@ class Row():
         
         return cells
 
-    def get_cell(self, column_index) -> Cell:
+    def get_cells(self, game_state) -> list[Cell]:
         """Returns the value of the row at the given column index.
         """
-        return self.cells[column_index]
+        return self._generate_cells(game_state)
 
     def _make_settings_dialog(self) -> gui.UmaMainWidget:
         """Returns a settings dialog for this row.
@@ -71,11 +76,26 @@ class Preset():
     name = None
     rows: list[Row] = []
 
-    def __init__(self, game_state):
-        self.rows = [row(game_state) for row in self.rows]
+    def __init__(self, row_types):
+        self.rows = [row_types[row]() for row in self.rows]
 
     def __iter__(self):
         return iter(self.rows)
+    
+    def generate_table(self, game_state):
+        if not game_state:
+            return ""
+
+        table = [[f"<th>{header}</th>" for header in TABLE_HEADERS]]
+
+        for row in self.rows:
+            table.append([cell.to_td() for cell in row.get_cells(game_state)])
+
+        table = [f"<tr>{''.join(row)}</tr>" for row in table]
+
+        thead = f"<thead>{table[0]}</thead>"
+        tbody = f"<tbody>{''.join(table[1:])}</tbody>"
+        return thead + tbody
 
 class SettingType(enum.Enum):
     BOOL = "bool"

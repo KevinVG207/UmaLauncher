@@ -113,7 +113,7 @@ class GainedSkillptSettings(hte.Settings):
 
 class GainedSkillptRow(hte.Row):
     long_name = "Skill points gained per facility"
-    short_name = "Skillpt"
+    short_name = "Skill Points"
     settings = GainedSkillptSettings()
 
     def _generate_cells(self, game_state) -> list[hte.Cell]:
@@ -188,14 +188,25 @@ class LevelRow(hte.Row):
         return cells
 
 
+row_types = {
+    "current_stats": CurrentStatsRow,
+    "gained_stats": GainedStatsRow,
+    "gained_energy": GainedEnergyRow,
+    "useful_bond": UsefulBondRow,
+    "gained_skillpt": GainedSkillptRow,
+    "fail_percentage": FailPercentageRow,
+    "level": LevelRow
+}
+
+
 class DefaultPreset(hte.Preset):
     name = "Default"
     rows = [
-        CurrentStatsRow,
-        GainedStatsRow,
-        GainedEnergyRow,
-        UsefulBondRow,
-        GainedSkillptRow,
-        FailPercentageRow,
-        LevelRow
+        "current_stats",
+        "gained_stats",
+        "gained_energy",
+        "useful_bond",
+        "gained_skillpt",
+        "fail_percentage",
+        "level"
     ]

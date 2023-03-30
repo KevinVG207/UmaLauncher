@@ -16,7 +16,7 @@ from selenium.common.exceptions import NoSuchWindowException
 from screenstate import ScreenState, Location
 import util
 import mdb
-from helper_table import create_helper_table
+import helper_table
 
 # TODO: Track amount of trainings on every facility to know when it upgrades next.
 # TODO: Log ALL races by passing race packets to training_tracker.
@@ -28,6 +28,7 @@ class CarrotJuicer():
     previous_element = None
     threader = None
     screen_state_handler = None
+    helper_table = None
     should_stop = False
     last_browser_rect = None
     reset_browser = False
@@ -42,13 +43,15 @@ class CarrotJuicer():
         self.threader = threader
 
         self._browser_list = {
-            'Firefox': self.firefox_setup,
             'Chrome': self.chrome_setup,
+            'Firefox': self.firefox_setup,
             'Edge': self.edge_setup,
         }
 
         self.screen_state_handler = threader.screenstate
         self.restart_time()
+
+        self.helper_table = helper_table.HelperTable(self)
 
         # Remove existing geckodriver.log
         if os.path.exists("geckodriver.log"):
@@ -167,10 +170,11 @@ class CarrotJuicer():
         window.UL_OVERLAY = document.createElement("div");
         window.GT_PAGE = document.getElementById("__next");
         window.OVERLAY_HEIGHT = "15rem";
-        window.UL_OVERLAY.style.height = OVERLAY_HEIGHT;
+        window.UL_OVERLAY.style.height = "max_content";
         window.UL_OVERLAY.style.width = "100%";
+        window.UL_OVERLAY.style.padding = "1rem 0";
         window.UL_OVERLAY.style.position = "fixed";
-        window.UL_OVERLAY.style.top = "0";
+        window.UL_OVERLAY.style.bottom = "100%";
         window.UL_OVERLAY.style.zIndex = 100;
         window.UL_OVERLAY.style.backgroundColor = "var(--c-bg-main)";
         window.UL_OVERLAY.style.borderBottom = "2px solid var(--c-topnav)";
@@ -179,7 +183,6 @@ class CarrotJuicer():
         window.UL_OVERLAY.style.justifyContent = "center";
         window.UL_OVERLAY.style.flexDirection = "column";
         window.UL_OVERLAY.style.fontSize = "0.9rem";
-        window.UL_OVERLAY.style.transition = "top 0.5s";
 
         window.UL_OVERLAY.innerHTML = `
             <div>Energy: <span id="energy"></span></div>
@@ -189,23 +192,31 @@ class CarrotJuicer():
 
         var ul_dropdown = document.createElement("div");
         ul_dropdown.id = "ul-dropdown";
-        ul_dropdown.style = "position: fixed;right: 0;top: calc(15rem - 2px);width: 3rem;height: 1.6rem;background-color: var(--c-bg-main);text-align: center;z-index: 101;line-height: 1.5rem;border-left: 2px solid var(--c-topnav);border-bottom: 2px solid var(--c-topnav);border-bottom-left-radius: 0.5rem;cursor: pointer;transition: top 0.5s;";
+        ul_dropdown.style = "position: fixed;right: 0;top: 0;width: 3rem;height: 1.6rem;background-color: var(--c-bg-main);text-align: center;z-index: 101;line-height: 1.5rem;border-left: 2px solid var(--c-topnav);border-bottom: 2px solid var(--c-topnav);border-bottom-left-radius: 0.5rem;cursor: pointer;";
         ul_dropdown.textContent = "⯅";
         window.UL_OVERLAY.appendChild(ul_dropdown);
 
+        window.hide_overlay = function() {
+            window.UL_DATA.expanded = false;
+            document.getElementById("ul-dropdown").textContent = "⯆";
+            document.getElementById("ul-dropdown").style.top = "-2px";
+            window.GT_PAGE.style.paddingTop = "0";
+            window.UL_OVERLAY.style.bottom = "100%";
+        }
+
+        window.expand_overlay = function() {
+            window.UL_DATA.expanded = true;
+            document.getElementById("ul-dropdown").textContent = "⯅";
+            document.getElementById("ul-dropdown").style.top = "calc(" + window.OVERLAY_HEIGHT + " - 2px)";
+            window.GT_PAGE.style.paddingTop = window.OVERLAY_HEIGHT;
+            window.UL_OVERLAY.style.bottom = "calc(100% - " + window.OVERLAY_HEIGHT + ")";
+        }
+
         ul_dropdown.addEventListener("click", function() {
             if (window.UL_DATA.expanded) {
-                window.UL_DATA.expanded = false;
-                document.getElementById("ul-dropdown").textContent = "⯆";
-                document.getElementById("ul-dropdown").style.top = "-2px";
-                window.GT_PAGE.style.paddingTop = "0";
-                window.UL_OVERLAY.style.top = "-" + OVERLAY_HEIGHT;
+                window.hide_overlay();
             } else {
-                window.UL_DATA.expanded = true;
-                document.getElementById("ul-dropdown").textContent = "⯅";
-                document.getElementById("ul-dropdown").style.top = "calc(15rem - 2px)";
-                window.GT_PAGE.style.paddingTop = OVERLAY_HEIGHT;
-                window.UL_OVERLAY.style.top = "0";
+                window.expand_overlay();
             }
         });
 
@@ -217,13 +228,21 @@ class CarrotJuicer():
         };
 
         document.body.prepend(window.UL_OVERLAY);
-        window.GT_PAGE.style.paddingTop = OVERLAY_HEIGHT;
+
+        window.UL_OVERLAY.querySelector("#ul-dropdown").style.transition = "top 0.5s";
+        window.UL_OVERLAY.style.transition = "bottom 0.5s";
         window.GT_PAGE.style.transition = "padding-top 0.5s";
 
         window.update_overlay = function() {
             document.getElementById("energy").innerText = window.UL_DATA.energy + "/" + window.UL_DATA.max_energy;
 
             document.getElementById("training-table").innerHTML = window.UL_DATA.table;
+
+            var height = window.UL_OVERLAY.clientHeight;
+            window.OVERLAY_HEIGHT = height + "px";
+            if (window.UL_DATA.expanded) {
+                window.expand_overlay();
+            }
         };
         """)
 
@@ -401,7 +420,7 @@ class CarrotJuicer():
                     logger.debug(f"Helper URL: {self.helper_url}")
                     self.open_helper()
                 
-                helper_table = create_helper_table(data)
+                helper_table = self.helper_table.create_helper_table(data)
                 if helper_table:
                     self.browser.execute_script("""
                         window.UL_DATA.energy = arguments[0];
