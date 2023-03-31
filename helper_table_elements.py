@@ -43,6 +43,7 @@ class Row():
     description = None
     settings = None
     cells = None
+    dialog = None
 
     """Defines a row in the helper table.
     """
@@ -61,16 +62,16 @@ class Row():
         """
         return self._generate_cells(game_state)
 
-    def _make_settings_dialog(self) -> gui.UmaMainWidget:
+    def _make_settings_dialog(self, parent) -> gui.UmaMainWidget:
         """Returns a settings dialog for this row.
         """
-        pass
+        return gui.UmaRowSettingsDialog(parent, self, SettingType)
 
-    def display_settings_dialog(self):
+    def display_settings_dialog(self, parent):
         """Displays the settings dialog for this row.
         """
-        dialog = self._make_settings_dialog()
-        dialog.show()
+        self.dialog = self._make_settings_dialog(parent)
+        self.dialog.exec()
 
 class Preset():
     name = None
@@ -79,7 +80,7 @@ class Preset():
     default = False
 
     def __init__(self, row_types):
-        self.initialized_rows = [row_types[row]() for row in self.rows]
+        self.initialized_rows = [row.value() for row in self.rows]
 
     def __iter__(self):
         return iter(self.initialized_rows)
@@ -102,8 +103,6 @@ class Preset():
 class SettingType(enum.Enum):
     BOOL = "bool"
     INT = "int"
-    FLOAT = "float"
-    STRING = "str"
 
 class Settings():
     def get_settings_keys(self):
@@ -119,3 +118,5 @@ class Setting():
     description: str
     value: ...
     type: SettingType
+    min_value: int = 0
+    max_value: int = 100

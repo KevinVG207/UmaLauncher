@@ -1,3 +1,4 @@
+from enum import Enum
 import helper_table_elements as hte
 
 class CurrentStatsRow(hte.Row):
@@ -113,6 +114,18 @@ class GainedSkillptSettings(hte.Settings):
         False,
         hte.SettingType.BOOL
     )
+    s_highlight_max2 = hte.Setting(
+        "Highlight max2",
+        "Highlights the facility with the most gained skill points.",
+        False,
+        hte.SettingType.BOOL
+    )
+    s_highlight_max3 = hte.Setting(
+        "Highlight max3",
+        "Highlights the facility with the most gained skill points.",
+        False,
+        hte.SettingType.BOOL
+    )
 
 class GainedSkillptRow(hte.Row):
     long_name = "Skill points gained per facility"
@@ -146,13 +159,17 @@ class FailPercentageSettings(hte.Settings):
         "Orange threshold",
         "The number from which the fail percentage is orange.",
         1,
-        hte.SettingType.INT
+        hte.SettingType.INT,
+        0,
+        100
     )
     s_red_threshold = hte.Setting(
         "Red threshold",
         "The number from which the fail percentage is red.",
         30,
-        hte.SettingType.INT
+        hte.SettingType.INT,
+        0,
+        100
     )
 
 class FailPercentageRow(hte.Row):
@@ -193,43 +210,41 @@ class LevelRow(hte.Row):
 
         return cells
 
-
-row_types = {
-    "current_stats": CurrentStatsRow,
-    "gained_stats": GainedStatsRow,
-    "gained_energy": GainedEnergyRow,
-    "useful_bond": UsefulBondRow,
-    "gained_skillpt": GainedSkillptRow,
-    "fail_percentage": FailPercentageRow,
-    "level": LevelRow
-}
+class RowTypes(Enum):
+    CURRENT_STATS = CurrentStatsRow
+    GAINED_STATS = GainedStatsRow
+    GAINED_ENERGY = GainedEnergyRow
+    USEFUL_BOND = UsefulBondRow
+    GAINED_SKILLPT = GainedSkillptRow
+    FAIL_PERCENTAGE = FailPercentageRow
+    LEVEL = LevelRow
 
 
 class DefaultPreset(hte.Preset):
     name = "Default"
     rows = [
-        "current_stats",
-        "gained_stats",
-        "gained_energy",
-        "useful_bond",
-        "gained_skillpt",
-        "fail_percentage",
-        "level"
+        RowTypes.CURRENT_STATS,
+        RowTypes.GAINED_STATS,
+        RowTypes.GAINED_ENERGY,
+        RowTypes.USEFUL_BOND,
+        RowTypes.GAINED_SKILLPT,
+        RowTypes.FAIL_PERCENTAGE,
+        RowTypes.LEVEL
     ]
 
 class TestPreset(hte.Preset):
     name = "Test 1"
     rows = [
-        "gained_stats",
-        "gained_energy",
-        "useful_bond",
+        RowTypes.CURRENT_STATS,
+        RowTypes.GAINED_ENERGY,
+        RowTypes.USEFUL_BOND
     ]
 
 class Test2Preset(hte.Preset):
     name = "Test 2"
     rows = [
-        "gained_energy",
-        "useful_bond",
-        "gained_skillpt",
-        "fail_percentage",
+        RowTypes.GAINED_ENERGY,
+        RowTypes.USEFUL_BOND,
+        RowTypes.GAINED_SKILLPT,
+        RowTypes.FAIL_PERCENTAGE
     ]

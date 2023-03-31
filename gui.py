@@ -1,3 +1,4 @@
+import copy
 import PyQt5.QtCore as qtc
 import PyQt5.QtWidgets as qtw
 import PyQt5.QtGui as qtg
@@ -63,17 +64,45 @@ class UmaMainWidget(qtw.QWidget):
         pass
 
 
+class UmaMainDialog(qtw.QDialog):
+    _parent = None
+
+    def __init__(self, parent: UmaApp, *args, **kwargs):
+        self._parent = parent
+        super().__init__()
+
+        # Init defaults
+        self.setWindowTitle("Uma Launcher")
+
+        # Init unique
+        self.init_ui(*args, **kwargs)
+
+        # Generate geometry before showing, otherwise centering doesn't work
+        self.adjustSize()
+
+        # Center widget to primary screen        
+        screen = qtw.QDesktopWidget().primaryScreen()
+        screen_size = qtw.QDesktopWidget().screenGeometry(screen)
+        self.move(screen_size.center() - self.rect().center())
+
+        self.raise_()
+
+
+    def init_ui(self, *args, **kwargs):
+        pass
+
+
 class UmaPresetMenu(UmaMainWidget):
     default_preset = None
     selected_preset = None
     preset_list = None
-    row_types_dict = None
+    row_types_enum = None
 
-    def init_ui(self, selected_preset, default_preset, preset_list, row_types_dict, *args, **kwargs):
+    def init_ui(self, selected_preset, default_preset, preset_list, row_types_enum, *args, **kwargs):
         self.selected_preset = selected_preset
         self.default_preset = default_preset
         self.preset_list = preset_list
-        self.row_types_dict = row_types_dict
+        self.row_types_enum = row_types_enum
 
         self.resize(691, 471)
         # Disable resizing
@@ -112,11 +141,11 @@ class UmaPresetMenu(UmaMainWidget):
         self.lst_available.setGeometry(qtc.QRect(10, 20, 311, 251))
         self.lst_available.itemSelectionChanged.connect(self.on_available_row_select)
 
-        for key, row in self.row_types_dict.items():
+        for row_data in row_types_enum:
             new_item = qtw.QListWidgetItem(self.lst_available)
-            new_item.setText(row.long_name)
-            new_item.setData(qtc.Qt.UserRole, key)
-            new_item.setData(qtc.Qt.UserRole + 1, row)
+            new_item.setText(row_data.value.long_name)
+            new_item.setData(qtc.Qt.UserRole, row_data.name)
+            new_item.setData(qtc.Qt.UserRole + 1, row_data.value())
 
         self.btn_copy_to_preset = qtw.QPushButton(self.grp_available_rows)
         self.btn_copy_to_preset.setObjectName(u"btn_copy_to_preset")
@@ -138,14 +167,20 @@ class UmaPresetMenu(UmaMainWidget):
         self.lst_current.setGeometry(qtc.QRect(10, 20, 311, 251))
         self.lst_current.setDragEnabled(True)
         self.lst_current.setDragDropMode(qtw.QAbstractItemView.DragDrop)
+        self.lst_current.setDefaultDropAction(qtc.Qt.MoveAction)
         self.lst_current.itemSelectionChanged.connect(self.on_current_row_select)
         self.btn_delete_from_preset = qtw.QPushButton(self.grp_current_preset)
         self.btn_delete_from_preset.setObjectName(u"btn_delete_from_preset")
-        self.btn_delete_from_preset.setGeometry(qtc.QRect(10, 280, 311, 23))
+        self.btn_delete_from_preset.setGeometry(qtc.QRect(10, 280, 151, 21))
         self.btn_delete_from_preset.setText(u"Delete from current preset")
+        self.btn_row_options = qtw.QPushButton(self.grp_current_preset)
+        self.btn_row_options.setObjectName(u"btn_row_options")
+        self.btn_row_options.setGeometry(qtc.QRect(170, 280, 151, 21))
+        self.btn_row_options.setText(u"Row options")
 
         self.btn_copy_to_preset.clicked.connect(self.on_copy_to_preset)
         self.btn_delete_from_preset.clicked.connect(self.on_delete_from_preset)
+        self.btn_row_options.clicked.connect(self.on_row_options)
 
         self.btn_close = qtw.QPushButton(self)
         self.btn_close.setObjectName(u"btn_close")
@@ -168,13 +203,28 @@ class UmaPresetMenu(UmaMainWidget):
 
         self.reload_preset_combobox()
 
+
+    @qtc.pyqtSlot()
+    def on_row_options(self):
+        row = self.lst_current.currentItem()
+        if row:
+            row_object = row.data(qtc.Qt.UserRole + 1)
+            row_object.display_settings_dialog(self)
+
     @qtc.pyqtSlot()
     def on_available_row_select(self):
         self.show_row_description(self.lst_available.currentItem())
-    
+
     @qtc.pyqtSlot()
     def on_current_row_select(self):
-        self.show_row_description(self.lst_current.currentItem())
+        current_item = self.lst_current.currentItem()
+        self.show_row_description(current_item)
+        if current_item:
+            row_object = current_item.data(qtc.Qt.UserRole + 1)
+            if row_object.settings:
+                self.btn_row_options.setEnabled(True)
+            else:
+                self.btn_row_options.setEnabled(False)
 
     def show_row_description(self, item):
         if item and item.data(qtc.Qt.UserRole + 1).description:
@@ -193,7 +243,8 @@ class UmaPresetMenu(UmaMainWidget):
                 new_item = qtw.QListWidgetItem(self.lst_current)
                 new_item.setText(item.text())
                 new_item.setData(qtc.Qt.UserRole, item.data(qtc.Qt.UserRole))
-                new_item.setData(qtc.Qt.UserRole + 1, item.data(qtc.Qt.UserRole + 1))
+                new_item.setData(qtc.Qt.UserRole + 1, copy.deepcopy(item.data(qtc.Qt.UserRole + 1)))
+                self.lst_current.setCurrentItem(new_item)
             # Select the next item in the list
             next_row = self.lst_available.row(item) + 1
             if next_row < self.lst_available.count():
@@ -220,11 +271,13 @@ class UmaPresetMenu(UmaMainWidget):
         self.lst_current.setEnabled(True)
         self.btn_delete_from_preset.setEnabled(True)
         self.btn_copy_to_preset.setEnabled(True)
+        self.btn_row_options.setEnabled(True)
 
     def disable_current_preset(self):
         self.lst_current.setEnabled(False)
         self.btn_delete_from_preset.setEnabled(False)
         self.btn_copy_to_preset.setEnabled(False)
+        self.btn_row_options.setEnabled(False)
 
     def reload_current_rows(self):
         self.lst_current.clear()
@@ -232,11 +285,10 @@ class UmaPresetMenu(UmaMainWidget):
             self.disable_current_preset()
         else:
             self.enable_current_preset()
-        for row_key in self.selected_preset.rows:
-            row = self.row_types_dict[row_key]
+        for row in self.selected_preset.initialized_rows:
             new_item = qtw.QListWidgetItem(self.lst_current)
             new_item.setText(row.long_name)
-            new_item.setData(qtc.Qt.UserRole, row_key)
+            new_item.setData(qtc.Qt.UserRole, self.row_types_enum(type(row)).name)
             new_item.setData(qtc.Qt.UserRole + 1, row)
 
     def reload_preset_combobox(self):
@@ -249,6 +301,138 @@ class UmaPresetMenu(UmaMainWidget):
                 self.cmb_select_preset.setCurrentIndex(i + 1)
                 self.lst_current.setEnabled(True)
         self.reload_current_rows()
+
+
+class UmaRowSettingsDialog(UmaMainDialog):
+    row_object = None
+    setting_types_enum = None
+
+    def init_ui(self, row_object, setting_types_enum,  *args, **kwargs):
+        self.row_object = row_object
+        self.setting_types_enum = setting_types_enum
+
+        self.resize(481, 401)
+        # Disable resizing
+        self.setFixedSize(self.size())
+        self.setWindowFlags(qtc.Qt.WindowCloseButtonHint)
+        self.setWindowTitle(u"Change row options")
+        self.scrollArea = qtw.QScrollArea(self)
+        self.scrollArea.setObjectName(u"scrollArea")
+        self.scrollArea.setGeometry(qtc.QRect(9, 9, 461, 351))
+        self.scrollArea.setWidgetResizable(True)
+        self.scrollAreaWidgetContents = qtw.QWidget()
+        self.scrollAreaWidgetContents.setObjectName(u"scrollAreaWidgetContents")
+        self.scrollAreaWidgetContents.setGeometry(qtc.QRect(0, 0, 459, 349))
+        sizePolicy = qtw.QSizePolicy(qtw.QSizePolicy.Preferred, qtw.QSizePolicy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.scrollAreaWidgetContents.sizePolicy().hasHeightForWidth())
+        self.scrollAreaWidgetContents.setSizePolicy(sizePolicy)
+        self.scrollAreaWidgetContents.setMinimumSize(qtc.QSize(0, 0))
+        self.scrollAreaWidgetContents.setMaximumSize(qtc.QSize(16777215, 16777215))
+        self.verticalLayout = qtw.QVBoxLayout(self.scrollAreaWidgetContents)
+        self.verticalLayout.setObjectName(f"verticalLayout")
+
+
+        # Adding group boxes to the scroll area
+        settings_keys = self.row_object.settings.get_settings_keys()
+        last_setting = settings_keys[-1]
+        for setting_key in settings_keys:
+            setting = getattr(self.row_object.settings, setting_key)
+            group_box = self.add_group_box(setting)
+
+            if not group_box:
+                continue
+
+            if setting_key == last_setting:
+                self.verticalLayout.addWidget(group_box, 0, qtc.Qt.AlignTop)
+            else:
+                self.verticalLayout.addWidget(group_box)
+
+        self.scrollArea.setWidget(self.scrollAreaWidgetContents)
+        self.pushButton = qtw.QPushButton(self)
+        self.pushButton.setObjectName(u"pushButton")
+        self.pushButton.setGeometry(qtc.QRect(400, 370, 71, 23))
+        self.pushButton.setText(u"Cancel")
+        self.pushButton_2 = qtw.QPushButton(self)
+        self.pushButton_2.setObjectName(u"pushButton_2")
+        self.pushButton_2.setGeometry(qtc.QRect(290, 370, 101, 23))
+        self.pushButton_2.setText(u"Save and close")
+
+
+    def add_group_box(self, setting):
+        grp_setting = qtw.QGroupBox(self.scrollAreaWidgetContents)
+        grp_setting.setObjectName(f"grp_setting_{setting.name}")
+        sizePolicy = qtw.QSizePolicy(qtw.QSizePolicy.Preferred, qtw.QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(grp_setting.sizePolicy().hasHeightForWidth())
+        grp_setting.setSizePolicy(sizePolicy)
+        grp_setting.setMinimumSize(qtc.QSize(0, 50))
+        grp_setting.setTitle(setting.name)
+        horizontalLayout = qtw.QHBoxLayout(grp_setting)
+        horizontalLayout.setObjectName(f"horizontalLayout_{setting.name}")
+        lbl_setting_description = qtw.QLabel(grp_setting)
+        lbl_setting_description.setObjectName(u"lbl_setting_description")
+        lbl_setting_description.setText(setting.description)
+
+        horizontalLayout.addWidget(lbl_setting_description)
+
+        input_widget = None
+        if setting.type == self.setting_types_enum.BOOL:
+            input_widget = self.add_checkbox(setting, grp_setting)
+        elif setting.type == self.setting_types_enum.INT:
+            input_widget = self.add_spinbox(setting, grp_setting)
+        
+        if not input_widget:
+            return
+
+        horizontalLayout.addWidget(input_widget)
+
+        return grp_setting
+
+
+    def add_checkbox(self, setting, parent):
+        ckb_setting_checkbox = qtw.QCheckBox(parent)
+        ckb_setting_checkbox.setObjectName(f"ckb_setting_{setting.name}")
+        sizePolicy = qtw.QSizePolicy(qtw.QSizePolicy.Maximum, qtw.QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(ckb_setting_checkbox.sizePolicy().hasHeightForWidth())
+        ckb_setting_checkbox.setSizePolicy(sizePolicy)
+        ckb_setting_checkbox.setText(u"")
+        ckb_setting_checkbox.setChecked(setting.value)
+        return ckb_setting_checkbox
+
+    def add_spinbox(self, setting, parent):
+        spn_setting_spinbox = qtw.QSpinBox(parent)
+        spn_setting_spinbox.setObjectName(f"spn_setting_{setting.name}")
+        sizePolicy = qtw.QSizePolicy(qtw.QSizePolicy.Fixed, qtw.QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(spn_setting_spinbox.sizePolicy().hasHeightForWidth())
+        spn_setting_spinbox.setSizePolicy(sizePolicy)
+        spn_setting_spinbox.setMinimumSize(qtc.QSize(46, 0))
+        spn_setting_spinbox.setAlignment(qtc.Qt.AlignRight|qtc.Qt.AlignVCenter)
+        spn_setting_spinbox.setMinimum(setting.min_value)
+        spn_setting_spinbox.setMaximum(setting.max_value)
+        spn_setting_spinbox.setValue(setting.value)
+        return spn_setting_spinbox
+
+
+class UmaSimpleDialog(UmaMainDialog):
+    def init_ui(self, title: str, message: str, *args, **kwargs):
+        self.setWindowTitle(title)
+        self.setWindowFlag(qtc.Qt.WindowType.WindowStaysOnTopHint, True)
+
+        self.layout = qtw.QVBoxLayout()
+        self.setLayout(self.layout)
+
+        self.label = qtw.QLabel(message)
+        self.label.setWordWrap(True)
+        # Center label text
+        self.label.setAlignment(qtc.Qt.AlignmentFlag.AlignCenter)
+        self.layout.addWidget(self.label)
 
 
 class UmaUpdateConfirm(UmaMainWidget):

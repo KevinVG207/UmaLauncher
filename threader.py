@@ -12,7 +12,6 @@ from elevate import elevate
 try:
     elevate()
 except OSError:
-    import util
     util.show_error_box("Launch Error", "Uma Launcher needs administrator privileges to start.")
     sys.exit()
 
@@ -24,7 +23,6 @@ import umatray
 import screenstate
 import windowmover
 import win32api
-import util
 
 class Threader():
     unpack_dir = None

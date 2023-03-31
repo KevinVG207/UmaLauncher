@@ -24,7 +24,7 @@ class HelperTable():
 
     def __init__(self, carrotjuicer):
         self.carrotjuicer = carrotjuicer
-        self.preset = htd.DefaultPreset(htd.row_types)
+        self.preset = htd.DefaultPreset(htd.RowTypes)
 
     def create_helper_table(self, data) -> str:
         """Creates a helper table for the given game state.
