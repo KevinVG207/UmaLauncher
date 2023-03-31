@@ -76,6 +76,10 @@ class UmaPresetMenu(UmaMainWidget):
         self.row_types_dict = row_types_dict
 
         self.resize(691, 471)
+        # Disable resizing
+        self.setFixedSize(self.size())
+        self.setWindowFlags(qtc.Qt.WindowCloseButtonHint)
+
         self.setWindowTitle(u"Customize Helper Table")
         self.grp_preset_catalog = qtw.QGroupBox(self)
         self.grp_preset_catalog.setObjectName(u"grp_preset_catalog")
@@ -89,6 +93,8 @@ class UmaPresetMenu(UmaMainWidget):
         self.cmb_select_preset = qtw.QComboBox(self.grp_preset_catalog)
         self.cmb_select_preset.setObjectName(u"cmb_select_preset")
         self.cmb_select_preset.setGeometry(qtc.QRect(10, 20, 491, 22))
+        self.cmb_select_preset.currentIndexChanged.connect(self.on_preset_change)
+
         self.but_new_preset = qtw.QPushButton(self.grp_preset_catalog)
         self.but_new_preset.setObjectName(u"but_new_preset")
         self.but_new_preset.setGeometry(qtc.QRect(510, 20, 71, 23))
@@ -102,17 +108,16 @@ class UmaPresetMenu(UmaMainWidget):
         self.grp_available_rows.setGeometry(qtc.QRect(10, 60, 331, 311))
         self.grp_available_rows.setTitle(u"Available rows")
         self.lst_available = qtw.QListWidget(self.grp_available_rows)
+        self.lst_available.setObjectName(u"lst_available")
+        self.lst_available.setGeometry(qtc.QRect(10, 20, 311, 251))
+        self.lst_available.itemSelectionChanged.connect(self.on_available_row_select)
 
         for key, row in self.row_types_dict.items():
             new_item = qtw.QListWidgetItem(self.lst_available)
             new_item.setText(row.long_name)
             new_item.setData(qtc.Qt.UserRole, key)
             new_item.setData(qtc.Qt.UserRole + 1, row)
-            print(new_item.data(qtc.Qt.UserRole))
-            print(new_item.data(qtc.Qt.UserRole + 1))
 
-        self.lst_available.setObjectName(u"lst_available")
-        self.lst_available.setGeometry(qtc.QRect(10, 20, 311, 251))
         self.btn_copy_to_preset = qtw.QPushButton(self.grp_available_rows)
         self.btn_copy_to_preset.setObjectName(u"btn_copy_to_preset")
         self.btn_copy_to_preset.setGeometry(qtc.QRect(10, 280, 311, 23))
@@ -133,11 +138,15 @@ class UmaPresetMenu(UmaMainWidget):
         self.lst_current.setGeometry(qtc.QRect(10, 20, 311, 251))
         self.lst_current.setDragEnabled(True)
         self.lst_current.setDragDropMode(qtw.QAbstractItemView.DragDrop)
-        self.lst_current.setDefaultDropAction(qtc.Qt.MoveAction)
+        self.lst_current.itemSelectionChanged.connect(self.on_current_row_select)
         self.btn_delete_from_preset = qtw.QPushButton(self.grp_current_preset)
         self.btn_delete_from_preset.setObjectName(u"btn_delete_from_preset")
         self.btn_delete_from_preset.setGeometry(qtc.QRect(10, 280, 311, 23))
         self.btn_delete_from_preset.setText(u"Delete from current preset")
+
+        self.btn_copy_to_preset.clicked.connect(self.on_copy_to_preset)
+        self.btn_delete_from_preset.clicked.connect(self.on_delete_from_preset)
+
         self.btn_close = qtw.QPushButton(self)
         self.btn_close.setObjectName(u"btn_close")
         self.btn_close.setGeometry(qtc.QRect(610, 440, 71, 23))
@@ -150,18 +159,79 @@ class UmaPresetMenu(UmaMainWidget):
         self.grp_help.setObjectName(u"grp_help")
         self.grp_help.setGeometry(qtc.QRect(10, 370, 671, 61))
         self.grp_help.setTitle(u"Help")
-        self.label = qtw.QLabel(self.grp_help)
-        self.label.setObjectName(u"label")
-        self.label.setGeometry(qtc.QRect(10, 20, 651, 31))
-        self.label.setText(u"DESCRIPTION.")
-        self.label.setAlignment(qtc.Qt.AlignLeading|qtc.Qt.AlignLeft|qtc.Qt.AlignTop)
-        self.label.setWordWrap(True)
+        self.lbl_description = qtw.QLabel(self.grp_help)
+        self.lbl_description.setObjectName(u"lbl_description")
+        self.lbl_description.setGeometry(qtc.QRect(10, 20, 651, 31))
+        self.lbl_description.setText(u"Select a row to see its description.")
+        self.lbl_description.setAlignment(qtc.Qt.AlignLeading|qtc.Qt.AlignLeft|qtc.Qt.AlignTop)
+        self.lbl_description.setWordWrap(True)
 
         self.reload_preset_combobox()
 
+    @qtc.pyqtSlot()
+    def on_available_row_select(self):
+        self.show_row_description(self.lst_available.currentItem())
+    
+    @qtc.pyqtSlot()
+    def on_current_row_select(self):
+        self.show_row_description(self.lst_current.currentItem())
+
+    def show_row_description(self, item):
+        if item and item.data(qtc.Qt.UserRole + 1).description:
+            self.lbl_description.setText(item.data(qtc.Qt.UserRole + 1).description)
+        else:
+            self.lbl_description.setText("No description available.")
+
+    @qtc.pyqtSlot()
+    def on_copy_to_preset(self):
+        if not self.lst_current.isEnabled():
+            return
+        selected_items = self.lst_available.selectedItems()
+        for item in selected_items:
+            # Check if item is already in the list
+            if not self.lst_current.findItems(item.text(), qtc.Qt.MatchExactly):
+                new_item = qtw.QListWidgetItem(self.lst_current)
+                new_item.setText(item.text())
+                new_item.setData(qtc.Qt.UserRole, item.data(qtc.Qt.UserRole))
+                new_item.setData(qtc.Qt.UserRole + 1, item.data(qtc.Qt.UserRole + 1))
+            # Select the next item in the list
+            next_row = self.lst_available.row(item) + 1
+            if next_row < self.lst_available.count():
+                self.lst_available.setCurrentRow(next_row)
+
+    @qtc.pyqtSlot()
+    def on_delete_from_preset(self):
+        if not self.lst_current.isEnabled():
+            return
+        selected_items = self.lst_current.selectedItems()
+        for item in selected_items:
+            self.lst_current.takeItem(self.lst_current.row(item))
+
+    @qtc.pyqtSlot()
+    def on_preset_change(self):
+        index = self.cmb_select_preset.currentIndex()
+        if index == 0:
+            self.selected_preset = self.default_preset
+        else:
+            self.selected_preset = self.preset_list[index - 1]
+        self.reload_current_rows()
+
+    def enable_current_preset(self):
+        self.lst_current.setEnabled(True)
+        self.btn_delete_from_preset.setEnabled(True)
+        self.btn_copy_to_preset.setEnabled(True)
+
+    def disable_current_preset(self):
+        self.lst_current.setEnabled(False)
+        self.btn_delete_from_preset.setEnabled(False)
+        self.btn_copy_to_preset.setEnabled(False)
 
     def reload_current_rows(self):
         self.lst_current.clear()
+        if self.selected_preset.name == self.default_preset.name:
+            self.disable_current_preset()
+        else:
+            self.enable_current_preset()
         for row_key in self.selected_preset.rows:
             row = self.row_types_dict[row_key]
             new_item = qtw.QListWidgetItem(self.lst_current)
@@ -170,19 +240,14 @@ class UmaPresetMenu(UmaMainWidget):
             new_item.setData(qtc.Qt.UserRole + 1, row)
 
     def reload_preset_combobox(self):
+        sel_preset_name = self.selected_preset.name
         self.cmb_select_preset.clear()
-        self.cmb_select_preset.addItem(self.default_preset.name, -1)
-        set_current_index = False
+        self.cmb_select_preset.addItem(self.default_preset.name)
         for i, preset in enumerate(self.preset_list):
-            self.cmb_select_preset.addItem(preset.name, i)
-            if preset == self.selected_preset:
+            self.cmb_select_preset.addItem(preset.name)
+            if preset.name == sel_preset_name:
                 self.cmb_select_preset.setCurrentIndex(i + 1)
-                set_current_index = True
-                print("Set current index to", i + 1)
-        
-        if not set_current_index:
-            self.cmb_select_preset.setCurrentIndex(0)
-
+                self.lst_current.setEnabled(True)
         self.reload_current_rows()
 
 

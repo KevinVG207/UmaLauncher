@@ -3,6 +3,7 @@ import helper_table_elements as hte
 class CurrentStatsRow(hte.Row):
     long_name = "Current stats per facility"
     short_name = "Current"
+    description = "Shows the current stats of each facility."
     settings = None
 
     def _generate_cells(self, game_state) -> list[hte.Cell]:
@@ -26,6 +27,7 @@ class GainedStatsSettings(hte.Settings):
 class GainedStatsRow(hte.Row):
     long_name = "Stats gained per facility"
     short_name = "Stat Gain"
+    description = "Shows the total stats gained per facility. This includes stats gained outside the facility itself."
     settings = GainedStatsSettings()
 
     def _generate_cells(self, game_state) -> list[hte.Cell]:
@@ -54,6 +56,7 @@ class GainedEnergySettings(hte.Settings):
 class GainedEnergyRow(hte.Row):
     long_name = "Energy gained/lost per facility"
     short_name = "Energy"
+    description = "Shows the total energy gained or lost per facility."
     settings = GainedEnergySettings()
 
     def _generate_cells(self, game_state) -> list[hte.Cell]:
@@ -114,6 +117,7 @@ class GainedSkillptSettings(hte.Settings):
 class GainedSkillptRow(hte.Row):
     long_name = "Skill points gained per facility"
     short_name = "Skill Points"
+    description = "Shows the total skill points gained per facility."
     settings = GainedSkillptSettings()
 
     def _generate_cells(self, game_state) -> list[hte.Cell]:
@@ -154,6 +158,7 @@ class FailPercentageSettings(hte.Settings):
 class FailPercentageRow(hte.Row):
     long_name = "Fail percentage per facility"
     short_name = "Fail %"
+    description = "Shows the fail percentage per facility."
     settings = FailPercentageSettings()
 
     def _generate_cells(self, game_state) -> list[hte.Cell]:
@@ -178,6 +183,7 @@ class FailPercentageRow(hte.Row):
 class LevelRow(hte.Row):
     long_name = "Facility level"
     short_name = "Level"
+    description = "Shows the level of each facility."
 
     def _generate_cells(self, game_state) -> list[hte.Cell]:
         cells = [hte.Cell(self.short_name)]
@@ -209,4 +215,21 @@ class DefaultPreset(hte.Preset):
         "gained_skillpt",
         "fail_percentage",
         "level"
+    ]
+
+class TestPreset(hte.Preset):
+    name = "Test 1"
+    rows = [
+        "gained_stats",
+        "gained_energy",
+        "useful_bond",
+    ]
+
+class Test2Preset(hte.Preset):
+    name = "Test 2"
+    rows = [
+        "gained_energy",
+        "useful_bond",
+        "gained_skillpt",
+        "fail_percentage",
     ]
