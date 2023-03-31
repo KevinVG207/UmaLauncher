@@ -171,11 +171,11 @@ class UmaPresetMenu(UmaMainWidget):
         self.lst_current.itemSelectionChanged.connect(self.on_current_row_select)
         self.btn_delete_from_preset = qtw.QPushButton(self.grp_current_preset)
         self.btn_delete_from_preset.setObjectName(u"btn_delete_from_preset")
-        self.btn_delete_from_preset.setGeometry(qtc.QRect(10, 280, 151, 21))
+        self.btn_delete_from_preset.setGeometry(qtc.QRect(10, 280, 151, 23))
         self.btn_delete_from_preset.setText(u"Delete from current preset")
         self.btn_row_options = qtw.QPushButton(self.grp_current_preset)
         self.btn_row_options.setObjectName(u"btn_row_options")
-        self.btn_row_options.setGeometry(qtc.QRect(170, 280, 151, 21))
+        self.btn_row_options.setGeometry(qtc.QRect(170, 280, 151, 23))
         self.btn_row_options.setText(u"Row options")
 
         self.btn_copy_to_preset.clicked.connect(self.on_copy_to_preset)
