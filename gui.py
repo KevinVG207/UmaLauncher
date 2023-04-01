@@ -21,13 +21,15 @@ class UmaApp():
         pass
 
     def run(self, main_widget: qtw.QWidget, retain_font=False):
-
         if not retain_font:
             font = main_widget.font()
             font.setPointSizeF(8.75)
             main_widget.setFont(font)
 
         self.main_widget = main_widget
+        self.main_widget.activateWindow()
+        self.main_widget.setFocus(True)
+        self.main_widget.raise_()
         self.app.exec_()
 
     def close(self):
@@ -59,6 +61,7 @@ class UmaMainWidget(qtw.QWidget):
         self.raise_()
 
         self.show()
+
 
 
     def init_ui(self, *args, **kwargs):
@@ -215,6 +218,10 @@ class UmaPresetMenu(UmaMainWidget):
 
         self.reload_preset_combobox()
 
+
+    def closeEvent(self, event):
+        self.close()
+
     @qtc.pyqtSlot()
     def on_close(self):
         self.close()
@@ -344,7 +351,7 @@ class UmaPresetMenu(UmaMainWidget):
 
     def reload_current_rows(self):
         self.lst_current.clear()
-        if self.selected_preset.name == self.default_preset.name:
+        if self.selected_preset == self.default_preset:
             self.disable_current_preset()
         else:
             self.enable_current_preset()
@@ -401,9 +408,13 @@ class UmaNewPresetDialog(UmaMainDialog):
         if self.lne_preset_name.text() == "":
             UmaInfoPopup("Error", "Preset name cannot be empty.", ICONS.Critical).exec_()
             self.close()
-        if self.lne_preset_name.text() in [preset.name for preset in self._parent.preset_list]:
+            return
+        names_list = [preset.name for preset in self._parent.preset_list + [self._parent.default_preset]]
+        logger.debug(names_list)
+        if self.lne_preset_name.text() in names_list:
             UmaInfoPopup("Error", "Preset with this name already exists.", ICONS.Critical).exec_()
             self.close()
+            return
         new_preset = self.new_presets_class(self._parent.row_types_enum)
         new_preset.name = self.lne_preset_name.text()
         self._parent.preset_list.append(new_preset)

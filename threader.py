@@ -16,6 +16,7 @@ except OSError:
     sys.exit()
 
 import threading
+import time
 from loguru import logger
 import settings
 import carrotjuicer
@@ -32,6 +33,8 @@ class Threader():
     windowmover = None
     screenstate = None
     threads = []
+    should_stop = False
+    show_helper_table_dialog = False
 
     def __init__(self):
         # Set directory to find assets
@@ -54,11 +57,21 @@ class Threader():
 
         win32api.SetConsoleCtrlHandler(self.stop_signal, True)
 
+        while not self.should_stop:
+            time.sleep(0.2)
+
+            if self.show_helper_table_dialog:
+                self.settings.update_helper_table()
+                self.show_helper_table_dialog = False
+
+        logger.info("=== Launcher closed ===")
+
     def stop_signal(self, *_):
         self.stop()
 
     def stop(self):
         logger.info("=== Closing launcher ===")
+        self.should_stop = True
         if self.tray:
             self.tray.stop()
         if self.carrotjuicer:
@@ -67,8 +80,6 @@ class Threader():
             self.screenstate.stop()
         if self.windowmover:
             self.windowmover.stop()
-
-        logger.info("=== Launcher closed ===")
 
 @logger.catch
 def main():

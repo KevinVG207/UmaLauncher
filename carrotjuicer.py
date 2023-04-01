@@ -36,6 +36,7 @@ class CarrotJuicer():
     last_training_id = None
     training_tracker = None
     previous_request = None
+    last_helper_data = None
 
     _browser_list = None
 
@@ -420,18 +421,8 @@ class CarrotJuicer():
                     logger.debug(f"Helper URL: {self.helper_url}")
                     self.open_helper()
                 
-                helper_table = self.helper_table.create_helper_table(data)
-                if helper_table:
-                    self.browser.execute_script("""
-                        window.UL_DATA.energy = arguments[0];
-                        window.UL_DATA.max_energy = arguments[1];
-                        window.UL_DATA.table = arguments[2];
-                        window.update_overlay();
-                        """,
-                        data['chara_info']['vital'],
-                        data['chara_info']['max_vital'],
-                        helper_table
-                    )
+                self.last_helper_data = data
+                self.update_helper_table(data)
 
             if 'unchecked_event_array' in data and data['unchecked_event_array']:
                 # Training event.
@@ -594,6 +585,33 @@ class CarrotJuicer():
 
     def get_msgpack_batch(self, msg_path):
         return sorted(glob.glob(os.path.join(msg_path, "*.msgpack")), key=os.path.getmtime)
+
+
+    def update_helper_table(self, energy, max_energy, table_string):
+        self.browser.execute_script("""
+            window.UL_DATA.energy = arguments[0];
+            window.UL_DATA.max_energy = arguments[1];
+            window.UL_DATA.table = arguments[2];
+            window.update_overlay();
+            """,
+            energy,
+            max_energy,
+            table_string
+        )
+
+    def update_helper_table(self, data):
+        helper_table = self.helper_table.create_helper_table(data)
+        if helper_table:
+            self.browser.execute_script("""
+                window.UL_DATA.energy = arguments[0];
+                window.UL_DATA.max_energy = arguments[1];
+                window.UL_DATA.table = arguments[2];
+                window.update_overlay();
+                """,
+                data['chara_info']['vital'],
+                data['chara_info']['max_vital'],
+                helper_table
+            )
 
 
     def run(self):

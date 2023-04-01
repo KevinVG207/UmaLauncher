@@ -77,14 +77,22 @@ class Row():
         self.dialog = self._make_settings_dialog(parent)
         self.dialog.exec()
         self.dialog = None
+    
+    def to_dict(self, row_types):
+        return {
+            "type": row_types(type(self)).name,
+            "settings": self.settings.to_dict() if self.settings else {}
+        }
+
 
 class Preset():
     name = None
     rows = None
     initialized_rows: list[Row] = None
-    default = False
+    row_types = None
 
     def __init__(self, row_types):
+        self.row_types = row_types
         if self.rows:
             self.initialized_rows = [row.value() for row in self.rows]
         else:
@@ -117,6 +125,21 @@ class Preset():
         tbody = f"<tbody>{''.join(table[1:])}</tbody>"
         return thead + tbody
 
+    def to_dict(self):
+        return {
+            "name": self.name,
+            "rows": [row.to_dict(self.row_types) for row in self.initialized_rows] if self.initialized_rows else []
+        }
+    
+    def import_dict(self, preset_dict):
+        self.name = preset_dict["name"]
+        self.initialized_rows = []
+        for row_dict in preset_dict["rows"]:
+            row_object = self.row_types[row_dict["type"]].value()
+            if row_object.settings:
+                row_object.settings.import_dict(row_dict["settings"])
+            self.initialized_rows.append(row_object)
+
 class SettingType(enum.Enum):
     BOOL = "bool"
     INT = "int"
@@ -127,7 +150,12 @@ class Settings():
 
     def to_dict(self):
         settings = self.get_settings_keys()
-        return {setting: getattr(self, setting).value for setting in settings}
+        return {setting: getattr(self, setting).value for setting in settings} if settings else {}
+    
+    def import_dict(self, settings_dict):
+        for key, value in settings_dict.items():
+            if hasattr(self, key):
+                getattr(self, key).value = value
 
 
 class Setting():

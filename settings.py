@@ -7,6 +7,9 @@ import traceback
 from loguru import logger
 import util
 import version
+import gui
+import helper_table_defaults as htd
+import helper_table_elements as hte
 
 ORIENTATION_DICT = {
     True: 'portrait',
@@ -41,7 +44,9 @@ class Settings():
             "Chrome": False,
             "Firefox": False,
             "Edge": False
-        }
+        },
+        "training_helper_table_preset": "Default",
+        "training_helper_table_preset_list": [],
     }
 
     loaded_settings = {}
@@ -204,3 +209,44 @@ class Settings():
             self.loaded_settings['selected_browser'][key] = key == item.text
         logger.info(f"Saving browser selection: {item.text}")
         self.save_settings()
+
+
+    def get_preset_list(self):
+        preset_list = []
+        for preset in self.get("training_helper_table_preset_list"):
+            preset_object = hte.Preset(htd.RowTypes)
+            preset_object.import_dict(preset)
+            preset_list.append(preset_object)
+        return preset_list
+
+
+    def get_helper_table_data(self):
+        preset_dict = {preset.name: preset for preset in self.get_preset_list()}
+        selected_preset_name = self.get("training_helper_table_preset")
+        if selected_preset_name in preset_dict:
+            selected_preset = preset_dict[selected_preset_name]
+        else:
+            selected_preset = htd.DefaultPreset(htd.RowTypes)
+        return preset_dict, selected_preset
+
+    def update_helper_table(self):
+        preset_dict, selected_preset = self.get_helper_table_data()
+        new_preset_list = []
+        app = gui.UmaApp()
+        app.run(gui.UmaPresetMenu(
+            app,
+            selected_preset=selected_preset,
+            default_preset=htd.DefaultPreset(htd.RowTypes),
+            new_preset_class=hte.Preset,
+            preset_list=list(preset_dict.values()),
+            row_types_enum=htd.RowTypes,
+            output_list=new_preset_list
+        ), True)
+        app.close()
+        if new_preset_list:
+            selected_preset = new_preset_list.pop(0)
+            self.loaded_settings["training_helper_table_preset"] = selected_preset.name
+            self.loaded_settings["training_helper_table_preset_list"] = [preset.to_dict() for preset in new_preset_list]
+            if self.threader.carrotjuicer.helper_table:
+                self.threader.carrotjuicer.helper_table.update_presets(*self.get_helper_table_data())
+            self.save_settings()

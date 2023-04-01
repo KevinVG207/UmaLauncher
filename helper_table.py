@@ -3,6 +3,7 @@ import mdb
 import util
 import gui
 import helper_table_defaults as htd
+import helper_table_elements as hte
 
 COMMAND_ID_TO_KEY = {
     101: "speed",
@@ -19,12 +20,22 @@ COMMAND_ID_TO_KEY = {
 
 class HelperTable():
     carrotjuicer = None
-    preset = None
-    last_game_state = None
+    selected_preset = None
+    preset_dict = None
 
     def __init__(self, carrotjuicer):
         self.carrotjuicer = carrotjuicer
-        self.preset = htd.DefaultPreset(htd.RowTypes)
+        self.preset_dict = {}
+        self.selected_preset = None
+        self.preset_dict, self.selected_preset = self.carrotjuicer.threader.settings.get_helper_table_data()
+
+    def update_presets(self, preset_dict, selected_preset):
+        self.preset_dict = preset_dict
+        self.selected_preset = selected_preset
+        if self.carrotjuicer.last_helper_data and self.carrotjuicer.browser:
+            self.carrotjuicer.check_browser()
+            self.carrotjuicer.update_helper_table(self.carrotjuicer.last_helper_data)
+
 
     def create_helper_table(self, data) -> str:
         """Creates a helper table for the given game state.
@@ -152,9 +163,7 @@ class HelperTable():
             if command_id in COMMAND_ID_TO_KEY
         }
 
-        self.last_game_state = game_state
-
-        table = self.preset.generate_table(game_state)
+        table = self.selected_preset.generate_table(game_state)
 
         return table
 

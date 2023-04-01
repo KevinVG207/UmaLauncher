@@ -241,6 +241,7 @@ class RowTypes(Enum):
     FAIL_PERCENTAGE = FailPercentageRow
     LEVEL = LevelRow
 
+
 class DefaultPreset(hte.Preset):
     name = "Default"
     rows = [
