@@ -43,10 +43,14 @@ class Row():
     description = None
     settings = None
     cells = None
+
     dialog = None
 
     """Defines a row in the helper table.
     """
+    def __init__(self):
+        self.dialog = None
+
     def _generate_cells(self, game_state) -> list[Cell]:
         """Returns a list of cells for this row.
         """
@@ -72,18 +76,31 @@ class Row():
         """
         self.dialog = self._make_settings_dialog(parent)
         self.dialog.exec()
+        self.dialog = None
 
 class Preset():
     name = None
-    rows: None
+    rows = None
     initialized_rows: list[Row] = None
     default = False
 
     def __init__(self, row_types):
-        self.initialized_rows = [row.value() for row in self.rows]
+        if self.rows:
+            self.initialized_rows = [row.value() for row in self.rows]
+        else:
+            self.initialized_rows = []
 
     def __iter__(self):
         return iter(self.initialized_rows)
+    
+    def __gt__(self, other):
+        return self.name > other.name
+    
+    def __lt__(self, other):
+        return self.name < other.name
+    
+    def __eq__(self, other):
+        return self.name == other.name
     
     def generate_table(self, game_state):
         if not game_state:
@@ -112,11 +129,19 @@ class Settings():
         settings = self.get_settings_keys()
         return {setting: getattr(self, setting).value for setting in settings}
 
-@dataclass
+
 class Setting():
-    name: str
-    description: str
-    value: ...
-    type: SettingType
-    min_value: int = 0
-    max_value: int = 100
+    name: str = None
+    description: str = None
+    value: ... = None
+    type: SettingType = None
+    min_value: int = None
+    max_value: int = None
+
+    def __init__(self, name, description, value, type, min_value=0, max_value=100):
+        self.name = name
+        self.description = description
+        self.value = value
+        self.type = type
+        self.min_value = min_value
+        self.max_value = max_value

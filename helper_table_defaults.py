@@ -5,7 +5,6 @@ class CurrentStatsRow(hte.Row):
     long_name = "Current stats per facility"
     short_name = "Current"
     description = "Shows the current stats of each facility."
-    settings = None
 
     def _generate_cells(self, game_state) -> list[hte.Cell]:
         cells = [hte.Cell(self.short_name)]
@@ -18,18 +17,24 @@ class CurrentStatsRow(hte.Row):
 
 
 class GainedStatsSettings(hte.Settings):
-    s_highlight_max = hte.Setting(
-        "Highlight max",
-        "Highlights the facility with the most gained stats.",
-        True,
-        hte.SettingType.BOOL
-    )
+    s_highlight_max = None
+
+    def __init__(self):
+        self.s_highlight_max = hte.Setting(
+            "Highlight max",
+            "Highlights the facility with the most gained stats.",
+            True,
+            hte.SettingType.BOOL
+        )
 
 class GainedStatsRow(hte.Row):
     long_name = "Stats gained per facility"
     short_name = "Stat Gain"
     description = "Shows the total stats gained per facility. This includes stats gained outside the facility itself."
-    settings = GainedStatsSettings()
+    settings = None
+
+    def __init__(self):
+        self.settings = GainedStatsSettings()
 
     def _generate_cells(self, game_state) -> list[hte.Cell]:
         cells = [hte.Cell(self.short_name)]
@@ -47,7 +52,10 @@ class GainedStatsRow(hte.Row):
 
 
 class GainedEnergySettings(hte.Settings):
-    s_enable_colors = hte.Setting(
+    s_enable_colors = None
+
+    def __init__(self):
+        self.s_enable_colors = hte.Setting(
         "Enable colors",
         "Enables coloring of the energy gained or lost.",
         False,
@@ -58,7 +66,10 @@ class GainedEnergyRow(hte.Row):
     long_name = "Energy gained/lost per facility"
     short_name = "Energy"
     description = "Shows the total energy gained or lost per facility."
-    settings = GainedEnergySettings()
+    settings = None
+
+    def __init__(self):
+        self.settings = GainedEnergySettings()
 
     def _generate_cells(self, game_state) -> list[hte.Cell]:
         cells = [hte.Cell(self.short_name)]
@@ -79,18 +90,26 @@ class GainedEnergyRow(hte.Row):
 
 
 class UsefulBondSettings(hte.Settings):
-    s_highlight_max = hte.Setting(
-        "Highlight max",
-        "Highlights the facility with the most useful bond.",
-        True,
-        hte.SettingType.BOOL
-    )
+    s_highlight_max = None
+
+    def __init__(self):
+        self.s_highlight_max = hte.Setting(
+            "Highlight max",
+            "Highlights the facility with the most useful bond.",
+            True,
+            hte.SettingType.BOOL
+        )
+
+
 
 class UsefulBondRow(hte.Row):
     long_name = "Useful bond gained per facility"
     short_name = "Useful Bond"
     description = "Useful includes supports until orange bar, excluding friend/group cards. Also Akikawa until green bar."
-    settings = UsefulBondSettings()
+    settings = None
+
+    def __init__(self):
+        self.settings = UsefulBondSettings()
 
     def _generate_cells(self, game_state) -> list[hte.Cell]:
         cells = [hte.Cell(self.short_name)]
@@ -108,30 +127,24 @@ class UsefulBondRow(hte.Row):
 
 
 class GainedSkillptSettings(hte.Settings):
-    s_highlight_max = hte.Setting(
-        "Highlight max",
-        "Highlights the facility with the most gained skill points.",
-        False,
-        hte.SettingType.BOOL
-    )
-    s_highlight_max2 = hte.Setting(
-        "Highlight max2",
-        "Highlights the facility with the most gained skill points.",
-        False,
-        hte.SettingType.BOOL
-    )
-    s_highlight_max3 = hte.Setting(
-        "Highlight max3",
-        "Highlights the facility with the most gained skill points.",
-        False,
-        hte.SettingType.BOOL
-    )
+    s_highlight_max = None
+
+    def __init__(self):
+        self.s_highlight_max = hte.Setting(
+            "Highlight max",
+            "Highlights the facility with the most gained skill points.",
+            False,
+            hte.SettingType.BOOL
+        )
 
 class GainedSkillptRow(hte.Row):
     long_name = "Skill points gained per facility"
     short_name = "Skill Points"
     description = "Shows the total skill points gained per facility."
-    settings = GainedSkillptSettings()
+    settings = None
+
+    def __init__(self):
+        self.settings = GainedSkillptSettings()
 
     def _generate_cells(self, game_state) -> list[hte.Cell]:
         cells = [hte.Cell(self.short_name)]
@@ -149,34 +162,42 @@ class GainedSkillptRow(hte.Row):
 
 
 class FailPercentageSettings(hte.Settings):
-    s_enable_colors = hte.Setting(
-        "Enable colors",
-        "Enables coloring of the fail percentage.",
-        True,
-        hte.SettingType.BOOL
-    )
-    s_orange_threshold = hte.Setting(
-        "Orange threshold",
-        "The number from which the fail percentage is orange.",
-        1,
-        hte.SettingType.INT,
-        0,
-        100
-    )
-    s_red_threshold = hte.Setting(
-        "Red threshold",
-        "The number from which the fail percentage is red.",
-        30,
-        hte.SettingType.INT,
-        0,
-        100
-    )
+    s_enable_colors = None
+    s_orange_threshold = None
+    s_red_threshold = None
+
+    def __init__(self):
+        self.s_enable_colors = hte.Setting(
+            "Enable colors",
+            "Enables coloring of the fail percentage.",
+            True,
+            hte.SettingType.BOOL
+        )
+        self.s_orange_threshold = hte.Setting(
+            "Orange threshold",
+            "The number from which the fail percentage is orange.",
+            1,
+            hte.SettingType.INT,
+            0,
+            100
+        )
+        self.s_red_threshold = hte.Setting(
+            "Red threshold",
+            "The number from which the fail percentage is red.",
+            30,
+            hte.SettingType.INT,
+            0,
+            100
+        )
 
 class FailPercentageRow(hte.Row):
     long_name = "Fail percentage per facility"
     short_name = "Fail %"
     description = "Shows the fail percentage per facility."
-    settings = FailPercentageSettings()
+    settings = None
+
+    def __init__(self):
+        self.settings = FailPercentageSettings()
 
     def _generate_cells(self, game_state) -> list[hte.Cell]:
         cells = [hte.Cell(self.short_name)]
@@ -210,6 +231,7 @@ class LevelRow(hte.Row):
 
         return cells
 
+
 class RowTypes(Enum):
     CURRENT_STATS = CurrentStatsRow
     GAINED_STATS = GainedStatsRow
@@ -218,7 +240,6 @@ class RowTypes(Enum):
     GAINED_SKILLPT = GainedSkillptRow
     FAIL_PERCENTAGE = FailPercentageRow
     LEVEL = LevelRow
-
 
 class DefaultPreset(hte.Preset):
     name = "Default"
