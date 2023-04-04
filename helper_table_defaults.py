@@ -43,7 +43,7 @@ class GainedStatsRow(hte.Row):
 
         for command in game_state.values():
             gained_stats = command['gained_stats']
-            if self.settings.s_highlight_max.value and gained_stats == max_gained_stats:
+            if self.settings.s_highlight_max.value and max_gained_stats > 0 and gained_stats == max_gained_stats:
                 cells.append(hte.Cell(gained_stats, bold=True, color=hte.Colors.GOOD))
             else:
                 cells.append(hte.Cell(gained_stats))
@@ -87,6 +87,41 @@ class GainedEnergyRow(hte.Row):
                 cells.append(hte.Cell(gained_energy))
 
         return cells
+    
+
+class TotalBondSettings(hte.Settings):
+    s_highlight_max = None
+
+    def __init__(self):
+        self.s_highlight_max = hte.Setting(
+            "Highlight max",
+            "Highlights the facility with the most total bond.",
+            True,
+            hte.SettingType.BOOL
+        )
+
+class TotalBondRow(hte.Row):
+    long_name = "Total bond gained per facility"
+    short_name = "Total Bond"
+    description = "Total includes all bond gains of all supports and Akikawa, until they fill up their bar."
+    settings = None
+
+    def __init__(self):
+        self.settings = TotalBondSettings()
+
+    def _generate_cells(self, game_state) -> list[hte.Cell]:
+        cells = [hte.Cell(self.short_name)]
+
+        max_total_bond = max(facility['total_bond'] for facility in game_state.values())
+
+        for command in game_state.values():
+            total_bond = command['total_bond']
+            if self.settings.s_highlight_max.value and max_total_bond > 0 and total_bond == max_total_bond:
+                cells.append(hte.Cell(total_bond, bold=True, color=hte.Colors.GOOD))
+            else:
+                cells.append(hte.Cell(total_bond))
+
+        return cells
 
 
 class UsefulBondSettings(hte.Settings):
@@ -118,7 +153,7 @@ class UsefulBondRow(hte.Row):
 
         for command in game_state.values():
             useful_bond = command['useful_bond']
-            if self.settings.s_highlight_max.value and useful_bond == max_useful_bond:
+            if self.settings.s_highlight_max.value and max_useful_bond > 0 and useful_bond == max_useful_bond:
                 cells.append(hte.Cell(useful_bond, bold=True, color=hte.Colors.GOOD))
             else:
                 cells.append(hte.Cell(useful_bond))
@@ -153,7 +188,7 @@ class GainedSkillptRow(hte.Row):
 
         for command in game_state.values():
             gained_skillpt = command['gained_skillpt']
-            if self.settings.s_highlight_max.value and gained_skillpt == max_gained_skillpt:
+            if self.settings.s_highlight_max.value and max_gained_skillpt > 0 and gained_skillpt == max_gained_skillpt:
                 cells.append(hte.Cell(gained_skillpt, bold=True, color=hte.Colors.GOOD))
             else:
                 cells.append(hte.Cell(gained_skillpt))
@@ -205,15 +240,17 @@ class FailPercentageRow(hte.Row):
         for command in game_state.values():
             fail_percentage = command['failure_rate']
             fail_string = f"{fail_percentage}%"
-            if self.settings.s_enable_colors.value:
-                if fail_percentage >= self.settings.s_red_threshold.value:
-                    cells.append(hte.Cell(fail_string, color=hte.Colors.ALERT))
-                elif fail_percentage >= self.settings.s_orange_threshold.value:
-                    cells.append(hte.Cell(fail_string, color=hte.Colors.WARNING))
-                else:
-                    cells.append(hte.Cell(fail_string))
+            if not self.settings.s_enable_colors.value or fail_percentage == 0:
+                cells.append(hte.Cell(fail_string))
+                continue
+
+            if fail_percentage >= self.settings.s_red_threshold.value:
+                cells.append(hte.Cell(fail_string, color=hte.Colors.ALERT))
+            elif fail_percentage >= self.settings.s_orange_threshold.value:
+                cells.append(hte.Cell(fail_string, color=hte.Colors.WARNING))
             else:
                 cells.append(hte.Cell(fail_string))
+                
 
         return cells
 
@@ -237,6 +274,7 @@ class RowTypes(Enum):
     GAINED_STATS = GainedStatsRow
     GAINED_ENERGY = GainedEnergyRow
     USEFUL_BOND = UsefulBondRow
+    TOTAL_BOND = TotalBondRow
     GAINED_SKILLPT = GainedSkillptRow
     FAIL_PERCENTAGE = FailPercentageRow
     LEVEL = LevelRow
@@ -249,24 +287,8 @@ class DefaultPreset(hte.Preset):
         RowTypes.GAINED_STATS,
         RowTypes.GAINED_ENERGY,
         RowTypes.USEFUL_BOND,
+        RowTypes.TOTAL_BOND,
         RowTypes.GAINED_SKILLPT,
         RowTypes.FAIL_PERCENTAGE,
         RowTypes.LEVEL
-    ]
-
-class TestPreset(hte.Preset):
-    name = "Test 1"
-    rows = [
-        RowTypes.CURRENT_STATS,
-        RowTypes.GAINED_ENERGY,
-        RowTypes.USEFUL_BOND
-    ]
-
-class Test2Preset(hte.Preset):
-    name = "Test 2"
-    rows = [
-        RowTypes.GAINED_ENERGY,
-        RowTypes.USEFUL_BOND,
-        RowTypes.GAINED_SKILLPT,
-        RowTypes.FAIL_PERCENTAGE
     ]

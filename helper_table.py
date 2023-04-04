@@ -18,6 +18,14 @@ COMMAND_ID_TO_KEY = {
     605: "wiz"
 }
 
+class BondMember():
+    def __init__(self, partner_id, starting_bond):
+        self.partner_id = partner_id
+        self.starting_bond = starting_bond
+        self.training_bond = 0
+        self.tip_bond = 0
+
+
 class HelperTable():
     carrotjuicer = None
     selected_preset = None
@@ -43,8 +51,6 @@ class HelperTable():
 
         if not 'home_info' in data:
             return None
-
-        eval_dict = {eval_data['training_partner_id']: eval_data['evaluation'] for eval_data in data['chara_info']['evaluation_info_array']}
 
         game_state = {}
 
@@ -72,11 +78,13 @@ class HelperTable():
             if command['command_id'] not in COMMAND_ID_TO_KEY:
                 continue
 
+            eval_dict = {eval_data['training_partner_id']: BondMember(eval_data['training_partner_id'], eval_data['evaluation']) for eval_data in data['chara_info']['evaluation_info_array']}
             level = command['level']
             failure_rate = command['failure_rate']
             stats = 0
             skillpt = 0
-            bond = 0
+            total_bond = 0
+            useful_bond = 0
             energy = 0
 
             for param in command['params_inc_dec_info_array']:
@@ -86,33 +94,6 @@ class HelperTable():
                     skillpt += param['value']
                 elif param['target_type'] == 10:
                     energy += param['value']
-            
-            
-            def calc_bond_gain(partner_id, amount):
-                if not partner_id in eval_dict:
-                    logger.error(f"Training partner ID not found in eval dict: {partner_id}")
-                    return 0
-                
-                # Ignore group and friend type cards
-                if partner_id <= 6:
-                    support_card_id = data['chara_info']['support_card_array'][partner_id - 1]['support_card_id']
-                    support_card_data = mdb.get_support_card_dict()[support_card_id]
-                    support_card_type = util.SUPPORT_CARD_TYPE_DICT[(support_card_data[1], support_card_data[2])]
-                    if support_card_type in ("Group", "Friend"):
-                        return 0
-
-                cur_bond = eval_dict[partner_id]
-                effective_bond = 0
-
-                usefulness_cutoff = 81
-                if partner_id == 102:
-                    usefulness_cutoff = 61
-
-                if cur_bond < usefulness_cutoff:
-                    new_bond = cur_bond + amount
-                    new_bond = min(new_bond, 80)
-                    effective_bond = new_bond - cur_bond
-                return effective_bond
 
             for training_partner_id in command['training_partner_array']:
                 # Akikawa is 102
@@ -126,7 +107,11 @@ class HelperTable():
                     elif training_partner_id == 102 and 9 in data['chara_info'].get('chara_effect_id_array', []):
                         initial_gain += 2
 
-                    bond += calc_bond_gain(training_partner_id, initial_gain)
+                    eval_dict[training_partner_id].training_bond += initial_gain
+
+            for tips_partner_id in command['tips_event_partner_array']:
+                if tips_partner_id <= 6:
+                    eval_dict[tips_partner_id].tip_bond += 5
 
             # For bond, first check if blue venus effect is active.
             venus_blue_active = False
@@ -134,14 +119,64 @@ class HelperTable():
                 if data['venus_data_set']['venus_spirit_active_effect_info_array'][0]['chara_id'] == 9041:
                     venus_blue_active = True
 
-            bond_gains = [0]
-            for tips_partner_id in command['tips_event_partner_array']:
-                if tips_partner_id <= 6:
-                    bond_gains.append(calc_bond_gain(tips_partner_id, 5))
+
+            def calc_bond_gain(partner_id, amount):
+                if not partner_id in eval_dict:
+                    logger.error(f"Training partner ID not found in eval dict: {partner_id}")
+                    return 0
+                
+                # Ignore group and friend type cards
+                if partner_id <= 6:
+                    support_card_id = data['chara_info']['support_card_array'][partner_id - 1]['support_card_id']
+                    support_card_data = mdb.get_support_card_dict()[support_card_id]
+                    support_card_type = util.SUPPORT_CARD_TYPE_DICT[(support_card_data[1], support_card_data[2])]
+                    if support_card_type in ("Group", "Friend"):
+                        return 0
+
+                cur_bond = eval_dict[partner_id].starting_bond
+                effective_bond = 0
+
+                usefulness_cutoff = 81
+                if partner_id == 102:
+                    usefulness_cutoff = 61
+
+                if cur_bond < usefulness_cutoff:
+                    new_bond = cur_bond + amount
+                    new_bond = min(new_bond, 80)
+                    effective_bond = new_bond - cur_bond
+                return effective_bond
+
+
+            tip_gains_total = []
+            tip_gains_useful = []
+            for bond_member in eval_dict.values():
+                # Cap bond at 100
+                new_bond = min(bond_member.starting_bond + bond_member.training_bond, 100)
+                true_training_gain = new_bond - bond_member.starting_bond
+                total_bond += true_training_gain
+                useful_bond += calc_bond_gain(bond_member.partner_id, true_training_gain)
+                bond_member.starting_bond = new_bond
+
+                # Cap bond at 100 again
+                new_bond = min(bond_member.starting_bond + bond_member.tip_bond, 100)
+                true_tip_gain = new_bond - bond_member.starting_bond
+                tip_gains_total.append(true_tip_gain)
+
+                new_tip_total = bond_member.starting_bond + true_tip_gain
+                if new_tip_total < 81:
+                    tip_gains_useful.append(true_tip_gain)
+                else:
+                    tip_gains_useful.append(81 - bond_member.starting_bond)
+
+                bond_member.starting_bond = new_bond
+            
             if not venus_blue_active:
-                bond += max(bond_gains)
+                total_bond += max(tip_gains_total)
+                useful_bond += max(tip_gains_useful)
             else:
-                bond += sum(bond_gains)
+                total_bond += sum(tip_gains_total)
+                useful_bond += sum(tip_gains_useful)
+
 
             current_stats = data['chara_info'][COMMAND_ID_TO_KEY[command['command_id']]]
 
@@ -151,7 +186,8 @@ class HelperTable():
                 'failure_rate': failure_rate,
                 'gained_stats': stats,
                 'gained_skillpt': skillpt,
-                'useful_bond': bond,
+                'total_bond': total_bond,
+                'useful_bond': useful_bond,
                 'gained_energy': energy
             }
 
