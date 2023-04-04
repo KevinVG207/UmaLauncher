@@ -179,17 +179,18 @@ class CarrotJuicer():
         window.UL_OVERLAY.style.zIndex = 100;
         window.UL_OVERLAY.style.backgroundColor = "var(--c-bg-main)";
         window.UL_OVERLAY.style.borderBottom = "2px solid var(--c-topnav)";
-        window.UL_OVERLAY.style.display = "flex";
-        window.UL_OVERLAY.style.alignItems = "center";
-        window.UL_OVERLAY.style.justifyContent = "center";
-        window.UL_OVERLAY.style.flexDirection = "column";
-        window.UL_OVERLAY.style.fontSize = "0.9rem";
 
-        window.UL_OVERLAY.innerHTML = `
-            <div>Energy: <span id="energy"></span></div>
-            <table id="training-table">
-            </table>
-        `;
+        var ul_data = document.createElement("div");
+        ul_data.id = "ul-data";
+        window.UL_OVERLAY.appendChild(ul_data);
+
+        window.UL_OVERLAY.ul_data = ul_data;
+
+        ul_data.style.display = "flex";
+        ul_data.style.alignItems = "center";
+        ul_data.style.justifyContent = "center";
+        ul_data.style.flexDirection = "column";
+        ul_data.style.fontSize = "0.9rem";
 
         var ul_dropdown = document.createElement("div");
         ul_dropdown.id = "ul-dropdown";
@@ -235,9 +236,7 @@ class CarrotJuicer():
         window.GT_PAGE.style.transition = "padding-top 0.5s";
 
         window.update_overlay = function() {
-            document.getElementById("energy").innerText = window.UL_DATA.energy + "/" + window.UL_DATA.max_energy;
-
-            document.getElementById("training-table").innerHTML = window.UL_DATA.table;
+            window.UL_OVERLAY.ul_data.innerHTML = window.UL_DATA.overlay_html;
 
             var height = window.UL_OVERLAY.clientHeight;
             window.OVERLAY_HEIGHT = height + "px";
@@ -587,29 +586,13 @@ class CarrotJuicer():
         return sorted(glob.glob(os.path.join(msg_path, "*.msgpack")), key=os.path.getmtime)
 
 
-    def update_helper_table(self, energy, max_energy, table_string):
-        self.browser.execute_script("""
-            window.UL_DATA.energy = arguments[0];
-            window.UL_DATA.max_energy = arguments[1];
-            window.UL_DATA.table = arguments[2];
-            window.update_overlay();
-            """,
-            energy,
-            max_energy,
-            table_string
-        )
-
     def update_helper_table(self, data):
         helper_table = self.helper_table.create_helper_table(data)
         if helper_table:
             self.browser.execute_script("""
-                window.UL_DATA.energy = arguments[0];
-                window.UL_DATA.max_energy = arguments[1];
-                window.UL_DATA.table = arguments[2];
+                window.UL_DATA.overlay_html = arguments[0];
                 window.update_overlay();
                 """,
-                data['chara_info']['vital'],
-                data['chara_info']['max_vital'],
                 helper_table
             )
 

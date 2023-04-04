@@ -34,8 +34,8 @@ class Cell():
         if self.color:
             style += f"color:{self.color.value};"
         if style:
-            style = f"style=\"{style}\""
-        return f"<td {style if style else ''}>{self.value}{'%' if self.percent else ''}</td>"
+            style = f" style=\"{style}\""
+        return f"<td{style if style else ''}>{self.value}{'%' if self.percent else ''}</td>"
 
 
 class Row():
@@ -54,20 +54,20 @@ class Row():
         self.dialog = None
         self.style = None
 
-    def _generate_cells(self, game_state) -> list[Cell]:
+    def _generate_cells(self, command_info) -> list[Cell]:
         """Returns a list of cells for this row.
         """
         cells = [Cell(self.short_name)]
 
-        for command in game_state:
+        for command in command_info:
             cells.append(Cell())
         
         return cells
 
-    def get_cells(self, game_state) -> list[Cell]:
+    def get_cells(self, command_info) -> list[Cell]:
         """Returns the value of the row at the given column index.
         """
-        return self._generate_cells(game_state)
+        return self._generate_cells(command_info)
 
     def _make_settings_dialog(self, parent) -> gui.UmaMainWidget:
         """Returns a settings dialog for this row.
@@ -81,8 +81,8 @@ class Row():
         self.dialog.exec()
         self.dialog = None
     
-    def to_tr(self, game_state):
-        td = ''.join(cell.to_td() for cell in self.get_cells(game_state))
+    def to_tr(self, command_info):
+        td = ''.join(cell.to_td() for cell in self.get_cells(command_info))
         return f"<tr{self.get_style()}>{td}</tr>"
     
     def get_style(self):
@@ -104,6 +104,9 @@ class Preset():
     row_types = None
 
     def __init__(self, row_types):
+        self.energy_enabled = True
+        self.scenario_specific_enabled = True
+
         self.row_types = row_types
         if self.rows:
             self.initialized_rows = [row.value() for row in self.rows]
@@ -122,19 +125,28 @@ class Preset():
     def __eq__(self, other):
         return self.name == other.name
     
-    def generate_table(self, game_state):
-        if not game_state:
+    def generate_overlay(self, main_info, command_info):
+        return ''.join([
+            self.generate_energy(main_info),
+            self.generate_table(command_info)
+        ])
+    
+    def generate_energy(self, main_info):
+        return f"<div id=\"energy\">Energy: {main_info['energy']}/{main_info['max_energy']}</div>"
+    
+    def generate_table(self, command_info):
+        if not command_info:
             return ""
 
         table_header = ''.join(f"<th>{header}</th>" for header in TABLE_HEADERS)
         table = [f"<tr>{table_header}</tr>"]
 
         for row in self.initialized_rows:
-            table.append(row.to_tr(game_state))
+            table.append(row.to_tr(command_info))
 
         thead = f"<thead>{table[0]}</thead>"
         tbody = f"<tbody>{''.join(table[1:])}</tbody>"
-        return thead + tbody
+        return f"<table id=\"training-table\">{thead}{tbody}</table>"
 
     def to_dict(self):
         return {

@@ -38,7 +38,7 @@ class HelperTable():
         if not 'home_info' in data:
             return None
 
-        game_state = {}
+        command_info = {}
 
         all_commands = {}
         
@@ -166,7 +166,7 @@ class HelperTable():
 
             current_stats = data['chara_info'][util.COMMAND_ID_TO_KEY[command['command_id']]]
 
-            game_state[command['command_id']] = {
+            command_info[command['command_id']] = {
                 'current_stats': current_stats,
                 'level': level,
                 'failure_rate': failure_rate,
@@ -179,19 +179,17 @@ class HelperTable():
 
         # Simplify everything down to a dict with only the keys we care about.
         # No distinction between normal and summer training.
-        game_state = {
-            util.COMMAND_ID_TO_KEY[command_id]: game_state[command_id]
-            for command_id in game_state
+        command_info = {
+            util.COMMAND_ID_TO_KEY[command_id]: command_info[command_id]
+            for command_id in command_info
             if command_id in util.COMMAND_ID_TO_KEY
         }
 
-        table = self.selected_preset.generate_table(game_state)
+        main_info = {
+            "energy": data['chara_info']['vital'],
+            "max_energy": data['chara_info']['max_vital']
+        }
 
-        return table
+        overlay_html = self.selected_preset.generate_overlay(main_info, command_info)
 
-    def show_preset_menu(self):
-        """Shows a menu to select a preset.
-        """
-
-        app = gui.UmaApp()
-        app.run()
+        return overlay_html
