@@ -30,8 +30,8 @@ class HelperTable():
             self.carrotjuicer.update_helper_table(self.carrotjuicer.last_helper_data)
 
 
-    def create_helper_table(self, data) -> str:
-        """Creates a helper table for the given game state.
+    def create_helper_elements(self, data) -> str:
+        """Creates the helper elements for the given response packet.
         """
 
         if not 'home_info' in data:
@@ -63,7 +63,10 @@ class HelperTable():
             if command['command_id'] not in util.COMMAND_ID_TO_KEY:
                 continue
 
-            eval_dict = {eval_data['training_partner_id']: BondMember(eval_data['training_partner_id'], eval_data['evaluation']) for eval_data in data['chara_info']['evaluation_info_array']}
+            eval_dict = {
+                eval_data['training_partner_id']: BondMember(eval_data['training_partner_id'], eval_data['evaluation'])
+                for eval_data in data['chara_info']['evaluation_info_array']
+            }
             level = command['level']
             failure_rate = command['failure_rate']
             gained_stats = {stat_type: 0 for stat_type in set(util.COMMAND_ID_TO_KEY.values())}
@@ -161,7 +164,6 @@ class HelperTable():
             else:
                 total_bond += sum(tip_gains_total)
                 useful_bond += sum(tip_gains_useful)
-
 
             current_stats = data['chara_info'][util.COMMAND_ID_TO_KEY[command['command_id']]]
 

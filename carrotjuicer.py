@@ -587,7 +587,7 @@ class CarrotJuicer():
 
 
     def update_helper_table(self, data):
-        helper_table = self.helper_table.create_helper_table(data)
+        helper_table = self.helper_table.create_helper_elements(data)
         if helper_table:
             self.browser.execute_script("""
                 window.UL_DATA.overlay_html = arguments[0];
