@@ -186,9 +186,19 @@ class HelperTable():
             if command_id in util.COMMAND_ID_TO_KEY
         }
 
+        gm_fragments = [0] * 8
+
+        if 'venus_data_set' in data:
+            fragments = data['venus_data_set']['spirit_info_array']
+            for fragment in fragments:
+                if fragment['spirit_num'] <= 8:
+                    gm_fragments[fragment['spirit_num'] - 1] = fragment['spirit_id']
+
         main_info = {
+            "scenario_id": data['chara_info']['scenario_id'],
             "energy": data['chara_info']['vital'],
-            "max_energy": data['chara_info']['max_vital']
+            "max_energy": data['chara_info']['max_vital'],
+            "gm_fragments": gm_fragments
         }
 
         overlay_html = self.selected_preset.generate_overlay(main_info, command_info)

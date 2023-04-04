@@ -1,7 +1,9 @@
 import enum
-from dataclasses import dataclass
+import os
+import base64
 from loguru import logger
 import gui
+import util
 
 TABLE_HEADERS = [
     "Facility",
@@ -143,11 +145,30 @@ class PresetSettings(Settings):
         )
 
 
+def get_gm_fragment_strings():
+    fragment_dict = {}
+    for i in range(0, 23):
+        fragment_img_path = f"_assets/gm/frag_{i:02}.png"
+        asset_path = util.get_asset(fragment_img_path)
+
+        if not os.path.exists(asset_path):
+            continue
+
+        with open(asset_path, "rb") as f:
+            b64 = "data:image/png;base64," + base64.b64encode(f.read()).decode("utf-8")
+        
+        fragment_dict[i] = b64
+
+    return fragment_dict
+
+
 class Preset():
     name = None
     rows = None
     initialized_rows: list[Row] = None
     row_types = None
+
+    gm_fragment_dict = get_gm_fragment_strings()
 
     def __init__(self, row_types):
         self.settings = PresetSettings()
@@ -180,7 +201,10 @@ class Preset():
 
         if self.settings.s_energy_enabled.value:
             html_elements.append(self.generate_energy(main_info))
-        
+
+        if self.settings.s_scenario_specific_enabled.value:
+            html_elements.append(self.generate_gm_table(main_info))
+
         html_elements.append(self.generate_table(command_info))
 
         return ''.join(html_elements)
@@ -201,6 +225,21 @@ class Preset():
         thead = f"<thead>{table[0]}</thead>"
         tbody = f"<tbody>{''.join(table[1:])}</tbody>"
         return f"<table id=\"training-table\">{thead}{tbody}</table>"
+
+    def generate_gm_table(self, main_info):
+        if main_info['scenario_id'] != 5:
+            return ""
+        
+        header = "<tr><th colspan=\"8\">Fragments</th></tr>"
+    
+        frag_tds = []
+        for index, fragment_id in enumerate(main_info['gm_fragments']):
+            frag_tds.append(f"<td style=\"{'outline: 1px solid red; outline-offset: -1px;' if index in (0, 4) else ''}\"><img src=\"{self.gm_fragment_dict[fragment_id]}\" height=\"36\" width=\"34\" style=\"display:block; margin: auto; width: auto; height: 36px;\" /></td>")
+        
+        frag_tr = f"<tr>{''.join(frag_tds)}</tr>"
+
+        return f"<table id=\"gm-fragments\"><thead>{header}</thead><tbody>{frag_tr}</tbody></table>"
+
 
     def to_dict(self):
         return {

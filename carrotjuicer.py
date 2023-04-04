@@ -173,7 +173,7 @@ class CarrotJuicer():
         window.OVERLAY_HEIGHT = "15rem";
         window.UL_OVERLAY.style.height = "max_content";
         window.UL_OVERLAY.style.width = "100%";
-        window.UL_OVERLAY.style.padding = "1rem 0";
+        window.UL_OVERLAY.style.padding = "0.5rem 0";
         window.UL_OVERLAY.style.position = "fixed";
         window.UL_OVERLAY.style.bottom = "100%";
         window.UL_OVERLAY.style.zIndex = 100;
@@ -190,6 +190,7 @@ class CarrotJuicer():
         ul_data.style.alignItems = "center";
         ul_data.style.justifyContent = "center";
         ul_data.style.flexDirection = "column";
+        ul_data.style.gap = "0.5rem";
         ul_data.style.fontSize = "0.9rem";
 
         var ul_dropdown = document.createElement("div");
@@ -208,6 +209,11 @@ class CarrotJuicer():
 
         window.expand_overlay = function() {
             window.UL_DATA.expanded = true;
+
+            var height = window.UL_OVERLAY.offsetHeight;
+            console.log(height)
+            window.OVERLAY_HEIGHT = height + "px";
+
             document.getElementById("ul-dropdown").textContent = "⯅";
             document.getElementById("ul-dropdown").style.top = "calc(" + window.OVERLAY_HEIGHT + " - 2px)";
             window.GT_PAGE.style.paddingTop = window.OVERLAY_HEIGHT;
@@ -236,12 +242,13 @@ class CarrotJuicer():
         window.GT_PAGE.style.transition = "padding-top 0.5s";
 
         window.update_overlay = function() {
-            window.UL_OVERLAY.ul_data.innerHTML = window.UL_DATA.overlay_html;
+            window.UL_OVERLAY.ul_data.replaceChildren();
+            window.UL_OVERLAY.ul_data.insertAdjacentHTML("afterbegin", window.UL_DATA.overlay_html)
+            //window.UL_OVERLAY.ul_data.innerHTML = window.UL_DATA.overlay_html;
 
-            var height = window.UL_OVERLAY.clientHeight;
-            window.OVERLAY_HEIGHT = height + "px";
             if (window.UL_DATA.expanded) {
                 window.expand_overlay();
+                //setTimeout(window.expand_overlay, 100);
             }
         };
         """)
@@ -632,8 +639,11 @@ class CarrotJuicer():
             pass
 
         if self.browser:
-            self.last_browser_rect = self.browser.get_window_rect()
-            self.browser.quit()
+            try:
+                self.last_browser_rect = self.browser.get_window_rect()
+                self.browser.quit()
+            except: pass
+
         self.save_last_browser_rect()
         return
 
