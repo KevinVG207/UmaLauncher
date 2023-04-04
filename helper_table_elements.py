@@ -20,14 +20,15 @@ class Colors(enum.Enum):
     GOOD = "lightgreen"
 
 class Cell():
-    def __init__(self, value="", bold=False, color=None, percent=False):
+    def __init__(self, value="", bold=False, color=None, percent=False, style=""):
         self.value = value
         self.bold = bold
         self.color = color
         self.percent = percent
+        self.style = style
 
     def to_td(self):
-        style = ""
+        style = self.style
         if self.bold:
             style += "font-weight:bold;"
         if self.color:
@@ -45,11 +46,13 @@ class Row():
     cells = None
 
     dialog = None
+    style = None
 
     """Defines a row in the helper table.
     """
     def __init__(self):
         self.dialog = None
+        self.style = None
 
     def _generate_cells(self, game_state) -> list[Cell]:
         """Returns a list of cells for this row.
@@ -77,6 +80,15 @@ class Row():
         self.dialog = self._make_settings_dialog(parent)
         self.dialog.exec()
         self.dialog = None
+    
+    def to_tr(self, game_state):
+        td = ''.join(cell.to_td() for cell in self.get_cells(game_state))
+        return f"<tr{self.get_style()}>{td}</tr>"
+    
+    def get_style(self):
+        if self.style:
+            return f" style=\"{self.style}\""
+        return ""
     
     def to_dict(self, row_types):
         return {
@@ -114,12 +126,13 @@ class Preset():
         if not game_state:
             return ""
 
-        table = [[f"<th>{header}</th>" for header in TABLE_HEADERS]]
+        table_header = ''.join(f"<th>{header}</th>" for header in TABLE_HEADERS)
+        table = [f"<tr>{table_header}</tr>"]
 
         for row in self.initialized_rows:
-            table.append([cell.to_td() for cell in row.get_cells(game_state)])
+            table.append(row.to_tr(game_state))
 
-        table = [f"<tr>{''.join(row)}</tr>" for row in table]
+        print(table)
 
         thead = f"<thead>{table[0]}</thead>"
         tbody = f"<tbody>{''.join(table[1:])}</tbody>"

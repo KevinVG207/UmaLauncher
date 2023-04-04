@@ -2,21 +2,7 @@ from loguru import logger
 import mdb
 import util
 import gui
-import helper_table_defaults as htd
-import helper_table_elements as hte
 
-COMMAND_ID_TO_KEY = {
-    101: "speed",
-    105: "stamina",
-    102: "power",
-    103: "guts",
-    106: "wiz",
-    601: "speed",
-    602: "stamina",
-    603: "power",
-    604: "guts",
-    605: "wiz"
-}
 
 class BondMember():
     def __init__(self, partner_id, starting_bond):
@@ -75,13 +61,13 @@ class HelperTable():
                         all_commands[command['command_id']]['params_inc_dec_info_array'] += command['params_inc_dec_info_array']
 
         for command in all_commands.values():
-            if command['command_id'] not in COMMAND_ID_TO_KEY:
+            if command['command_id'] not in util.COMMAND_ID_TO_KEY:
                 continue
 
             eval_dict = {eval_data['training_partner_id']: BondMember(eval_data['training_partner_id'], eval_data['evaluation']) for eval_data in data['chara_info']['evaluation_info_array']}
             level = command['level']
             failure_rate = command['failure_rate']
-            stats = 0
+            gained_stats = {stat_type: 0 for stat_type in set(util.COMMAND_ID_TO_KEY.values())}
             skillpt = 0
             total_bond = 0
             useful_bond = 0
@@ -89,7 +75,7 @@ class HelperTable():
 
             for param in command['params_inc_dec_info_array']:
                 if param['target_type'] < 6:
-                    stats += param['value']
+                    gained_stats[util.TARGET_TYPE_TO_KEY[param['target_type']]] += param['value']
                 elif param['target_type'] == 30:
                     skillpt += param['value']
                 elif param['target_type'] == 10:
@@ -178,13 +164,13 @@ class HelperTable():
                 useful_bond += sum(tip_gains_useful)
 
 
-            current_stats = data['chara_info'][COMMAND_ID_TO_KEY[command['command_id']]]
+            current_stats = data['chara_info'][util.COMMAND_ID_TO_KEY[command['command_id']]]
 
             game_state[command['command_id']] = {
                 'current_stats': current_stats,
                 'level': level,
                 'failure_rate': failure_rate,
-                'gained_stats': stats,
+                'gained_stats': gained_stats,
                 'gained_skillpt': skillpt,
                 'total_bond': total_bond,
                 'useful_bond': useful_bond,
@@ -194,9 +180,9 @@ class HelperTable():
         # Simplify everything down to a dict with only the keys we care about.
         # No distinction between normal and summer training.
         game_state = {
-            COMMAND_ID_TO_KEY[command_id]: game_state[command_id]
+            util.COMMAND_ID_TO_KEY[command_id]: game_state[command_id]
             for command_id in game_state
-            if command_id in COMMAND_ID_TO_KEY
+            if command_id in util.COMMAND_ID_TO_KEY
         }
 
         table = self.selected_preset.generate_table(game_state)

@@ -77,6 +77,27 @@ SUPPORT_CARD_TYPE_DICT = {
     (0, 3): "Group"
 }
 
+COMMAND_ID_TO_KEY = {
+    101: "speed",
+    105: "stamina",
+    102: "power",
+    103: "guts",
+    106: "wiz",
+    601: "speed",
+    602: "stamina",
+    603: "power",
+    604: "guts",
+    605: "wiz"
+}
+
+TARGET_TYPE_TO_KEY = {
+    1: "speed",
+    2: "stamina",
+    3: "power",
+    4: "guts",
+    5: "wiz"
+}
+
 def get_asset(asset_path):
     return os.path.join(unpack_dir, asset_path)
 

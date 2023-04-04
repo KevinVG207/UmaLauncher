@@ -17,8 +17,6 @@ class CurrentStatsRow(hte.Row):
 
 
 class GainedStatsSettings(hte.Settings):
-    s_highlight_max = None
-
     def __init__(self):
         self.s_highlight_max = hte.Setting(
             "Highlight max",
@@ -28,21 +26,21 @@ class GainedStatsSettings(hte.Settings):
         )
 
 class GainedStatsRow(hte.Row):
-    long_name = "Stats gained per facility"
+    long_name = "Total stats gained per facility"
     short_name = "Stat Gain"
     description = "Shows the total stats gained per facility. This includes stats gained outside the facility itself."
-    settings = None
 
     def __init__(self):
+        super().__init__()
         self.settings = GainedStatsSettings()
 
     def _generate_cells(self, game_state) -> list[hte.Cell]:
         cells = [hte.Cell(self.short_name)]
 
-        max_gained_stats = max(facility['gained_stats'] for facility in game_state.values())
+        max_gained_stats = max(sum(facility['gained_stats'].values()) for facility in game_state.values())
 
         for command in game_state.values():
-            gained_stats = command['gained_stats']
+            gained_stats = sum(command['gained_stats'].values())
             if self.settings.s_highlight_max.value and max_gained_stats > 0 and gained_stats == max_gained_stats:
                 cells.append(hte.Cell(gained_stats, bold=True, color=hte.Colors.GOOD))
             else:
@@ -50,10 +48,46 @@ class GainedStatsRow(hte.Row):
 
         return cells
 
+class GainedStatsDistributionSettings(hte.Settings):
+    def __init__(self):
+        self.s_include_skillpts = hte.Setting(
+            "Include skill points",
+            "Include skill points in the row.",
+            False,
+            hte.SettingType.BOOL
+        )
+
+class GainedStatsDistributionRow(hte.Row):
+    long_name = "Stats distribution per facility"
+    short_name = "Stat Gain <br>Distribution"
+    description = "Shows the stats gained per facility per type. This includes stats gained outside the facility itself."
+
+    def __init__(self):
+        super().__init__()
+        self.settings = GainedStatsDistributionSettings()
+
+    def _generate_cells(self, game_state) -> list[hte.Cell]:
+        cells = [hte.Cell(self.short_name)]
+
+        for command in game_state.values():
+            gained_stats = command['gained_stats']
+            out_lines = [
+                f"Spd: {gained_stats['speed']}",
+                f"Sta: {gained_stats['stamina']}",
+                f"Pow: {gained_stats['power']}",
+                f"Gut: {gained_stats['guts']}",
+                f"Wis: {gained_stats['wiz']}"
+            ]
+            
+            if self.settings.s_include_skillpts.value:
+                out_lines.append(f"Skl: {command['gained_skillpt']}")
+            
+            cells.append(hte.Cell('<br>'.join(out_lines), style="text-align: left;"))
+
+        return cells
+
 
 class GainedEnergySettings(hte.Settings):
-    s_enable_colors = None
-
     def __init__(self):
         self.s_enable_colors = hte.Setting(
         "Enable colors",
@@ -66,9 +100,9 @@ class GainedEnergyRow(hte.Row):
     long_name = "Energy gained/lost per facility"
     short_name = "Energy"
     description = "Shows the total energy gained or lost per facility."
-    settings = None
 
     def __init__(self):
+        super().__init__()
         self.settings = GainedEnergySettings()
 
     def _generate_cells(self, game_state) -> list[hte.Cell]:
@@ -90,8 +124,6 @@ class GainedEnergyRow(hte.Row):
     
 
 class TotalBondSettings(hte.Settings):
-    s_highlight_max = None
-
     def __init__(self):
         self.s_highlight_max = hte.Setting(
             "Highlight max",
@@ -104,9 +136,9 @@ class TotalBondRow(hte.Row):
     long_name = "Total bond gained per facility"
     short_name = "Total Bond"
     description = "Total includes all bond gains of all supports and Akikawa, until they fill up their bar."
-    settings = None
 
     def __init__(self):
+        super().__init__()
         self.settings = TotalBondSettings()
 
     def _generate_cells(self, game_state) -> list[hte.Cell]:
@@ -125,8 +157,6 @@ class TotalBondRow(hte.Row):
 
 
 class UsefulBondSettings(hte.Settings):
-    s_highlight_max = None
-
     def __init__(self):
         self.s_highlight_max = hte.Setting(
             "Highlight max",
@@ -141,9 +171,9 @@ class UsefulBondRow(hte.Row):
     long_name = "Useful bond gained per facility"
     short_name = "Useful Bond"
     description = "Useful includes supports until orange bar, excluding friend/group cards. Also Akikawa until green bar."
-    settings = None
 
     def __init__(self):
+        super().__init__()
         self.settings = UsefulBondSettings()
 
     def _generate_cells(self, game_state) -> list[hte.Cell]:
@@ -162,8 +192,6 @@ class UsefulBondRow(hte.Row):
 
 
 class GainedSkillptSettings(hte.Settings):
-    s_highlight_max = None
-
     def __init__(self):
         self.s_highlight_max = hte.Setting(
             "Highlight max",
@@ -176,9 +204,9 @@ class GainedSkillptRow(hte.Row):
     long_name = "Skill points gained per facility"
     short_name = "Skill Points"
     description = "Shows the total skill points gained per facility."
-    settings = None
 
     def __init__(self):
+        super().__init__()
         self.settings = GainedSkillptSettings()
 
     def _generate_cells(self, game_state) -> list[hte.Cell]:
@@ -197,10 +225,6 @@ class GainedSkillptRow(hte.Row):
 
 
 class FailPercentageSettings(hte.Settings):
-    s_enable_colors = None
-    s_orange_threshold = None
-    s_red_threshold = None
-
     def __init__(self):
         self.s_enable_colors = hte.Setting(
             "Enable colors",
@@ -229,9 +253,9 @@ class FailPercentageRow(hte.Row):
     long_name = "Fail percentage per facility"
     short_name = "Fail %"
     description = "Shows the fail percentage per facility."
-    settings = None
 
     def __init__(self):
+        super().__init__()
         self.settings = FailPercentageSettings()
 
     def _generate_cells(self, game_state) -> list[hte.Cell]:
@@ -272,6 +296,7 @@ class LevelRow(hte.Row):
 class RowTypes(Enum):
     CURRENT_STATS = CurrentStatsRow
     GAINED_STATS = GainedStatsRow
+    GAINED_STATS_DISTR = GainedStatsDistributionRow
     GAINED_ENERGY = GainedEnergyRow
     USEFUL_BOND = UsefulBondRow
     TOTAL_BOND = TotalBondRow
