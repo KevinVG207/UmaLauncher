@@ -128,9 +128,14 @@ class UmaPresetMenu(UmaMainWidget):
         self.grp_preset_catalog.setTitle(u"Preset catalog")
         self.cmb_select_preset = qtw.QComboBox(self.grp_preset_catalog)
         self.cmb_select_preset.setObjectName(u"cmb_select_preset")
-        self.cmb_select_preset.setGeometry(qtc.QRect(10, 20, 491, 22))
+        self.cmb_select_preset.setGeometry(qtc.QRect(10, 20, 381, 22))
         self.cmb_select_preset.currentIndexChanged.connect(self.on_preset_change)
 
+        self.but_toggle_elements = qtw.QPushButton(self.grp_preset_catalog)
+        self.but_toggle_elements.setObjectName(u"but_toggle_elements")
+        self.but_toggle_elements.setGeometry(qtc.QRect(400, 20, 101, 23))
+        self.but_toggle_elements.setText(u"Toggle elements")
+        self.but_toggle_elements.clicked.connect(self.on_toggle_elements)
         self.but_new_preset = qtw.QPushButton(self.grp_preset_catalog)
         self.but_new_preset.setObjectName(u"but_new_preset")
         self.but_new_preset.setGeometry(qtc.QRect(510, 20, 71, 23))
@@ -198,12 +203,12 @@ class UmaPresetMenu(UmaMainWidget):
         self.btn_close = qtw.QPushButton(self)
         self.btn_close.setObjectName(u"btn_close")
         self.btn_close.setGeometry(qtc.QRect(610, 440, 71, 23))
-        self.btn_close.setText(u"Close")
+        self.btn_close.setText(u"Cancel")
         self.btn_close.clicked.connect(self.on_close)
         self.btn_apply = qtw.QPushButton(self)
         self.btn_apply.setObjectName(u"btn_apply")
-        self.btn_apply.setGeometry(qtc.QRect(530, 440, 71, 23))
-        self.btn_apply.setText(u"Apply")
+        self.btn_apply.setGeometry(qtc.QRect(510, 440, 91, 23))
+        self.btn_apply.setText("Apply && Close")
         self.btn_apply.clicked.connect(self.on_apply)
         self.grp_help = qtw.QGroupBox(self)
         self.grp_help.setObjectName(u"grp_help")
@@ -232,6 +237,17 @@ class UmaPresetMenu(UmaMainWidget):
         for preset in self.preset_list:
             self.output_list.append(preset)
         self.close()
+
+    @qtc.pyqtSlot()
+    def on_toggle_elements(self):
+        current_preset_index = self.cmb_select_preset.currentIndex()
+        current_preset = None
+        # Get the preset object
+        if current_preset_index <= 0:
+            current_preset = self.default_preset
+        else:
+            current_preset = self.preset_list[current_preset_index - 1]
+        current_preset.display_settings_dialog(self)
 
     @qtc.pyqtSlot()
     def on_new_preset(self):
@@ -337,6 +353,7 @@ class UmaPresetMenu(UmaMainWidget):
         self.btn_copy_to_preset.setEnabled(True)
         self.btn_row_options.setEnabled(True)
         self.but_del_preset.setEnabled(True)
+        self.but_toggle_elements.setEnabled(True)
 
     def disable_current_preset(self):
         self.lst_current.setEnabled(False)
@@ -344,6 +361,7 @@ class UmaPresetMenu(UmaMainWidget):
         self.btn_copy_to_preset.setEnabled(False)
         self.btn_row_options.setEnabled(False)
         self.but_del_preset.setEnabled(False)
+        self.but_toggle_elements.setEnabled(False)
 
     def reload_current_rows(self):
         self.lst_current.clear()
@@ -417,21 +435,21 @@ class UmaNewPresetDialog(UmaMainDialog):
         self._parent.selected_preset = new_preset
         self.close()
 
-class UmaRowSettingsDialog(UmaMainDialog):
-    row_object = None
+class UmaPresetSettingsDialog(UmaMainDialog):
+    settings_parent_object = None
     setting_types_enum = None
     setting_elements = None
 
-    def init_ui(self, row_object, setting_types_enum,  *args, **kwargs):
+    def init_ui(self, settings_parent_object, setting_types_enum, window_title="Change options", *args, **kwargs):
         self.setting_elements = {}
-        self.row_object = row_object
+        self.settings_parent_object = settings_parent_object
         self.setting_types_enum = setting_types_enum
 
         self.resize(481, 401)
         # Disable resizing
         self.setFixedSize(self.size())
         self.setWindowFlags(qtc.Qt.WindowCloseButtonHint)
-        self.setWindowTitle(u"Change row options")
+        self.setWindowTitle(window_title)
         self.scrollArea = qtw.QScrollArea(self)
         self.scrollArea.setObjectName(u"scrollArea")
         self.scrollArea.setGeometry(qtc.QRect(9, 9, 461, 351))
@@ -451,10 +469,10 @@ class UmaRowSettingsDialog(UmaMainDialog):
 
 
         # Adding group boxes to the scroll area
-        settings_keys = self.row_object.settings.get_settings_keys()
+        settings_keys = self.settings_parent_object.settings.get_settings_keys()
         last_setting = settings_keys[-1]
         for setting_key in settings_keys:
-            setting = getattr(self.row_object.settings, setting_key)
+            setting = getattr(self.settings_parent_object.settings, setting_key)
             group_box, value_func = self.add_group_box(setting)
 
             if not group_box:
@@ -474,15 +492,15 @@ class UmaRowSettingsDialog(UmaMainDialog):
         self.btn_cancel.setText(u"Cancel")
         self.btn_save_close = qtw.QPushButton(self)
         self.btn_save_close.setObjectName(u"btn_save_close")
-        self.btn_save_close.setGeometry(qtc.QRect(290, 370, 101, 23))
-        self.btn_save_close.setText(u"Save and close")
+        self.btn_save_close.setGeometry(qtc.QRect(300, 370, 91, 23))
+        self.btn_save_close.setText(u"Save && close")
 
         self.btn_cancel.clicked.connect(self.close)
         self.btn_save_close.clicked.connect(self.save_and_close)
     
     def save_and_close(self):
         for setting_key, value_func in self.setting_elements.items():
-            getattr(self.row_object.settings, setting_key).value = value_func()
+            getattr(self.settings_parent_object.settings, setting_key).value = value_func()
 
         self.close()
 

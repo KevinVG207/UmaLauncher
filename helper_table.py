@@ -1,7 +1,6 @@
 from loguru import logger
 import mdb
 import util
-import gui
 
 
 class BondMember():

@@ -230,6 +230,7 @@ class Settings():
         return preset_dict, selected_preset
 
     def update_helper_table(self):
+        logger.debug("Showing helper table preset menu.")
         preset_dict, selected_preset = self.get_helper_table_data()
         new_preset_list = []
         app = gui.UmaApp()
@@ -244,6 +245,7 @@ class Settings():
         ), True)
         app.close()
         if new_preset_list:
+            logger.debug("Saving new helper table preset list.")
             selected_preset = new_preset_list.pop(0)
             self.loaded_settings["training_helper_table_preset"] = selected_preset.name
             self.loaded_settings["training_helper_table_preset_list"] = [preset.to_dict() for preset in new_preset_list]

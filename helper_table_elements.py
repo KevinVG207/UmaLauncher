@@ -19,6 +19,41 @@ class Colors(enum.Enum):
     WARNING = "orange"
     GOOD = "lightgreen"
 
+class SettingType(enum.Enum):
+    BOOL = "bool"
+    INT = "int"
+
+class Settings():
+    def get_settings_keys(self):
+        return [attr for attr in dir(self) if attr.startswith("s_")]
+
+    def to_dict(self):
+        settings = self.get_settings_keys()
+        return {setting: getattr(self, setting).value for setting in settings} if settings else {}
+    
+    def import_dict(self, settings_dict):
+        for key, value in settings_dict.items():
+            if hasattr(self, key):
+                getattr(self, key).value = value
+
+
+class Setting():
+    name: str = None
+    description: str = None
+    value: ... = None
+    type: SettingType = None
+    min_value: int = None
+    max_value: int = None
+
+    def __init__(self, name, description, value, type, min_value=0, max_value=100):
+        self.name = name
+        self.description = description
+        self.value = value
+        self.type = type
+        self.min_value = min_value
+        self.max_value = max_value
+
+
 class Cell():
     def __init__(self, value="", bold=False, color=None, percent=False, style=""):
         self.value = value
@@ -69,15 +104,10 @@ class Row():
         """
         return self._generate_cells(command_info)
 
-    def _make_settings_dialog(self, parent) -> gui.UmaMainWidget:
-        """Returns a settings dialog for this row.
-        """
-        return gui.UmaRowSettingsDialog(parent, self, SettingType)
-
     def display_settings_dialog(self, parent):
         """Displays the settings dialog for this row.
         """
-        self.dialog = self._make_settings_dialog(parent)
+        self.dialog = gui.UmaPresetSettingsDialog(parent, self, SettingType, window_title="Change row options")
         self.dialog.exec()
         self.dialog = None
     
@@ -97,6 +127,22 @@ class Row():
         }
 
 
+class PresetSettings(Settings):
+    def __init__(self):
+        self.s_energy_enabled = Setting(
+            "Show energy",
+            "Displays energy in the event helper.",
+            True,
+            SettingType.BOOL
+        )
+        self.s_scenario_specific_enabled = Setting(
+            "Show scenario specific elements",
+            "Show scenario specific elements in the event helper.\n(Grand Live tokens/Grand Masters fragments)",
+            True,
+            SettingType.BOOL
+        )
+
+
 class Preset():
     name = None
     rows = None
@@ -104,8 +150,7 @@ class Preset():
     row_types = None
 
     def __init__(self, row_types):
-        self.energy_enabled = True
-        self.scenario_specific_enabled = True
+        self.settings = PresetSettings()
 
         self.row_types = row_types
         if self.rows:
@@ -125,11 +170,20 @@ class Preset():
     def __eq__(self, other):
         return self.name == other.name
     
+    def display_settings_dialog(self, parent):
+        self.dialog = gui.UmaPresetSettingsDialog(parent, self, SettingType, window_title="Toggle elements")
+        self.dialog.exec()
+        self.dialog = None
+    
     def generate_overlay(self, main_info, command_info):
-        return ''.join([
-            self.generate_energy(main_info),
-            self.generate_table(command_info)
-        ])
+        html_elements = []
+
+        if self.settings.s_energy_enabled.value:
+            html_elements.append(self.generate_energy(main_info))
+        
+        html_elements.append(self.generate_table(command_info))
+
+        return ''.join(html_elements)
     
     def generate_energy(self, main_info):
         return f"<div id=\"energy\">Energy: {main_info['energy']}/{main_info['max_energy']}</div>"
@@ -151,48 +205,19 @@ class Preset():
     def to_dict(self):
         return {
             "name": self.name,
+            "settings": self.settings.to_dict(),
             "rows": [row.to_dict(self.row_types) for row in self.initialized_rows] if self.initialized_rows else []
         }
     
     def import_dict(self, preset_dict):
-        self.name = preset_dict["name"]
-        self.initialized_rows = []
-        for row_dict in preset_dict["rows"]:
-            row_object = self.row_types[row_dict["type"]].value()
-            if row_object.settings:
-                row_object.settings.import_dict(row_dict["settings"])
-            self.initialized_rows.append(row_object)
-
-class SettingType(enum.Enum):
-    BOOL = "bool"
-    INT = "int"
-
-class Settings():
-    def get_settings_keys(self):
-        return [attr for attr in dir(self) if attr.startswith("s_")]
-
-    def to_dict(self):
-        settings = self.get_settings_keys()
-        return {setting: getattr(self, setting).value for setting in settings} if settings else {}
-    
-    def import_dict(self, settings_dict):
-        for key, value in settings_dict.items():
-            if hasattr(self, key):
-                getattr(self, key).value = value
-
-
-class Setting():
-    name: str = None
-    description: str = None
-    value: ... = None
-    type: SettingType = None
-    min_value: int = None
-    max_value: int = None
-
-    def __init__(self, name, description, value, type, min_value=0, max_value=100):
-        self.name = name
-        self.description = description
-        self.value = value
-        self.type = type
-        self.min_value = min_value
-        self.max_value = max_value
+        if "name" in preset_dict:
+            self.name = preset_dict["name"]
+        if "settings" in preset_dict:
+            self.settings.import_dict(preset_dict["settings"])
+        if "rows" in preset_dict:
+            self.initialized_rows = []
+            for row_dict in preset_dict["rows"]:
+                row_object = self.row_types[row_dict["type"]].value()
+                if row_object.settings:
+                    row_object.settings.import_dict(row_dict["settings"])
+                self.initialized_rows.append(row_object)
