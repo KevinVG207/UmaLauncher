@@ -1,0 +1,266 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0" connectslotsbyname="false">
+ <class>UmaPresetMenu</class>
+ <widget class="QDialog" name="UmaPresetMenu">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>691</width>
+    <height>471</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string notr="true">Customize Helper Table</string>
+  </property>
+  <widget class="QGroupBox" name="grp_preset_catalog">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>10</y>
+     <width>671</width>
+     <height>51</height>
+    </rect>
+   </property>
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
+   <property name="title">
+    <string notr="true">Preset catalog</string>
+   </property>
+   <widget class="QComboBox" name="cmb_select_preset">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>20</y>
+      <width>381</width>
+      <height>22</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <item>
+     <property name="text">
+      <string notr="true">Default</string>
+     </property>
+    </item>
+   </widget>
+   <widget class="QPushButton" name="but_new_preset">
+    <property name="geometry">
+     <rect>
+      <x>510</x>
+      <y>20</y>
+      <width>71</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string notr="true">New</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="but_del_preset">
+    <property name="geometry">
+     <rect>
+      <x>590</x>
+      <y>20</y>
+      <width>71</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string notr="true">Delete</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="but_toggle_elements">
+    <property name="geometry">
+     <rect>
+      <x>400</x>
+      <y>20</y>
+      <width>101</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string notr="true">Toggle elements</string>
+    </property>
+   </widget>
+  </widget>
+  <widget class="QGroupBox" name="grp_available_rows">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>60</y>
+     <width>331</width>
+     <height>311</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string notr="true">Available rows</string>
+   </property>
+   <widget class="QListWidget" name="lst_available">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>20</y>
+      <width>311</width>
+      <height>251</height>
+     </rect>
+    </property>
+    <item>
+     <property name="text">
+      <string notr="true">1</string>
+     </property>
+    </item>
+   </widget>
+   <widget class="QPushButton" name="btn_copy_to_preset">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>280</y>
+      <width>311</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="sizePolicy">
+     <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+      <horstretch>0</horstretch>
+      <verstretch>0</verstretch>
+     </sizepolicy>
+    </property>
+    <property name="text">
+     <string notr="true">Copy to current preset →</string>
+    </property>
+   </widget>
+  </widget>
+  <widget class="QGroupBox" name="grp_current_preset">
+   <property name="geometry">
+    <rect>
+     <x>350</x>
+     <y>60</y>
+     <width>331</width>
+     <height>311</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string notr="true">Current preset</string>
+   </property>
+   <widget class="QListWidget" name="lst_current">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>20</y>
+      <width>311</width>
+      <height>251</height>
+     </rect>
+    </property>
+    <property name="dragEnabled">
+     <bool>true</bool>
+    </property>
+    <property name="dragDropMode">
+     <enum>QAbstractItemView::DragDrop</enum>
+    </property>
+    <property name="defaultDropAction">
+     <enum>Qt::MoveAction</enum>
+    </property>
+    <item>
+     <property name="text">
+      <string notr="true">1</string>
+     </property>
+    </item>
+   </widget>
+   <widget class="QPushButton" name="btn_delete_from_preset">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>280</y>
+      <width>151</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string notr="true">Delete from current preset</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="btn_row_options">
+    <property name="geometry">
+     <rect>
+      <x>170</x>
+      <y>280</y>
+      <width>151</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string notr="true">Row options</string>
+    </property>
+   </widget>
+  </widget>
+  <widget class="QPushButton" name="btn_close">
+   <property name="geometry">
+    <rect>
+     <x>610</x>
+     <y>440</y>
+     <width>71</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string notr="true">Close</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="btn_apply">
+   <property name="geometry">
+    <rect>
+     <x>510</x>
+     <y>440</y>
+     <width>91</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string notr="true">Apply &amp; Close</string>
+   </property>
+  </widget>
+  <widget class="QGroupBox" name="grp_help">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>370</y>
+     <width>671</width>
+     <height>61</height>
+    </rect>
+   </property>
+   <property name="title">
+    <string notr="true">Help</string>
+   </property>
+   <widget class="QLabel" name="label">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>20</y>
+      <width>651</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string notr="true">DESCRIPTION.</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+    </property>
+    <property name="wordWrap">
+     <bool>true</bool>
+    </property>
+   </widget>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
