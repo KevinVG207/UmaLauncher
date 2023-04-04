@@ -2,7 +2,7 @@ from enum import Enum
 import helper_table_elements as hte
 
 class CurrentStatsRow(hte.Row):
-    long_name = "Current stats per facility"
+    long_name = "Current stats"
     short_name = "Current"
     description = "Shows the current stats of each facility."
 
@@ -26,7 +26,7 @@ class GainedStatsSettings(hte.Settings):
         )
 
 class GainedStatsRow(hte.Row):
-    long_name = "Total stats gained per facility"
+    long_name = "Total stats gained"
     short_name = "Stat Gain"
     description = "Shows the total stats gained per facility. This includes stats gained outside the facility itself."
 
@@ -58,7 +58,7 @@ class GainedStatsDistributionSettings(hte.Settings):
         )
 
 class GainedStatsDistributionRow(hte.Row):
-    long_name = "Stats distribution per facility"
+    long_name = "Gained stats distribution"
     short_name = "Stat Gain <br>Distribution"
     description = "Shows the stats gained per facility per type. This includes stats gained outside the facility itself."
 
@@ -71,18 +71,23 @@ class GainedStatsDistributionRow(hte.Row):
 
         for command in game_state.values():
             gained_stats = command['gained_stats']
-            out_lines = [
-                f"Spd: {gained_stats['speed']}",
-                f"Sta: {gained_stats['stamina']}",
-                f"Pow: {gained_stats['power']}",
-                f"Gut: {gained_stats['guts']}",
-                f"Wis: {gained_stats['wiz']}"
-            ]
-            
-            if self.settings.s_include_skillpts.value:
+
+            out_lines = []
+            if gained_stats['speed'] > 0:
+                out_lines.append(f"Spd: {gained_stats['speed']}")
+            if gained_stats['stamina'] > 0:
+                out_lines.append(f"Sta: {gained_stats['stamina']}")
+            if gained_stats['power'] > 0:
+                out_lines.append(f"Pow: {gained_stats['power']}")
+            if gained_stats['guts'] > 0:
+                out_lines.append(f"Gut: {gained_stats['guts']}")
+            if gained_stats['wiz'] > 0:
+                out_lines.append(f"Wis: {gained_stats['wiz']}")
+
+            if self.settings.s_include_skillpts.value and command['gained_skillpt'] > 0:
                 out_lines.append(f"Skl: {command['gained_skillpt']}")
             
-            cells.append(hte.Cell('<br>'.join(out_lines), style="text-align: left;"))
+            cells.append(hte.Cell('<br>'.join(out_lines)))
 
         return cells
 
@@ -97,7 +102,7 @@ class GainedEnergySettings(hte.Settings):
     )
 
 class GainedEnergyRow(hte.Row):
-    long_name = "Energy gained/lost per facility"
+    long_name = "Energy gained/lost"
     short_name = "Energy"
     description = "Shows the total energy gained or lost per facility."
 
@@ -133,9 +138,9 @@ class TotalBondSettings(hte.Settings):
         )
 
 class TotalBondRow(hte.Row):
-    long_name = "Total bond gained per facility"
+    long_name = "Total bond gained"
     short_name = "Total Bond"
-    description = "Total includes all bond gains of all supports and Akikawa, until they fill up their bar."
+    description = "Shows the total bond gain for each facility. Total includes all bond gains of all supports and Akikawa, until the bar is filled."
 
     def __init__(self):
         super().__init__()
@@ -168,9 +173,9 @@ class UsefulBondSettings(hte.Settings):
 
 
 class UsefulBondRow(hte.Row):
-    long_name = "Useful bond gained per facility"
+    long_name = "Useful bond gained"
     short_name = "Useful Bond"
-    description = "Useful includes supports until orange bar, excluding friend/group cards. Also Akikawa until green bar."
+    description = "Shows the useful bond gain for each facility. Useful includes supports until orange bar, excluding friend/group cards. Also Akikawa until green bar."
 
     def __init__(self):
         super().__init__()
@@ -201,7 +206,7 @@ class GainedSkillptSettings(hte.Settings):
         )
 
 class GainedSkillptRow(hte.Row):
-    long_name = "Skill points gained per facility"
+    long_name = "Skill points gained"
     short_name = "Skill Points"
     description = "Shows the total skill points gained per facility."
 
@@ -250,7 +255,7 @@ class FailPercentageSettings(hte.Settings):
         )
 
 class FailPercentageRow(hte.Row):
-    long_name = "Fail percentage per facility"
+    long_name = "Fail percentage"
     short_name = "Fail %"
     description = "Shows the fail percentage per facility."
 

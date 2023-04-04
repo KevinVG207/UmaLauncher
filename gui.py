@@ -271,13 +271,9 @@ class UmaPresetMenu(UmaMainWidget):
 
 
     def update_selected_preset_rows(self):
-        logger.debug("="*25)
-        logger.debug(f"Updating rows for {self.selected_preset.name}")
-        logger.debug(f"-"*10)
         self.selected_preset.initialized_rows = []
         for i in range(self.lst_current.count()):
             row_object = self.lst_current.item(i).data(qtc.Qt.UserRole + 1)
-            logger.debug(f"{row_object.long_name}")
             self.selected_preset.initialized_rows.append(row_object)
 
 

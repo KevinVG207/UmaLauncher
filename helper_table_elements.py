@@ -132,8 +132,6 @@ class Preset():
         for row in self.initialized_rows:
             table.append(row.to_tr(game_state))
 
-        print(table)
-
         thead = f"<thead>{table[0]}</thead>"
         tbody = f"<tbody>{''.join(table[1:])}</tbody>"
         return thead + tbody
