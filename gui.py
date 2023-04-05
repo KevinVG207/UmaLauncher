@@ -388,7 +388,7 @@ class UmaPresetMenu(UmaMainWidget):
                 self.lst_current.setEnabled(True)
         self.reload_current_rows()
 
-
+# TODO: Make default focused button the OK button.
 class UmaNewPresetDialog(UmaMainDialog):
     def init_ui(self, new_preset_class, *args, **kwargs):
         self.new_presets_class = new_preset_class

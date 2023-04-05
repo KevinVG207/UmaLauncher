@@ -4,7 +4,7 @@ import mdb
 import util
 
 
-class BondMember():
+class TrainingPartner():
     def __init__(self, partner_id, starting_bond):
         self.partner_id = partner_id
         self.starting_bond = starting_bond
@@ -63,7 +63,8 @@ class HelperTable():
         # Venus specific
         if 'venus_data_set' in data:
             for spirit_data in data['venus_data_set']['venus_chara_command_info_array']:
-                all_commands[spirit_data['command_id']]['spirit_data'] = spirit_data
+                if spirit_data['command_id'] in all_commands:
+                    all_commands[spirit_data['command_id']]['spirit_data'] = spirit_data
 
         # Grand Live specific
         if 'live_data_set' in data:
@@ -75,7 +76,7 @@ class HelperTable():
                 continue
 
             eval_dict = {
-                eval_data['training_partner_id']: BondMember(eval_data['training_partner_id'], eval_data['evaluation'])
+                eval_data['training_partner_id']: TrainingPartner(eval_data['training_partner_id'], eval_data['evaluation'])
                 for eval_data in data['chara_info']['evaluation_info_array']
             }
             level = command['level']
@@ -85,6 +86,7 @@ class HelperTable():
             total_bond = 0
             useful_bond = 0
             energy = 0
+            rainbow_count = 0
 
             for param in command['params_inc_dec_info_array']:
                 if param['target_type'] < 6:
@@ -116,7 +118,7 @@ class HelperTable():
             spirit_id = 0
             spirit_boost = 0
             venus_blue_active = False
-            if 'venus_data_set' in data:
+            if 'venus_data_set' in data and 'spirit_data' in command:
                 spirit_id = command['spirit_data']['spirit_id']
                 spirit_boost = command['spirit_data']['is_boost']
                 if len(data['venus_data_set']['venus_spirit_active_effect_info_array']) > 0 and data['venus_data_set']['venus_spirit_active_effect_info_array'][0]['chara_id'] == 9041:
@@ -133,15 +135,15 @@ class HelperTable():
                     support_card_id = data['chara_info']['support_card_array'][partner_id - 1]['support_card_id']
                     support_card_data = mdb.get_support_card_dict()[support_card_id]
                     support_card_type = util.SUPPORT_CARD_TYPE_DICT[(support_card_data[1], support_card_data[2])]
-                    if support_card_type in ("Group", "Friend"):
+                    if support_card_type in ("group", "friend"):
                         return 0
 
                 cur_bond = eval_dict[partner_id].starting_bond
                 effective_bond = 0
 
-                usefulness_cutoff = 81
+                usefulness_cutoff = 80
                 if partner_id == 102:
-                    usefulness_cutoff = 61
+                    usefulness_cutoff = 60
 
                 if cur_bond < usefulness_cutoff:
                     new_bond = cur_bond + amount
@@ -150,28 +152,44 @@ class HelperTable():
                 return effective_bond
 
 
-            tip_gains_total = []
-            tip_gains_useful = []
-            for bond_member in eval_dict.values():
+            tip_gains_total = [0]
+            tip_gains_useful = [0]
+            for training_partner_id in command['training_partner_array']:
+                # Detect if training_partner is rainbowing
+                training_partner = eval_dict[training_partner_id]
+                if training_partner_id <= 6:
+                    # Partner is a support card
+                    support_id = data['chara_info']['support_card_array'][training_partner_id - 1]['support_card_id']
+                    support_data = mdb.get_support_card_dict()[support_id]
+                    support_card_type = mdb.get_support_card_type(support_data)
+                    if support_card_type not in ("group", "friend") and training_partner.starting_bond >= 80 and command['command_id'] in util.SUPPORT_TYPE_TO_COMMAND_IDS[support_card_type]:
+                        rainbow_count += 1
+                    elif support_card_type == "group" and util.get_group_support_id_to_passion_zone_effect_id_dict()[support_id] in data['chara_info']['chara_effect_id_array']:
+                        rainbow_count += 1
+                    elif support_card_type != 'friend' and 'venus_data_set' in data and \
+                            len(data['venus_data_set']['venus_spirit_active_effect_info_array']) > 0 and \
+                                data['venus_data_set']['venus_spirit_active_effect_info_array'][0]['chara_id'] == 9042:
+                        rainbow_count += 1
+
                 # Cap bond at 100
-                new_bond = min(bond_member.starting_bond + bond_member.training_bond, 100)
-                true_training_gain = new_bond - bond_member.starting_bond
+                new_bond = min(training_partner.starting_bond + training_partner.training_bond, 100)
+                true_training_gain = new_bond - training_partner.starting_bond
                 total_bond += true_training_gain
-                useful_bond += calc_bond_gain(bond_member.partner_id, true_training_gain)
-                bond_member.starting_bond = new_bond
+                useful_bond += calc_bond_gain(training_partner.partner_id, true_training_gain)
+                training_partner.starting_bond = new_bond
 
                 # Cap bond at 100 again
-                new_bond = min(bond_member.starting_bond + bond_member.tip_bond, 100)
-                true_tip_gain = new_bond - bond_member.starting_bond
+                new_bond = min(training_partner.starting_bond + training_partner.tip_bond, 100)
+                true_tip_gain = new_bond - training_partner.starting_bond
                 tip_gains_total.append(true_tip_gain)
 
-                new_tip_total = bond_member.starting_bond + true_tip_gain
-                if new_tip_total < 81:
+                new_tip_total = training_partner.starting_bond + true_tip_gain
+                if new_tip_total < 80:
                     tip_gains_useful.append(true_tip_gain)
                 else:
-                    tip_gains_useful.append(max(0, 81 - bond_member.starting_bond))
+                    tip_gains_useful.append(max(0, 80 - training_partner.starting_bond))
 
-                bond_member.starting_bond = new_bond
+                training_partner.starting_bond = new_bond
             
             if not venus_blue_active:
                 total_bond += max(tip_gains_total)
@@ -198,6 +216,7 @@ class HelperTable():
                 'total_bond': total_bond,
                 'useful_bond': useful_bond,
                 'gained_energy': energy,
+                'rainbow_count': rainbow_count,
                 'gm_fragment': spirit_id,
                 'gm_fragment_double': spirit_boost,
                 'gl_tokens': gl_tokens,

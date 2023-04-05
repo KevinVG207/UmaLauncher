@@ -33,7 +33,7 @@ class GainedStatsSettings(hte.Settings):
         )
 
 class GainedStatsRow(hte.Row):
-    long_name = "Total stats gained"
+    long_name = "Stats gained total"
     short_name = "Stat Gain"
     description = "Shows the total stats gained per facility. This includes stats gained outside the facility itself. \nExcludes skill points by default."
 
@@ -71,7 +71,7 @@ class GainedStatsDistributionSettings(hte.Settings):
         )
 
 class GainedStatsDistributionRow(hte.Row):
-    long_name = "Gained stats distribution"
+    long_name = "Stats gained distribution"
     short_name = "Stat Gain <br>Distribution"
     description = "Shows the stats gained per facility per type. This includes stats gained outside the facility itself."
 
@@ -151,7 +151,7 @@ class TotalBondSettings(hte.Settings):
         )
 
 class TotalBondRow(hte.Row):
-    long_name = "Total bond gained"
+    long_name = "Bond gained total"
     short_name = "Total Bond"
     description = "Shows the total bond gain for each facility. Total includes all bond gains of all supports and Akikawa, until the bar is filled."
 
@@ -186,7 +186,7 @@ class UsefulBondSettings(hte.Settings):
 
 
 class UsefulBondRow(hte.Row):
-    long_name = "Useful bond gained"
+    long_name = "Useful bond gained total"
     short_name = "Useful Bond"
     description = "Shows the useful bond gain for each facility. Useful includes supports until orange bar, excluding friend/group cards. Also Akikawa until green bar."
 
@@ -344,9 +344,46 @@ class GrandMastersFragmentsRow(hte.Row):
         return super().to_tr(command_info)
 
 
-class GrandLiveTokensRow(hte.Row):
-    long_name = "Grand Live tokens (scenario-specific)"
-    short_name = "Tokens"
+class GrandLiveTotalTokensSettings(hte.Settings):
+    def __init__(self):
+        self.s_highlight_max = hte.Setting(
+            "Highlight max",
+            "Highlights the facility with the most Grand Live tokens.",
+            True,
+            hte.SettingType.BOOL
+        )
+
+class GrandLiveTotalTokensRow(hte.Row):
+    long_name = "Grand Live tokens total (scenario-specific)"
+    short_name = "Token Gain"
+    description = "Shows the total Grand Live tokens on each facility. Hidden in other scenarios."
+
+    def __init__(self):
+        super().__init__()
+        self.settings = GrandLiveTotalTokensSettings()
+
+    def _generate_cells(self, game_state) -> list[hte.Cell]:
+        if game_state['speed']['scenario_id'] != 3:
+            return []
+
+        cells = [hte.Cell(self.short_name, title=self.description)]
+
+        max_gl_tokens = max(sum(command['gl_tokens'].values()) for command in game_state.values())
+
+        for command in game_state.values():
+            gl_tokens = sum(command['gl_tokens'].values())
+            if self.settings.s_highlight_max.value and max_gl_tokens > 0 and gl_tokens == max_gl_tokens:
+                cells.append(hte.Cell(gl_tokens, bold=True, color=hte.Colors.GOOD))
+            else:
+                cells.append(hte.Cell(gl_tokens))
+
+        return cells
+
+
+
+class GrandLiveTokensDistributionRow(hte.Row):
+    long_name = "Grand Live tokens gained distribution (scenario-specific)"
+    short_name = "Token Gain <br>Distribution"
     description = "Shows the distribution of Grand Live tokens on each facility. Hidden in other scenarios."
 
     def _generate_cells(self, game_state) -> list[hte.Cell]:
@@ -377,6 +414,20 @@ class GrandLiveTokensRow(hte.Row):
             return ""
 
         return super().to_tr(command_info)
+    
+
+class RainbowCountRow(hte.Row):
+    long_name = "Rainbow count"
+    short_name = "Rainbows"
+    description = "Shows the total number of rainbows on each facility."
+
+    def _generate_cells(self, game_state) -> list[hte.Cell]:
+        cells = [hte.Cell(self.short_name, title=self.description)]
+
+        for command in game_state.values():
+            cells.append(hte.Cell(command['rainbow_count']))
+
+        return cells
 
 
 class RowTypes(Enum):
@@ -389,7 +440,9 @@ class RowTypes(Enum):
     GAINED_SKILLPT = GainedSkillptRow
     FAIL_PERCENTAGE = FailPercentageRow
     LEVEL = LevelRow
-    GL_TOKENS = GrandLiveTokensRow
+    RAINBOW_COUNT = RainbowCountRow
+    GL_TOKENS = GrandLiveTokensDistributionRow
+    GL_TOKENS_TOTAL = GrandLiveTotalTokensRow
     GM_FRAGMENTS = GrandMastersFragmentsRow
 
 
@@ -400,10 +453,7 @@ class DefaultPreset(hte.Preset):
         RowTypes.GM_FRAGMENTS,
         RowTypes.CURRENT_STATS,
         RowTypes.GAINED_STATS,
-        RowTypes.GAINED_ENERGY,
         RowTypes.USEFUL_BOND,
-        RowTypes.TOTAL_BOND,
         RowTypes.GAINED_SKILLPT,
         RowTypes.FAIL_PERCENTAGE,
-        RowTypes.LEVEL,
     ]

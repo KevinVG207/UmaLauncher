@@ -71,13 +71,34 @@ SUPPORT_CARD_RARITY_DICT = {
 }
 
 SUPPORT_CARD_TYPE_DICT = {
-    (101, 1): "Speed",
-    (105, 1): "Stamina",
-    (102, 1): "Power",
-    (103, 1): "Guts",
-    (106, 1): "Wisdom",
-    (0, 2): "Friend",
-    (0, 3): "Group"
+    (101, 1): "speed",
+    (105, 1): "stamina",
+    (102, 1): "power",
+    (103, 1): "guts",
+    (106, 1): "wiz",
+    (0, 2): "friend",
+    (0, 3): "group"
+}
+
+# TODO: Check if training csv shows the right version
+SUPPORT_CARD_TYPE_DICT_DISPLAY = {
+    "speed": "Speed",
+    "stamina": "Stamina",
+    "power": "Power",
+    "guts": "Guts",
+    "wiz": "Wisdom",
+    "friend": "Friend",
+    "group": "Group"
+}
+
+SUPPORT_TYPE_TO_COMMAND_IDS = {
+    "speed": [101, 601],
+    "stamina": [105, 602],
+    "power": [102, 603],
+    "guts": [103, 604],
+    "wiz": [106, 605],
+    "friend": [],
+    "group": []
 }
 
 COMMAND_ID_TO_KEY = {
@@ -363,3 +384,13 @@ def get_gl_token_dict():
             buffer.close()
 
     return gl_token_dict
+
+GROUP_SUPPORT_ID_TO_PASSION_ZONE_EFFECT_ID_DICT = None
+def get_group_support_id_to_passion_zone_effect_id_dict():
+    global GROUP_SUPPORT_ID_TO_PASSION_ZONE_EFFECT_ID_DICT
+
+    if not GROUP_SUPPORT_ID_TO_PASSION_ZONE_EFFECT_ID_DICT:
+        cards = mdb.get_group_card_effect_ids()
+        GROUP_SUPPORT_ID_TO_PASSION_ZONE_EFFECT_ID_DICT = {card[0]: card[1] for card in cards}
+
+    return GROUP_SUPPORT_ID_TO_PASSION_ZONE_EFFECT_ID_DICT
