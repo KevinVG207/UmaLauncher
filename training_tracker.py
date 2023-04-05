@@ -88,6 +88,7 @@ class TrainingTracker():
 
 
     def get_training_path(self):
+        #TODO: Add chara name + outfit to path
         return str(os.path.join(self.training_log_folder, self.training_id))
 
 

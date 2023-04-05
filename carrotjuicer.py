@@ -17,9 +17,6 @@ from screenstate import ScreenState, Location
 import util
 import mdb
 import helper_table
-
-# TODO: Track amount of trainings on every facility to know when it upgrades next.
-# TODO: Log ALL races by passing race packets to training_tracker.
 import training_tracker
 
 class CarrotJuicer():
