@@ -362,6 +362,14 @@ class CarrotJuicer():
 
             data = data['data']
 
+            # Close whatever popup is open
+            if self.browser:
+                self.browser.execute_script(
+                    """
+                    document.querySelectorAll("[class^='compatibility_viewer_item_'][aria-expanded=true]").forEach(e => e.click());
+                    """
+                )
+
             # Run ended
             if 'single_mode_factor_select_common' in data:
                 self.end_training()
@@ -439,12 +447,6 @@ class CarrotJuicer():
                 # TODO: Check if there can be multiple events??
                 if len(data['unchecked_event_array']) > 1:
                     logger.warning(f"Packet has more than 1 unchecked event! {message}")
-
-                self.browser.execute_script(
-                    """
-                    document.querySelectorAll("[class^='compatibility_viewer_item_'][aria-expanded=true]").forEach(e => e.click());
-                    """
-                )
 
                 if len(event_data['event_contents_info']['choice_array']) > 1:
 

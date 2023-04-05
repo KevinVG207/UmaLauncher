@@ -60,6 +60,16 @@ class HelperTable():
                     if 'params_inc_dec_info_array' in command:
                         all_commands[command['command_id']]['params_inc_dec_info_array'] += command['params_inc_dec_info_array']
 
+        # Venus specific
+        if 'venus_data_set' in data:
+            for spirit_data in data['venus_data_set']['venus_chara_command_info_array']:
+                all_commands[spirit_data['command_id']]['spirit_data'] = spirit_data
+
+        # Grand Live specific
+        if 'live_data_set' in data:
+            for command in data['live_data_set']['command_info_array']:
+                all_commands[command['command_id']]['performance_inc_dec_info_array'] = command['performance_inc_dec_info_array']
+
         for command in all_commands.values():
             if command['command_id'] not in util.COMMAND_ID_TO_KEY:
                 continue
@@ -107,12 +117,8 @@ class HelperTable():
             spirit_boost = 0
             venus_blue_active = False
             if 'venus_data_set' in data:
-                for spirit_data in data['venus_data_set']['venus_chara_command_info_array']:
-                    if spirit_data['command_id'] == command['command_id']:
-                        spirit_id = spirit_data['spirit_id']
-                        spirit_boost = spirit_data['is_boost']
-                        break
-
+                spirit_id = command['spirit_data']['spirit_id']
+                spirit_boost = command['spirit_data']['is_boost']
                 if len(data['venus_data_set']['venus_spirit_active_effect_info_array']) > 0 and data['venus_data_set']['venus_spirit_active_effect_info_array'][0]['chara_id'] == 9041:
                     venus_blue_active = True
 
@@ -176,6 +182,12 @@ class HelperTable():
 
             current_stats = data['chara_info'][util.COMMAND_ID_TO_KEY[command['command_id']]]
 
+            gl_tokens = {token_type: 0 for token_type in util.gl_token_list}
+            # Grand Live tokens
+            if 'live_data_set' in data:
+                for token_data in command['performance_inc_dec_info_array']:
+                    gl_tokens[util.gl_token_list[token_data['performance_type']-1]] += token_data['value']
+
             command_info[command['command_id']] = {
                 'scenario_id': data['chara_info']['scenario_id'],
                 'current_stats': current_stats,
@@ -188,6 +200,7 @@ class HelperTable():
                 'gained_energy': energy,
                 'gm_fragment': spirit_id,
                 'gm_fragment_double': spirit_boost,
+                'gl_tokens': gl_tokens,
             }
 
         # Simplify everything down to a dict with only the keys we care about.

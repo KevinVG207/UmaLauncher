@@ -324,13 +324,22 @@ def get_gm_fragment_dict():
             buffer.close()
     return gm_fragment_dict
 
-gm_token_dict = None
-def get_gl_token_dict():
-    global gm_token_dict
 
-    if not gm_token_dict:
+gl_token_list = [
+    'dance',
+    'passion',
+    'vocal',
+    'visual',
+    'mental'
+]
+
+gl_token_dict = None
+def get_gl_token_dict():
+    global gl_token_dict
+
+    if not gl_token_dict:
         logger.debug("Loading Grand Live token images...")
-        gm_token_dict = {}
+        gl_token_dict = {}
 
         token_folder = get_asset("_assets/gl/tokens")
         for token_file in os.listdir(token_folder):
@@ -349,8 +358,8 @@ def get_gl_token_dict():
 
             # Encode PNG image to base64 string
             b64 = "data:image/png;base64," + base64.b64encode(buffer.getvalue()).decode("utf-8")
-            gm_token_dict[token_name] = b64
+            gl_token_dict[token_name] = b64
 
             buffer.close()
 
-    return gm_token_dict
+    return gl_token_dict

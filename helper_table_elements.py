@@ -157,13 +157,6 @@ class Preset():
 
     gm_fragment_dict = util.get_gm_fragment_dict()
     gl_token_dict = util.get_gl_token_dict()
-    gl_token_order = [
-        'dance',
-        'passion',
-        'vocal',
-        'visual',
-        'mental'
-    ]
 
     def __init__(self, row_types):
         self.settings = PresetSettings()
@@ -243,7 +236,7 @@ class Preset():
         top_row = []
         bottom_row = []
 
-        for token_type in self.gl_token_order:
+        for token_type in util.gl_token_list:
             top_row.append(f"<th><img src=\"{self.gl_token_dict[token_type]}\" height=\"32\" width=\"31\" style=\"display:block; margin: auto; width: auto; height: 32px;\" /></th>")
             bottom_row.append(f"<td>{main_info['gl_stats'][token_type]}</td>")
         

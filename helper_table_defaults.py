@@ -4,7 +4,7 @@ import util
 
 class CurrentStatsRow(hte.Row):
     long_name = "Current stats"
-    short_name = "Current"
+    short_name = "Current Stats"
     description = "Shows the current stats of each facility."
 
     def _generate_cells(self, game_state) -> list[hte.Cell]:
@@ -344,6 +344,41 @@ class GrandMastersFragmentsRow(hte.Row):
         return super().to_tr(command_info)
 
 
+class GrandLiveTokensRow(hte.Row):
+    long_name = "Grand Live tokens (scenario-specific)"
+    short_name = "Tokens"
+    description = "Shows the distribution of Grand Live tokens on each facility. Hidden in other scenarios."
+
+    def _generate_cells(self, game_state) -> list[hte.Cell]:
+        if game_state['speed']['scenario_id'] != 3:
+            return []
+
+        cells = [hte.Cell(self.short_name, title=self.description)]
+
+        for command in game_state.values():
+            gl_tokens_dict = command['gl_tokens']
+            
+            cell_text = f"<div style=\"display: flex; align-items: center; justify-content: center; gap: 0.2rem;\">"
+            for token_type, value in gl_tokens_dict.items():
+                if value <= 0:
+                    continue
+                cell_text += f"<div style=\"display: flex; flex-direction: column; align-items: center; justify-content: center;\"><img src=\"{util.get_gl_token_dict()[token_type]}\" height=\"24\" width=\"24\" />"
+                cell_text += f"<div>{value}</div>"
+                cell_text += "</div>"
+
+            cell_text += "</div>"
+
+            cells.append(hte.Cell(cell_text))
+
+        return cells
+    
+    def to_tr(self, command_info):
+        if command_info['speed']['scenario_id'] != 3:
+            return ""
+
+        return super().to_tr(command_info)
+
+
 class RowTypes(Enum):
     CURRENT_STATS = CurrentStatsRow
     GAINED_STATS = GainedStatsRow
@@ -354,12 +389,15 @@ class RowTypes(Enum):
     GAINED_SKILLPT = GainedSkillptRow
     FAIL_PERCENTAGE = FailPercentageRow
     LEVEL = LevelRow
+    GL_TOKENS = GrandLiveTokensRow
     GM_FRAGMENTS = GrandMastersFragmentsRow
 
 
 class DefaultPreset(hte.Preset):
     name = "Default"
     rows = [
+        RowTypes.GL_TOKENS,
+        RowTypes.GM_FRAGMENTS,
         RowTypes.CURRENT_STATS,
         RowTypes.GAINED_STATS,
         RowTypes.GAINED_ENERGY,
@@ -368,5 +406,4 @@ class DefaultPreset(hte.Preset):
         RowTypes.GAINED_SKILLPT,
         RowTypes.FAIL_PERCENTAGE,
         RowTypes.LEVEL,
-        RowTypes.GM_FRAGMENTS,
     ]
