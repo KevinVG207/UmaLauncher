@@ -1,5 +1,6 @@
 from enum import Enum
 import helper_table_elements as hte
+import util
 
 class CurrentStatsRow(hte.Row):
     long_name = "Current stats"
@@ -7,7 +8,7 @@ class CurrentStatsRow(hte.Row):
     description = "Shows the current stats of each facility."
 
     def _generate_cells(self, game_state) -> list[hte.Cell]:
-        cells = [hte.Cell(self.short_name)]
+        cells = [hte.Cell(self.short_name, title=self.description)]
 
         for command in game_state.values():
             gained_stats = command['current_stats']
@@ -24,23 +25,35 @@ class GainedStatsSettings(hte.Settings):
             True,
             hte.SettingType.BOOL
         )
+        self.s_enable_skillpts = hte.Setting(
+            "Include skill points",
+            "Include skill points in the total.",
+            False,
+            hte.SettingType.BOOL
+        )
 
 class GainedStatsRow(hte.Row):
     long_name = "Total stats gained"
     short_name = "Stat Gain"
-    description = "Shows the total stats gained per facility. This includes stats gained outside the facility itself."
+    description = "Shows the total stats gained per facility. This includes stats gained outside the facility itself. \nExcludes skill points by default."
 
     def __init__(self):
         super().__init__()
         self.settings = GainedStatsSettings()
 
     def _generate_cells(self, game_state) -> list[hte.Cell]:
-        cells = [hte.Cell(self.short_name)]
+        cells = [hte.Cell(self.short_name, title=self.description)]
 
-        max_gained_stats = max(sum(facility['gained_stats'].values()) for facility in game_state.values())
+        all_gained_stats = []
+        for facility in game_state.values():
+            gained_stats = sum(facility['gained_stats'].values())
+            if self.settings.s_enable_skillpts.value:
+                gained_stats += facility['gained_skillpt']
+            all_gained_stats.append(gained_stats)
 
-        for command in game_state.values():
-            gained_stats = sum(command['gained_stats'].values())
+        max_gained_stats = max(all_gained_stats)
+
+        for gained_stats in all_gained_stats:
             if self.settings.s_highlight_max.value and max_gained_stats > 0 and gained_stats == max_gained_stats:
                 cells.append(hte.Cell(gained_stats, bold=True, color=hte.Colors.GOOD))
             else:
@@ -67,7 +80,7 @@ class GainedStatsDistributionRow(hte.Row):
         self.settings = GainedStatsDistributionSettings()
 
     def _generate_cells(self, game_state) -> list[hte.Cell]:
-        cells = [hte.Cell(self.short_name)]
+        cells = [hte.Cell(self.short_name, title=self.description)]
 
         for command in game_state.values():
             gained_stats = command['gained_stats']
@@ -111,7 +124,7 @@ class GainedEnergyRow(hte.Row):
         self.settings = GainedEnergySettings()
 
     def _generate_cells(self, game_state) -> list[hte.Cell]:
-        cells = [hte.Cell(self.short_name)]
+        cells = [hte.Cell(self.short_name, title=self.description)]
 
         for command in game_state.values():
             gained_energy = command['gained_energy']
@@ -147,7 +160,7 @@ class TotalBondRow(hte.Row):
         self.settings = TotalBondSettings()
 
     def _generate_cells(self, game_state) -> list[hte.Cell]:
-        cells = [hte.Cell(self.short_name)]
+        cells = [hte.Cell(self.short_name, title=self.description)]
 
         max_total_bond = max(facility['total_bond'] for facility in game_state.values())
 
@@ -182,7 +195,7 @@ class UsefulBondRow(hte.Row):
         self.settings = UsefulBondSettings()
 
     def _generate_cells(self, game_state) -> list[hte.Cell]:
-        cells = [hte.Cell(self.short_name)]
+        cells = [hte.Cell(self.short_name, title=self.description)]
 
         max_useful_bond = max(facility['useful_bond'] for facility in game_state.values())
 
@@ -215,7 +228,7 @@ class GainedSkillptRow(hte.Row):
         self.settings = GainedSkillptSettings()
 
     def _generate_cells(self, game_state) -> list[hte.Cell]:
-        cells = [hte.Cell(self.short_name)]
+        cells = [hte.Cell(self.short_name, title=self.description)]
 
         max_gained_skillpt = max(facility['gained_skillpt'] for facility in game_state.values())
 
@@ -264,7 +277,7 @@ class FailPercentageRow(hte.Row):
         self.settings = FailPercentageSettings()
 
     def _generate_cells(self, game_state) -> list[hte.Cell]:
-        cells = [hte.Cell(self.short_name)]
+        cells = [hte.Cell(self.short_name, title=self.description)]
 
         for command in game_state.values():
             fail_percentage = command['failure_rate']
@@ -290,12 +303,45 @@ class LevelRow(hte.Row):
     description = "Shows the level of each facility."
 
     def _generate_cells(self, game_state) -> list[hte.Cell]:
-        cells = [hte.Cell(self.short_name)]
+        cells = [hte.Cell(self.short_name, title=self.description)]
 
         for command in game_state.values():
             cells.append(hte.Cell(command['level']))
 
         return cells
+    
+
+class GrandMastersFragmentsRow(hte.Row):
+    long_name = "Grand Masters fragments (scenario-specific)"
+    short_name = "Fragments"
+    description = "Shows the total Grand Masters fragments on each facility. Hidden in other scenarios."
+
+    def _generate_cells(self, game_state) -> list[hte.Cell]:
+        if game_state['speed']['scenario_id'] != 5:
+            return []
+
+        cells = [hte.Cell(self.short_name, title=self.description)]
+
+        for command in game_state.values():
+            fragment_id = command['gm_fragment']
+            is_double = bool(command['gm_fragment_double'])
+
+            cell_text = f"<div style=\"display: flex; align-items: center; justify-content: center;\"><img src=\"{util.get_gm_fragment_dict()[fragment_id]}\" height=\"30\" width=\"28\" />"
+
+            if is_double:
+                cell_text += "<div>x2</div>"
+            
+            cell_text += "</div>"
+
+            cells.append(hte.Cell(cell_text, bold=True, color=hte.Colors.GOOD))
+
+        return cells
+    
+    def to_tr(self, command_info):
+        if command_info['speed']['scenario_id'] != 5:
+            return ""
+
+        return super().to_tr(command_info)
 
 
 class RowTypes(Enum):
@@ -308,6 +354,7 @@ class RowTypes(Enum):
     GAINED_SKILLPT = GainedSkillptRow
     FAIL_PERCENTAGE = FailPercentageRow
     LEVEL = LevelRow
+    GM_FRAGMENTS = GrandMastersFragmentsRow
 
 
 class DefaultPreset(hte.Preset):
@@ -320,5 +367,6 @@ class DefaultPreset(hte.Preset):
         RowTypes.TOTAL_BOND,
         RowTypes.GAINED_SKILLPT,
         RowTypes.FAIL_PERCENTAGE,
-        RowTypes.LEVEL
+        RowTypes.LEVEL,
+        RowTypes.GM_FRAGMENTS,
     ]

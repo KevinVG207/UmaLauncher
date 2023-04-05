@@ -208,7 +208,7 @@ class UmaPresetMenu(UmaMainWidget):
         self.btn_apply = qtw.QPushButton(self)
         self.btn_apply.setObjectName(u"btn_apply")
         self.btn_apply.setGeometry(qtc.QRect(510, 440, 91, 23))
-        self.btn_apply.setText("Apply && Close")
+        self.btn_apply.setText("Apply && close")
         self.btn_apply.clicked.connect(self.on_apply)
         self.grp_help = qtw.QGroupBox(self)
         self.grp_help.setObjectName(u"grp_help")

@@ -1,3 +1,4 @@
+import copy
 from loguru import logger
 import mdb
 import util
@@ -43,7 +44,7 @@ class HelperTable():
         
         # Default commands
         for command in data['home_info']['command_info_array']:
-            all_commands[command['command_id']] = command
+            all_commands[command['command_id']] = copy.deepcopy(command)
         
         # Scenario specific commands
         scenario_keys = [
@@ -102,9 +103,17 @@ class HelperTable():
                     eval_dict[tips_partner_id].tip_bond += 5
 
             # For bond, first check if blue venus effect is active.
+            spirit_id = 0
+            spirit_boost = 0
             venus_blue_active = False
-            if 'venus_data_set' in data and len(data['venus_data_set']['venus_spirit_active_effect_info_array']) > 0:
-                if data['venus_data_set']['venus_spirit_active_effect_info_array'][0]['chara_id'] == 9041:
+            if 'venus_data_set' in data:
+                for spirit_data in data['venus_data_set']['venus_chara_command_info_array']:
+                    if spirit_data['command_id'] == command['command_id']:
+                        spirit_id = spirit_data['spirit_id']
+                        spirit_boost = spirit_data['is_boost']
+                        break
+
+                if len(data['venus_data_set']['venus_spirit_active_effect_info_array']) > 0 and data['venus_data_set']['venus_spirit_active_effect_info_array'][0]['chara_id'] == 9041:
                     venus_blue_active = True
 
 
@@ -154,7 +163,7 @@ class HelperTable():
                 if new_tip_total < 81:
                     tip_gains_useful.append(true_tip_gain)
                 else:
-                    tip_gains_useful.append(81 - bond_member.starting_bond)
+                    tip_gains_useful.append(max(0, 81 - bond_member.starting_bond))
 
                 bond_member.starting_bond = new_bond
             
@@ -168,6 +177,7 @@ class HelperTable():
             current_stats = data['chara_info'][util.COMMAND_ID_TO_KEY[command['command_id']]]
 
             command_info[command['command_id']] = {
+                'scenario_id': data['chara_info']['scenario_id'],
                 'current_stats': current_stats,
                 'level': level,
                 'failure_rate': failure_rate,
@@ -175,7 +185,9 @@ class HelperTable():
                 'gained_skillpt': skillpt,
                 'total_bond': total_bond,
                 'useful_bond': useful_bond,
-                'gained_energy': energy
+                'gained_energy': energy,
+                'gm_fragment': spirit_id,
+                'gm_fragment_double': spirit_boost,
             }
 
         # Simplify everything down to a dict with only the keys we care about.
@@ -186,19 +198,26 @@ class HelperTable():
             if command_id in util.COMMAND_ID_TO_KEY
         }
 
+        # Grand Masters Fragments
         gm_fragments = [0] * 8
-
         if 'venus_data_set' in data:
             fragments = data['venus_data_set']['spirit_info_array']
             for fragment in fragments:
                 if fragment['spirit_num'] <= 8:
                     gm_fragments[fragment['spirit_num'] - 1] = fragment['spirit_id']
+        
+        # Grand Live Stats
+        gl_stats = {}
+        if 'live_data_set' in data:
+            gl_stats = data['live_data_set']['live_performance_info']
+
 
         main_info = {
             "scenario_id": data['chara_info']['scenario_id'],
             "energy": data['chara_info']['vital'],
             "max_energy": data['chara_info']['max_vital'],
-            "gm_fragments": gm_fragments
+            "gm_fragments": gm_fragments,
+            "gl_stats": gl_stats,
         }
 
         overlay_html = self.selected_preset.generate_overlay(main_info, command_info)

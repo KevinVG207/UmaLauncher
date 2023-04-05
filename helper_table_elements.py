@@ -1,6 +1,4 @@
 import enum
-import os
-import base64
 from loguru import logger
 import gui
 import util
@@ -57,12 +55,13 @@ class Setting():
 
 
 class Cell():
-    def __init__(self, value="", bold=False, color=None, percent=False, style=""):
+    def __init__(self, value="", bold=False, color=None, percent=False, title="", style=""):
         self.value = value
         self.bold = bold
         self.color = color
         self.percent = percent
         self.style = style
+        self.title = title
 
     def to_td(self):
         style = self.style
@@ -72,7 +71,12 @@ class Cell():
             style += f"color:{self.color.value};"
         if style:
             style = f" style=\"{style}\""
-        return f"<td{style if style else ''}>{self.value}{'%' if self.percent else ''}</td>"
+        
+        title = self.title
+        if title:
+            title = title.replace('\n','')
+            title = f" title=\"{title}\""
+        return f"<td{style if style else ''}{title if title else ''}>{self.value}{'%' if self.percent else ''}</td>"
 
 
 class Row():
@@ -139,27 +143,10 @@ class PresetSettings(Settings):
         )
         self.s_scenario_specific_enabled = Setting(
             "Show scenario specific elements",
-            "Show scenario specific elements in the event helper.\n(Grand Live tokens/Grand Masters fragments)",
+            "Show scenario specific elements in the event helper. \n(Grand Live tokens/Grand Masters fragments)",
             True,
             SettingType.BOOL
         )
-
-
-def get_gm_fragment_strings():
-    fragment_dict = {}
-    for i in range(0, 23):
-        fragment_img_path = f"_assets/gm/frag_{i:02}.png"
-        asset_path = util.get_asset(fragment_img_path)
-
-        if not os.path.exists(asset_path):
-            continue
-
-        with open(asset_path, "rb") as f:
-            b64 = "data:image/png;base64," + base64.b64encode(f.read()).decode("utf-8")
-        
-        fragment_dict[i] = b64
-
-    return fragment_dict
 
 
 class Preset():
@@ -168,7 +155,15 @@ class Preset():
     initialized_rows: list[Row] = None
     row_types = None
 
-    gm_fragment_dict = get_gm_fragment_strings()
+    gm_fragment_dict = util.get_gm_fragment_dict()
+    gl_token_dict = util.get_gl_token_dict()
+    gl_token_order = [
+        'dance',
+        'passion',
+        'vocal',
+        'visual',
+        'mental'
+    ]
 
     def __init__(self, row_types):
         self.settings = PresetSettings()
@@ -204,6 +199,7 @@ class Preset():
 
         if self.settings.s_scenario_specific_enabled.value:
             html_elements.append(self.generate_gm_table(main_info))
+            html_elements.append(self.generate_gl_table(main_info))
 
         html_elements.append(self.generate_table(command_info))
 
@@ -234,12 +230,27 @@ class Preset():
     
         frag_tds = []
         for index, fragment_id in enumerate(main_info['gm_fragments']):
-            frag_tds.append(f"<td style=\"{'outline: 1px solid red; outline-offset: -1px;' if index in (0, 4) else ''}\"><img src=\"{self.gm_fragment_dict[fragment_id]}\" height=\"36\" width=\"34\" style=\"display:block; margin: auto; width: auto; height: 36px;\" /></td>")
+            frag_tds.append(f"<td style=\"{'outline: 1px solid red; outline-offset: -1px;' if index in (0, 4) else ''}\"><img src=\"{self.gm_fragment_dict[fragment_id]}\" height=\"32\" width=\"30\" style=\"display:block; margin: auto; width: auto; height: 32px;\" /></td>")
         
         frag_tr = f"<tr>{''.join(frag_tds)}</tr>"
 
         return f"<table id=\"gm-fragments\"><thead>{header}</thead><tbody>{frag_tr}</tbody></table>"
 
+    def generate_gl_table(self, main_info):
+        if main_info['scenario_id'] != 3:
+            return ""
+        
+        top_row = []
+        bottom_row = []
+
+        for token_type in self.gl_token_order:
+            top_row.append(f"<th><img src=\"{self.gl_token_dict[token_type]}\" height=\"32\" width=\"31\" style=\"display:block; margin: auto; width: auto; height: 32px;\" /></th>")
+            bottom_row.append(f"<td>{main_info['gl_stats'][token_type]}</td>")
+        
+        top_row = f"<tr>{''.join(top_row)}</tr>"
+        bottom_row = f"<tr>{''.join(bottom_row)}</tr>"
+
+        return f"<table id=\"gl-tokens\"><thead>{top_row}</thead><tbody>{bottom_row}</tbody></table>"
 
     def to_dict(self):
         return {

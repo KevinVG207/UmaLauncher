@@ -1,5 +1,8 @@
 import os
 import sys
+import base64
+import io
+from PIL import Image
 from loguru import logger
 
 unpack_dir = os.getcwd()
@@ -291,3 +294,63 @@ def get_outfit_name_dict():
 def create_gametora_helper_url(card_id, scenario_id, support_ids):
     support_ids = list(map(str, support_ids))
     return f"https://gametora.com/umamusume/training-event-helper?deck={np.base_repr(int(str(card_id) + str(scenario_id)), 36)}-{np.base_repr(int(support_ids[0] + support_ids[1] + support_ids[2]), 36)}-{np.base_repr(int(support_ids[3] + support_ids[4] + support_ids[5]), 36)}".lower()
+
+gm_fragment_dict = None
+def get_gm_fragment_dict():
+    global gm_fragment_dict
+
+    if not gm_fragment_dict:
+        logger.debug("Loading Grand Master fragment images...")
+        gm_fragment_dict = {}
+        for i in range(0, 23):
+            fragment_img_path = f"_assets/gm/frag_{i:02}.png"
+            asset_path = get_asset(fragment_img_path)
+
+            if not os.path.exists(asset_path):
+                continue
+
+            img = Image.open(asset_path)
+            img.thumbnail((36, 36), Image.ANTIALIAS)
+
+            # Save the image in memory in PNG format
+            buffer = io.BytesIO()
+            img.save(buffer, format="PNG")
+            img.close()
+
+            # Encode PNG image to base64 string
+            b64 = "data:image/png;base64," + base64.b64encode(buffer.getvalue()).decode("utf-8")
+            gm_fragment_dict[i] = b64
+
+            buffer.close()
+    return gm_fragment_dict
+
+gm_token_dict = None
+def get_gl_token_dict():
+    global gm_token_dict
+
+    if not gm_token_dict:
+        logger.debug("Loading Grand Live token images...")
+        gm_token_dict = {}
+
+        token_folder = get_asset("_assets/gl/tokens")
+        for token_file in os.listdir(token_folder):
+            if not token_file.endswith(".png"):
+                continue
+
+            token_name = token_file[:-4]
+
+            img = Image.open(os.path.join(token_folder, token_file))
+            img.thumbnail((36, 36), Image.ANTIALIAS)
+
+            # Save the image in memory in PNG format
+            buffer = io.BytesIO()
+            img.save(buffer, format="PNG")
+            img.close()
+
+            # Encode PNG image to base64 string
+            b64 = "data:image/png;base64," + base64.b64encode(buffer.getvalue()).decode("utf-8")
+            gm_token_dict[token_name] = b64
+
+            buffer.close()
+
+    return gm_token_dict
