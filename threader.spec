@@ -18,6 +18,7 @@ a = Analysis(
     cipher=block_cipher,
     noarchive=False,
 )
+a.datas += Tree('./_assets', prefix='_assets')
 a.datas += Tree('./external', prefix='external')
 a.datas += Tree('./ff_profile', prefix='ff_profile')
 

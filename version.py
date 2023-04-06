@@ -81,7 +81,8 @@ def auto_update(umasettings, script_version, skip_version):
     # Check if we're coming from an update
     if os.path.exists("update.tmp"):
         os.remove("update.tmp")
-        util.show_info_box("Update complete!", "Uma Launcher updated successfully.")
+        util.show_info_box("Update complete!", f"Uma Launcher updated successfully.<br>You can read the changelog <a href=\"https://github.com/KevinVG207/UmaLauncher/releases/tag/v{vstr(script_version)}\">here</a>.")
+        return True
 
     response = requests.get("https://api.github.com/repos/KevinVG207/UmaLauncher/releases")
     if not response.ok:
@@ -147,7 +148,7 @@ def auto_update(umasettings, script_version, skip_version):
     logger.debug("Update window closed: Update failed.")
     if os.path.exists("update.tmp"):
         os.remove("update.tmp")
-    util.show_error_box("Update failed.", "Could not update. Please check your internet connection.\nUma Launcher will now close.")
+    util.show_error_box("Update failed.", "Could not update. Please check your internet connection.<br>Uma Launcher will now close.")
     return False
 
 

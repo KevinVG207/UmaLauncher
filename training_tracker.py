@@ -88,6 +88,7 @@ class TrainingTracker():
 
 
     def get_training_path(self):
+        #TODO: Add chara name + outfit to path
         return str(os.path.join(self.training_log_folder, self.training_id))
 
 
@@ -286,7 +287,6 @@ class TrainingAnalyzer():
             req = self.packets[packet_index]
             resp = self.packets[packet_index+1]
 
-            # TODO: Increase i and keep looping through the next packet to find a response.
             # Check if response really is a response
             while resp['_direction'] != 1:
                 packet_index += 1
@@ -476,13 +476,6 @@ class TrainingAnalyzer():
 
 
     def determine_action_type(self, req: dict, resp: dict, action: TrainingAction, prev_resp: dict):
-
-        # # If next action type is set, use that.
-        # if self.next_action_type is not None:
-        #     action.action_type = self.next_action_type
-        #     self.next_action_type = None
-        #     return
-
         # Request specific:
 
         # Start of run
@@ -556,13 +549,6 @@ class TrainingAnalyzer():
                 action.action_type = ActionType.Infirmary
                 return
 
-        # if 'program_id' in req and req['program_id']:
-        #     # Race Requested
-        #     action.action_type = ActionType.BeforeRace
-        #     self.last_program_id = req['program_id']
-        #     action.text = self.race_program_name_dict[self.last_program_id]
-        #     return
-
         if 'gain_skill_info_array' in req and req['gain_skill_info_array']:
             # Skill(s) bought
             action.action_type = ActionType.BuySkill
@@ -598,13 +584,6 @@ class TrainingAnalyzer():
                 action.text = self.chara_names_dict[goddess_chara_id]
                 action.value = {chara_dict['chara_id']: chara_dict['venus_level'] for chara_dict in venus['venus_chara_info_array']}[goddess_chara_id]
                 return
-
-            # # Before venus race.
-            # if 'race_start_info' in venus and venus['race_start_info'] is not None:
-            #     action.action_type = ActionType.BeforeRace
-            #     self.last_program_id = venus['race_start_info']['program_id']
-            #     action.text = self.race_program_name_dict[self.last_program_id]
-            #     return
 
             # Venus Race Packet
             if 'race_scenario' in venus and venus['race_scenario']:

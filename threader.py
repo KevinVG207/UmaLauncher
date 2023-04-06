@@ -12,11 +12,11 @@ from elevate import elevate
 try:
     elevate()
 except OSError:
-    import util
     util.show_error_box("Launch Error", "Uma Launcher needs administrator privileges to start.")
     sys.exit()
 
 import threading
+import time
 from loguru import logger
 import settings
 import carrotjuicer
@@ -24,7 +24,6 @@ import umatray
 import screenstate
 import windowmover
 import win32api
-import util
 
 class Threader():
     unpack_dir = None
@@ -34,6 +33,8 @@ class Threader():
     windowmover = None
     screenstate = None
     threads = []
+    should_stop = False
+    show_helper_table_dialog = False
 
     def __init__(self):
         # Set directory to find assets
@@ -56,11 +57,21 @@ class Threader():
 
         win32api.SetConsoleCtrlHandler(self.stop_signal, True)
 
+        while not self.should_stop:
+            time.sleep(0.2)
+
+            if self.show_helper_table_dialog:
+                self.settings.update_helper_table()
+                self.show_helper_table_dialog = False
+
+        logger.info("=== Launcher closed ===")
+
     def stop_signal(self, *_):
         self.stop()
 
     def stop(self):
         logger.info("=== Closing launcher ===")
+        self.should_stop = True
         if self.tray:
             self.tray.stop()
         if self.carrotjuicer:
@@ -69,8 +80,6 @@ class Threader():
             self.screenstate.stop()
         if self.windowmover:
             self.windowmover.stop()
-
-        logger.info("=== Launcher closed ===")
 
 @logger.catch
 def main():
