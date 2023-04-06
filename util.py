@@ -80,7 +80,7 @@ SUPPORT_CARD_TYPE_DICT = {
     (0, 3): "group"
 }
 
-SUPPORT_CARD_TYPE_DICT_DISPLAY = {
+SUPPORT_CARD_TYPE_DISPLAY_DICT = {
     "speed": "Speed",
     "stamina": "Stamina",
     "power": "Power",

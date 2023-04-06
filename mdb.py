@@ -15,7 +15,7 @@ class Connection():
         self.conn.close()
 
 def create_support_card_string(rarity, command_id, support_card_type, chara_id):
-    return f"{util.SUPPORT_CARD_RARITY_DICT[rarity]} {util.SUPPORT_CARD_TYPE_DICT_DISPLAY[util.SUPPORT_CARD_TYPE_DICT[(command_id, support_card_type)]]} {util.get_character_name_dict()[chara_id]}"
+    return f"{util.SUPPORT_CARD_RARITY_DICT[rarity]} {util.SUPPORT_CARD_TYPE_DISPLAY_DICT[util.SUPPORT_CARD_TYPE_DICT[(command_id, support_card_type)]]} {util.get_character_name_dict()[chara_id]}"
 
 def get_event_title(story_id):
     with Connection() as (_, cursor):
