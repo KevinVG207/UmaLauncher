@@ -118,9 +118,10 @@ class HelperTable():
             spirit_id = 0
             spirit_boost = 0
             venus_blue_active = False
-            if 'venus_data_set' in data and 'spirit_data' in command:
-                spirit_id = command['spirit_data']['spirit_id']
-                spirit_boost = command['spirit_data']['is_boost']
+            if 'venus_data_set' in data:
+                if 'spirit_data' in command:
+                    spirit_id = command['spirit_data']['spirit_id']
+                    spirit_boost = command['spirit_data']['is_boost']
                 if len(data['venus_data_set']['venus_spirit_active_effect_info_array']) > 0 and data['venus_data_set']['venus_spirit_active_effect_info_array'][0]['chara_id'] == 9041:
                     venus_blue_active = True
 
