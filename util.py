@@ -80,7 +80,6 @@ SUPPORT_CARD_TYPE_DICT = {
     (0, 3): "group"
 }
 
-# TODO: Check if training csv shows the right version
 SUPPORT_CARD_TYPE_DICT_DISPLAY = {
     "speed": "Speed",
     "stamina": "Stamina",

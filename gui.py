@@ -204,6 +204,7 @@ class UmaPresetMenu(UmaMainWidget):
         self.btn_close.setObjectName(u"btn_close")
         self.btn_close.setGeometry(qtc.QRect(610, 440, 71, 23))
         self.btn_close.setText(u"Cancel")
+        self.btn_close.setDefault(True)
         self.btn_close.clicked.connect(self.on_close)
         self.btn_apply = qtw.QPushButton(self)
         self.btn_apply.setObjectName(u"btn_apply")
@@ -388,7 +389,7 @@ class UmaPresetMenu(UmaMainWidget):
                 self.lst_current.setEnabled(True)
         self.reload_current_rows()
 
-# TODO: Make default focused button the OK button.
+
 class UmaNewPresetDialog(UmaMainDialog):
     def init_ui(self, new_preset_class, *args, **kwargs):
         self.new_presets_class = new_preset_class
@@ -415,6 +416,7 @@ class UmaNewPresetDialog(UmaMainDialog):
         self.btn_ok.setObjectName(u"btn_ok")
         self.btn_ok.setGeometry(qtc.QRect(140, 60, 81, 23))
         self.btn_ok.setText(u"OK")
+        self.btn_ok.setDefault(True)
         self.btn_ok.clicked.connect(self.on_ok)
     
     @qtc.pyqtSlot()
@@ -490,6 +492,7 @@ class UmaPresetSettingsDialog(UmaMainDialog):
         self.btn_cancel.setObjectName(u"btn_cancel")
         self.btn_cancel.setGeometry(qtc.QRect(400, 370, 71, 23))
         self.btn_cancel.setText(u"Cancel")
+        self.btn_cancel.setDefault(True)
         self.btn_save_close = qtw.QPushButton(self)
         self.btn_save_close.setObjectName(u"btn_save_close")
         self.btn_save_close.setGeometry(qtc.QRect(300, 370, 91, 23))
@@ -610,6 +613,7 @@ class UmaUpdateConfirm(UmaMainWidget):
 
         self.skip_button = qtw.QPushButton("Skip this version")
         self.skip_button.clicked.connect(self._skip)
+        self.skip_button.setDefault(True)
         self.button_layout.addWidget(self.skip_button)
 
         # Hide maxminize and minimize buttons
@@ -713,7 +717,13 @@ class UmaInfoPopup(qtw.QMessageBox):
         super().__init__()
         self.setWindowTitle(title)
         self.setText(message)
-        self.findChild(qtw.QLabel, "qt_msgbox_label").setSizePolicy(qtw.QSizePolicy.Expanding, qtw.QSizePolicy.Expanding)
+
+        msgbox_label = self.findChild(qtw.QLabel, "qt_msgbox_label")
+        msgbox_label.setSizePolicy(qtw.QSizePolicy.Expanding, qtw.QSizePolicy.Expanding)
+        msgbox_label.setTextFormat(qtc.Qt.TextFormat.RichText)
+        msgbox_label.setTextInteractionFlags(qtc.Qt.TextInteractionFlag.TextBrowserInteraction)
+        msgbox_label.setOpenExternalLinks(True)
+
         self.setWindowFlag(qtc.Qt.WindowType.WindowStaysOnTopHint, True)
         self.setIcon(msg_icon)
         self.show()
