@@ -81,7 +81,7 @@ def auto_update(umasettings, script_version, skip_version):
     # Check if we're coming from an update
     if os.path.exists("update.tmp"):
         os.remove("update.tmp")
-        util.show_info_box("Update complete!", f"Uma Launcher updated successfully.<br>You can read the changelog <a href=\"https://github.com/KevinVG207/UmaLauncher/releases/tag/v{vstr(script_version)}\">here</a>.")
+        util.show_info_box("Update complete!", f"Uma Launcher updated successfully.<br>You can read what's new <a href=\"https://github.com/KevinVG207/UmaLauncher/releases/tag/v{vstr(script_version)}\">here</a>.")
         return True
 
     response = requests.get("https://api.github.com/repos/KevinVG207/UmaLauncher/releases")
