@@ -229,7 +229,6 @@ class ScreenStateHandler():
             if not self.carrotjuicer_closed:
                 carrotjuicer_handle = util.get_window_handle("Umapyoi", type=util.EXACT)
                 if carrotjuicer_handle:
-                    # TODO: TLG fix
                     logger.info("Attempting to minimize CarrotJuicer.")
                     success = util.show_window(carrotjuicer_handle, win32con.SW_MINIMIZE)
                     if not success:

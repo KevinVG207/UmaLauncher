@@ -397,7 +397,7 @@ class CarrotJuicer():
 
                 training_id = data['chara_info']['start_time']
                 if not self.training_tracker or not self.training_tracker.training_id_matches(training_id):
-                    self.training_tracker = training_tracker.TrainingTracker(training_id)
+                    self.training_tracker = training_tracker.TrainingTracker(training_id, data['chara_info']['card_id'])
 
                 # Add request to tracker
                 self.add_response_to_tracker(data)
