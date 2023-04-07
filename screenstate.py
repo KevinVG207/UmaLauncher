@@ -237,7 +237,7 @@ class ScreenStateHandler():
                         logger.error("Failed to minimize CarrotJuicer")
                     else:
                         self.carrotjuicer_closed = True
-                    time.sleep(0.25)
+                        time.sleep(0.25)
 
             self.sleep_time = 1.
 

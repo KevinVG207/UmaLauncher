@@ -27,5 +27,5 @@ def unpatch_dmm(dmm_path):
 
 
 def start():
-    logger.info("Sending DMM to the Umamusume page.")
+    logger.info("Launching Uma Musume via DMM.")
     os.system("Start dmmgameplayer://play/GCL/umamusume/cl/win")
