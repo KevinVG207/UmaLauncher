@@ -15,7 +15,7 @@ class Connection():
         self.conn.close()
 
 def create_support_card_string(rarity, command_id, support_card_type, chara_id):
-    return f"{util.SUPPORT_CARD_RARITY_DICT[rarity]} {util.SUPPORT_CARD_TYPE_DICT[(command_id, support_card_type)]} {util.get_character_name_dict()[chara_id]}"
+    return f"{util.SUPPORT_CARD_RARITY_DICT[rarity]} {util.SUPPORT_CARD_TYPE_DISPLAY_DICT[util.SUPPORT_CARD_TYPE_DICT[(command_id, support_card_type)]]} {util.get_character_name_dict()[chara_id]}"
 
 def get_event_title(story_id):
     with Connection() as (_, cursor):
@@ -172,6 +172,9 @@ def get_support_card_dict():
         SUPPORT_CARD_DICT = {row[0]: row[1:] for row in rows}
     return SUPPORT_CARD_DICT
 
+def get_support_card_type(support_data):
+    return util.SUPPORT_CARD_TYPE_DICT[(support_data[1], support_data[2])]
+
 def get_support_card_string_dict():
     support_card_dict = get_support_card_dict()
     return {id: create_support_card_string(*data) for id, data in support_card_dict.items()}
@@ -202,3 +205,15 @@ def get_gl_lesson_dict():
         rows = cursor.fetchall()
 
     return {row[0]: (row[1], row[2]) for row in rows}
+
+def get_group_card_effect_ids():
+    with Connection() as (_, cursor):
+        cursor.execute(
+            """SELECT id, effect_id FROM support_card_data WHERE support_card_type = 3"""
+        )
+        rows = cursor.fetchall()
+    
+    if not rows:
+        return []
+
+    return rows

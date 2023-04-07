@@ -1,5 +1,8 @@
 import os
 import sys
+import base64
+import io
+from PIL import Image
 from loguru import logger
 
 unpack_dir = os.getcwd()
@@ -68,13 +71,54 @@ SUPPORT_CARD_RARITY_DICT = {
 }
 
 SUPPORT_CARD_TYPE_DICT = {
-    (101, 1): "Speed",
-    (105, 1): "Stamina",
-    (102, 1): "Power",
-    (103, 1): "Guts",
-    (106, 1): "Wisdom",
-    (0, 2): "Friend",
-    (0, 3): "Group"
+    (101, 1): "speed",
+    (105, 1): "stamina",
+    (102, 1): "power",
+    (103, 1): "guts",
+    (106, 1): "wiz",
+    (0, 2): "friend",
+    (0, 3): "group"
+}
+
+SUPPORT_CARD_TYPE_DISPLAY_DICT = {
+    "speed": "Speed",
+    "stamina": "Stamina",
+    "power": "Power",
+    "guts": "Guts",
+    "wiz": "Wisdom",
+    "friend": "Friend",
+    "group": "Group"
+}
+
+SUPPORT_TYPE_TO_COMMAND_IDS = {
+    "speed": [101, 601],
+    "stamina": [105, 602],
+    "power": [102, 603],
+    "guts": [103, 604],
+    "wiz": [106, 605],
+    "friend": [],
+    "group": []
+}
+
+COMMAND_ID_TO_KEY = {
+    101: "speed",
+    105: "stamina",
+    102: "power",
+    103: "guts",
+    106: "wiz",
+    601: "speed",
+    602: "stamina",
+    603: "power",
+    604: "guts",
+    605: "wiz"
+}
+
+TARGET_TYPE_TO_KEY = {
+    1: "speed",
+    2: "stamina",
+    3: "power",
+    4: "guts",
+    5: "wiz"
 }
 
 def get_asset(asset_path):
@@ -270,3 +314,82 @@ def get_outfit_name_dict():
 def create_gametora_helper_url(card_id, scenario_id, support_ids):
     support_ids = list(map(str, support_ids))
     return f"https://gametora.com/umamusume/training-event-helper?deck={np.base_repr(int(str(card_id) + str(scenario_id)), 36)}-{np.base_repr(int(support_ids[0] + support_ids[1] + support_ids[2]), 36)}-{np.base_repr(int(support_ids[3] + support_ids[4] + support_ids[5]), 36)}".lower()
+
+gm_fragment_dict = None
+def get_gm_fragment_dict():
+    global gm_fragment_dict
+
+    if not gm_fragment_dict:
+        logger.debug("Loading Grand Master fragment images...")
+        gm_fragment_dict = {}
+        for i in range(0, 23):
+            fragment_img_path = f"_assets/gm/frag_{i:02}.png"
+            asset_path = get_asset(fragment_img_path)
+
+            if not os.path.exists(asset_path):
+                continue
+
+            img = Image.open(asset_path)
+            img.thumbnail((36, 36), Image.ANTIALIAS)
+
+            # Save the image in memory in PNG format
+            buffer = io.BytesIO()
+            img.save(buffer, format="PNG")
+            img.close()
+
+            # Encode PNG image to base64 string
+            b64 = "data:image/png;base64," + base64.b64encode(buffer.getvalue()).decode("utf-8")
+            gm_fragment_dict[i] = b64
+
+            buffer.close()
+    return gm_fragment_dict
+
+
+gl_token_list = [
+    'dance',
+    'passion',
+    'vocal',
+    'visual',
+    'mental'
+]
+
+gl_token_dict = None
+def get_gl_token_dict():
+    global gl_token_dict
+
+    if not gl_token_dict:
+        logger.debug("Loading Grand Live token images...")
+        gl_token_dict = {}
+
+        token_folder = get_asset("_assets/gl/tokens")
+        for token_file in os.listdir(token_folder):
+            if not token_file.endswith(".png"):
+                continue
+
+            token_name = token_file[:-4]
+
+            img = Image.open(os.path.join(token_folder, token_file))
+            img.thumbnail((36, 36), Image.ANTIALIAS)
+
+            # Save the image in memory in PNG format
+            buffer = io.BytesIO()
+            img.save(buffer, format="PNG")
+            img.close()
+
+            # Encode PNG image to base64 string
+            b64 = "data:image/png;base64," + base64.b64encode(buffer.getvalue()).decode("utf-8")
+            gl_token_dict[token_name] = b64
+
+            buffer.close()
+
+    return gl_token_dict
+
+GROUP_SUPPORT_ID_TO_PASSION_ZONE_EFFECT_ID_DICT = None
+def get_group_support_id_to_passion_zone_effect_id_dict():
+    global GROUP_SUPPORT_ID_TO_PASSION_ZONE_EFFECT_ID_DICT
+
+    if not GROUP_SUPPORT_ID_TO_PASSION_ZONE_EFFECT_ID_DICT:
+        cards = mdb.get_group_card_effect_ids()
+        GROUP_SUPPORT_ID_TO_PASSION_ZONE_EFFECT_ID_DICT = {card[0]: card[1] for card in cards}
+
+    return GROUP_SUPPORT_ID_TO_PASSION_ZONE_EFFECT_ID_DICT

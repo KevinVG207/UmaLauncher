@@ -34,11 +34,15 @@ class UmaTray():
             )
         )
         menu_items.append(pystray.Menu.SEPARATOR)
+        menu_items.append(pystray.MenuItem("Customize Training Helper Table", lambda: self.show_helper_table_dialog()))
         menu_items.append(pystray.MenuItem("Maximize + center game", self.threader.windowmover.try_maximize))
         menu_items.append(pystray.MenuItem("Take screenshot", self.threader.screenstate.screenshot_to_clipboard))
         menu_items.append(pystray.MenuItem("Export Training CSV", lambda: training_tracker.training_csv_dialog()))
         menu_items.append(pystray.Menu.SEPARATOR)
         menu_items.append(pystray.MenuItem("Close", lambda: close_clicked(self)))
+        # if util.is_debug:
+        #     menu_items.append(pystray.Menu.SEPARATOR)
+            # menu_items.append(pystray.MenuItem("Debug", lambda: self.threader.carrotjuicer.helper_table.debug_change_settings()))
 
         self.icon_thread = pystray.Icon(
             'Uma Launcher',
@@ -51,6 +55,9 @@ class UmaTray():
 
     def stop(self):
         self.icon_thread.stop()
+
+    def show_helper_table_dialog(self):
+        self.threader.show_helper_table_dialog = True
 
 def close_clicked(tray: UmaTray):
     tray.threader.stop()

@@ -15,8 +15,6 @@ import util
 import dmm
 import mdb
 
-# TODO: Add outfit name to rich presence during training.
-
 START_TIME = time.time()
 
 class Location(Enum):
@@ -229,14 +227,15 @@ class ScreenStateHandler():
                 self.dmm_closed = True
 
             if not self.carrotjuicer_closed:
-                self.carrotjuicer_closed = True
                 carrotjuicer_handle = util.get_window_handle("Umapyoi", type=util.EXACT)
                 if carrotjuicer_handle:
                     logger.info("Attempting to minimize CarrotJuicer.")
                     success = util.show_window(carrotjuicer_handle, win32con.SW_MINIMIZE)
                     if not success:
                         logger.error("Failed to minimize CarrotJuicer")
-                    time.sleep(0.25)
+                    else:
+                        self.carrotjuicer_closed = True
+                        time.sleep(0.25)
 
             self.sleep_time = 1.
 

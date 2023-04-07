@@ -11,7 +11,7 @@ import dmm
 import util
 import gui
 
-VERSION = "1.3.5"
+VERSION = "1.4.0"
 
 def parse_version(version_string: str):
     """Convert version string to tuple."""
@@ -81,7 +81,7 @@ def auto_update(umasettings, script_version, skip_version):
     # Check if we're coming from an update
     if os.path.exists("update.tmp"):
         os.remove("update.tmp")
-        util.show_info_box("Update complete!", "Uma Launcher updated successfully.")
+        util.show_info_box("Update complete!", f"Uma Launcher updated successfully.<br>To see what's new, <a href=\"https://github.com/KevinVG207/UmaLauncher/releases/tag/v{vstr(script_version)}\">click here</a>.")
 
     response = requests.get("https://api.github.com/repos/KevinVG207/UmaLauncher/releases")
     if not response.ok:
@@ -120,7 +120,7 @@ def auto_update(umasettings, script_version, skip_version):
 
     choice = [1]  # Default to no
     app = gui.UmaApp()
-    app.run(gui.UmaUpdateConfirm(app, latest_release, vstr(release_version), choice))
+    app.run(gui.UmaUpdateConfirm(app, latest_release, vstr(release_version), choice), True)
     choice = choice[-1]
 
     logger.debug(f"User choice: {choice}")
@@ -147,7 +147,7 @@ def auto_update(umasettings, script_version, skip_version):
     logger.debug("Update window closed: Update failed.")
     if os.path.exists("update.tmp"):
         os.remove("update.tmp")
-    util.show_error_box("Update failed.", "Could not update. Please check your internet connection.\nUma Launcher will now close.")
+    util.show_error_box("Update failed.", "Could not update. Please check your internet connection.<br>Uma Launcher will now close.")
     return False
 
 

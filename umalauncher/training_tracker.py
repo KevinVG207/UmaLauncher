@@ -23,9 +23,6 @@ from external import race_data_parser
 
 
 class TrainingTracker():
-    training_log_folder = None
-    training_id = None
-
     request_remove_keys = [
         "viewer_id",
         "device",
@@ -43,12 +40,15 @@ class TrainingTracker():
     ]
 
 
-    def __init__(self, training_id: str, training_log_folder: str="training_logs"):
+    def __init__(self, training_id: str, card_id: int=None, training_log_folder: str="training_logs", full_path: str=None):
+        self.full_path=full_path
         self.training_log_folder = training_log_folder
+        self.card_id = card_id
 
-        # Create training_logs folder if it doesn't exist.
-        if not os.path.exists(self.training_log_folder):
-            os.makedirs(self.training_log_folder)
+        if not full_path:
+            # Create training_logs folder if it doesn't exist.
+            if not os.path.exists(self.training_log_folder):
+                os.makedirs(self.training_log_folder)
 
         self.training_id = self.make_training_id_safe(training_id)
 
@@ -88,7 +88,16 @@ class TrainingTracker():
 
 
     def get_training_path(self):
-        return str(os.path.join(self.training_log_folder, self.training_id))
+        if self.full_path:
+            return self.full_path
+
+        card_segment = ""
+        if self.card_id:
+            card_segment = f"{util.get_character_name_dict().get(int(str(self.card_id)[:4]), 'Unknown Chara')} {util.get_outfit_name_dict().get(self.card_id, 'Unknown Outfit')} - "
+        return str(os.path.join(
+            self.training_log_folder,
+            card_segment + self.training_id
+        ))
 
 
     def get_sav_path(self):
@@ -104,6 +113,7 @@ class TrainingTracker():
         # Append to gzip if file exists
         is_first = not os.path.exists(self.get_sav_path())
         if packet is not None:
+            logger.debug(os.getcwd())
             with gzip.open(self.get_sav_path(), 'ab') as f:
                 if not is_first:
                     f.write(','.encode('utf-8'))
@@ -286,7 +296,6 @@ class TrainingAnalyzer():
             req = self.packets[packet_index]
             resp = self.packets[packet_index+1]
 
-            # TODO: Increase i and keep looping through the next packet to find a response.
             # Check if response really is a response
             while resp['_direction'] != 1:
                 packet_index += 1
@@ -382,7 +391,7 @@ class TrainingAnalyzer():
 
         # Write to CSV
         scenario_str = util.SCENARIO_DICT.get(self.scenario_id, 'Unknown')
-        chara_str = f"{self.chara_names_dict.get(self.chara_id, 'Unknown')} - {self.outfit_name_dict[self.card_id]}"
+        chara_str = f"{self.chara_names_dict.get(self.chara_id, 'Unknown')} {self.outfit_name_dict[self.card_id]}"
         support_1_str = f"{self.support_cards[0]['support_card_id']} - {self.support_card_string_dict[self.support_cards[0]['support_card_id']]}"
         support_2_str = f"{self.support_cards[1]['support_card_id']} - {self.support_card_string_dict[self.support_cards[1]['support_card_id']]}"
         support_3_str = f"{self.support_cards[2]['support_card_id']} - {self.support_card_string_dict[self.support_cards[2]['support_card_id']]}"
@@ -476,13 +485,6 @@ class TrainingAnalyzer():
 
 
     def determine_action_type(self, req: dict, resp: dict, action: TrainingAction, prev_resp: dict):
-
-        # # If next action type is set, use that.
-        # if self.next_action_type is not None:
-        #     action.action_type = self.next_action_type
-        #     self.next_action_type = None
-        #     return
-
         # Request specific:
 
         # Start of run
@@ -556,13 +558,6 @@ class TrainingAnalyzer():
                 action.action_type = ActionType.Infirmary
                 return
 
-        # if 'program_id' in req and req['program_id']:
-        #     # Race Requested
-        #     action.action_type = ActionType.BeforeRace
-        #     self.last_program_id = req['program_id']
-        #     action.text = self.race_program_name_dict[self.last_program_id]
-        #     return
-
         if 'gain_skill_info_array' in req and req['gain_skill_info_array']:
             # Skill(s) bought
             action.action_type = ActionType.BuySkill
@@ -598,13 +593,6 @@ class TrainingAnalyzer():
                 action.text = self.chara_names_dict[goddess_chara_id]
                 action.value = {chara_dict['chara_id']: chara_dict['venus_level'] for chara_dict in venus['venus_chara_info_array']}[goddess_chara_id]
                 return
-
-            # # Before venus race.
-            # if 'race_start_info' in venus and venus['race_start_info'] is not None:
-            #     action.action_type = ActionType.BeforeRace
-            #     self.last_program_id = venus['race_start_info']['program_id']
-            #     action.text = self.race_program_name_dict[self.last_program_id]
-            #     return
 
             # Venus Race Packet
             if 'race_scenario' in venus and venus['race_scenario']:
@@ -737,9 +725,9 @@ class TrainingCombiner:
         training_analyzer = TrainingAnalyzer()
         for training_path in self.training_paths:
             try:
-                training_path_only, training_name = os.path.split(training_path)
+                _, training_name = os.path.split(training_path)
                 training_name, _ = os.path.splitext(training_name)
-                training_analyzer.set_training_tracker(TrainingTracker(training_name, training_path_only))
+                training_analyzer.set_training_tracker(TrainingTracker(training_name, full_path=os.path.splitext(training_path)[0]))
                 csvs.append(training_analyzer.to_csv_list())
             except Exception:
                 logger.error(traceback.format_exc())
@@ -789,15 +777,17 @@ def combine_trainings(training_paths, output_file_path):
 
 
 def training_csv_dialog(training_paths=None):
+    # cwd_before = os.getcwd()
     if training_paths is None:
         try:
             training_paths, _, _ = win32gui.GetOpenFileNameW(
                 InitialDir="training_logs",
                 Title="Select training log(s)",
-                Flags=win32con.OFN_ALLOWMULTISELECT | win32con.OFN_FILEMUSTEXIST | win32con.OFN_EXPLORER,
+                Flags=win32con.OFN_ALLOWMULTISELECT | win32con.OFN_FILEMUSTEXIST | win32con.OFN_EXPLORER | win32con.OFN_NOCHANGEDIR,
                 DefExt="gz",
                 Filter="Training logs (*.gz)\0*.gz\0\0"
             )
+            # os.chdir(cwd_before)
 
             training_paths = training_paths.split("\0")
             if len(training_paths) > 1:
@@ -805,6 +795,7 @@ def training_csv_dialog(training_paths=None):
                 training_paths = [os.path.join(dir_path, training_path) for training_path in training_paths[1:]]
 
         except util.pywinerror:
+            # os.chdir(cwd_before)
             util.show_error_box("Error", "No file(s) selected.")
             return
 
@@ -819,15 +810,21 @@ def training_csv_dialog(training_paths=None):
         output_file_path, _, _ = win32gui.GetSaveFileNameW(
             InitialDir="training_logs",
             Title="Select output file",
-            Flags=win32con.OFN_EXPLORER | win32con.OFN_OVERWRITEPROMPT | win32con.OFN_PATHMUSTEXIST,
+            Flags=win32con.OFN_EXPLORER | win32con.OFN_OVERWRITEPROMPT | win32con.OFN_PATHMUSTEXIST | win32con.OFN_NOCHANGEDIR,
             File="training",
             DefExt="csv",
             Filter="CSV (*.csv)\0*.csv\0\0"
         )
+        # os.chdir(cwd_before)
 
     except util.pywinerror:
+        # os.chdir(cwd_before)
         util.show_error_box("Error", "No output file given.")
         return
+    
+    # os.chdir(cwd_before)
+
+    logger.debug(os.getcwd())
 
     if not output_file_path.endswith(".csv"):
         output_file_path += ".csv"
