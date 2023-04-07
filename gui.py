@@ -531,6 +531,8 @@ class UmaPresetSettingsDialog(UmaMainDialog):
             input_widget, value_func = self.add_checkbox(setting, grp_setting)
         elif setting.type == self.setting_types_enum.INT:
             input_widget, value_func = self.add_spinbox(setting, grp_setting)
+        elif setting.type == self.setting_types_enum.LIST:
+            input_widget, value_func = self.add_combobox(setting, grp_setting)
         
         if not input_widget:
             return None, None
@@ -566,6 +568,22 @@ class UmaPresetSettingsDialog(UmaMainDialog):
         spn_setting_spinbox.setMaximum(setting.max_value)
         spn_setting_spinbox.setValue(setting.value)
         return spn_setting_spinbox, lambda: spn_setting_spinbox.value()
+
+    def add_combobox(self, setting, parent):
+        cmb_setting_combobox = qtw.QComboBox(parent)
+        cmb_setting_combobox.setObjectName(f"cmb_setting_{setting.name}")
+        sizePolicy = qtw.QSizePolicy(qtw.QSizePolicy.Fixed, qtw.QSizePolicy.Fixed)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(cmb_setting_combobox.sizePolicy().hasHeightForWidth())
+        cmb_setting_combobox.setSizePolicy(sizePolicy)
+        cmb_setting_combobox.setMinimumSize(qtc.QSize(46, 0))
+        
+        for choice in setting.choices:
+            cmb_setting_combobox.addItem(choice)
+
+        cmb_setting_combobox.setCurrentIndex(setting.value)
+        return cmb_setting_combobox, lambda: cmb_setting_combobox.currentIndex()
 
 
 class UmaSimpleDialog(UmaMainDialog):

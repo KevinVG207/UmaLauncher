@@ -1,6 +1,19 @@
 from enum import Enum
+import copy
 import helper_table_elements as hte
 import util
+
+def compensate_overcap(game_state, command):
+    # Compensate for overcapped stats by doubling any gained stats that bring the current stats over 1200.
+    current_stats = {command_type: game_state[command_type]['current_stats'] for command_type in game_state}
+    gained_stats = copy.deepcopy(command['gained_stats'])
+    for stat in current_stats:
+        if current_stats[stat] + gained_stats[stat] > 1200:
+            stats_until_1200 = max(1200 - current_stats[stat], 0)
+            gained_stats[stat] = stats_until_1200 + (gained_stats[stat] - stats_until_1200) * 2
+
+    return gained_stats
+
 
 class CurrentStatsRow(hte.Row):
     long_name = "Current stats"
@@ -31,6 +44,36 @@ class GainedStatsSettings(hte.Settings):
             False,
             hte.SettingType.BOOL
         )
+        self.s_displayed_value = hte.Setting(
+            "Displayed value(s)",
+            "Which value(s) to display.",
+            0,
+            hte.SettingType.LIST,
+            choices=["Raw gained stats", "Overcap-compensated gained stats", "Both"]
+        )
+        self.s_highlight_max_overcapped = hte.Setting(
+            "Highlight max (compensated)",
+            "(Only when 'highlight max' is enabled and both stats types are displayed.)\nHighlights the facility with the most gained stats, using the compensated values.",
+            True,
+            hte.SettingType.BOOL
+        )
+
+stats_highlight_span_open = f"<span style=\"font-weight: bold; color: {hte.Colors.GOOD.value};\">"
+stats_highlight_span_close = "</span>"
+
+def make_gained_stats_text(gained_stats, gained_stats_compensated, highlight=0):
+    if gained_stats_compensated == gained_stats:
+        if highlight < 1:
+            return f"{gained_stats}"
+        else:
+            return f"{stats_highlight_span_open}{gained_stats}{stats_highlight_span_close}"
+    else:
+        if highlight == 1:
+            return f"{stats_highlight_span_open}{gained_stats}{stats_highlight_span_close} ({gained_stats_compensated})"
+        elif highlight == 2:
+            return f"{gained_stats} ({stats_highlight_span_open}{gained_stats_compensated}{stats_highlight_span_close})"
+        else:
+            return f"{gained_stats} ({gained_stats_compensated})"
 
 class GainedStatsRow(hte.Row):
     long_name = "Stats gained total"
@@ -45,19 +88,44 @@ class GainedStatsRow(hte.Row):
         cells = [hte.Cell(self.short_name, title=self.description)]
 
         all_gained_stats = []
-        for facility in game_state.values():
-            gained_stats = sum(facility['gained_stats'].values())
+        all_gained_stats_compensated = []
+        for command in game_state.values():
+            gained_stats = sum(command['gained_stats'].values())
+            gained_stats_compensated = sum(compensate_overcap(game_state, command).values())
             if self.settings.s_enable_skillpts.value:
-                gained_stats += facility['gained_skillpt']
+                gained_stats += command['gained_skillpt']
+                gained_stats_compensated += command['gained_skillpt']
             all_gained_stats.append(gained_stats)
+            all_gained_stats_compensated.append(gained_stats_compensated)
 
-        max_gained_stats = max(all_gained_stats)
+        if self.settings.s_highlight_max_overcapped.value and self.settings.s_displayed_value.value == 2 or self.settings.s_displayed_value.value == 1:
+            max_gained_stats = max(all_gained_stats_compensated)
+        else:
+            max_gained_stats = max(all_gained_stats)
 
-        for gained_stats in all_gained_stats:
-            if self.settings.s_highlight_max.value and max_gained_stats > 0 and gained_stats == max_gained_stats:
-                cells.append(hte.Cell(gained_stats, bold=True, color=hte.Colors.GOOD))
-            else:
+        for i, gained_stats in enumerate(all_gained_stats):
+            gained_stats_compensated = all_gained_stats_compensated[i]
+            if self.settings.s_highlight_max.value:
+                if self.settings.s_displayed_value.value == 2:
+                    if self.settings.s_highlight_max_overcapped.value and gained_stats_compensated == max_gained_stats:
+                        cells.append(hte.Cell(make_gained_stats_text(gained_stats, gained_stats_compensated, highlight=2)))
+                        continue
+                    elif not self.settings.s_highlight_max_overcapped.value and gained_stats == max_gained_stats:
+                        cells.append(hte.Cell(make_gained_stats_text(gained_stats, gained_stats_compensated, highlight=1)))
+                        continue
+                elif self.settings.s_displayed_value.value == 0 and gained_stats == max_gained_stats:
+                    cells.append(hte.Cell(gained_stats, bold=True, color=hte.Colors.GOOD))
+                    continue
+                elif self.settings.s_displayed_value.value == 1 and gained_stats_compensated == max_gained_stats:
+                    cells.append(hte.Cell(gained_stats_compensated, bold=True, color=hte.Colors.GOOD))
+                    continue
+
+            if self.settings.s_displayed_value.value == 2:
+                cells.append(hte.Cell(make_gained_stats_text(gained_stats, gained_stats_compensated)))
+            elif self.settings.s_displayed_value.value == 0:
                 cells.append(hte.Cell(gained_stats))
+            elif self.settings.s_displayed_value.value == 1:
+                cells.append(hte.Cell(gained_stats_compensated))
 
         return cells
 
@@ -69,6 +137,14 @@ class GainedStatsDistributionSettings(hte.Settings):
             False,
             hte.SettingType.BOOL
         )
+        self.s_displayed_value = hte.Setting(
+            "Displayed value(s)",
+            "Which value(s) to display.",
+            0,
+            hte.SettingType.LIST,
+            choices=["Raw gained stats", "Overcap-compensated gained stats", "Both"]
+        )
+
 
 class GainedStatsDistributionRow(hte.Row):
     long_name = "Stats gained distribution"
@@ -84,18 +160,27 @@ class GainedStatsDistributionRow(hte.Row):
 
         for command in game_state.values():
             gained_stats = command['gained_stats']
+            gained_stats_compensated = compensate_overcap(game_state, command)
+
+            def display_value(gained, compensated):
+                if self.settings.s_displayed_value.value == 0:
+                    return gained
+                elif self.settings.s_displayed_value.value == 1:
+                    return compensated
+                elif self.settings.s_displayed_value.value == 2:
+                    return make_gained_stats_text(gained, compensated)
 
             out_lines = []
             if gained_stats['speed'] > 0:
-                out_lines.append(f"Spd: {gained_stats['speed']}")
+                out_lines.append(f"Spd: {display_value(gained_stats['speed'], gained_stats_compensated['speed'])}")
             if gained_stats['stamina'] > 0:
-                out_lines.append(f"Sta: {gained_stats['stamina']}")
+                out_lines.append(f"Sta: {display_value(gained_stats['stamina'], gained_stats_compensated['stamina'])}")
             if gained_stats['power'] > 0:
-                out_lines.append(f"Pow: {gained_stats['power']}")
+                out_lines.append(f"Pow: {display_value(gained_stats['power'], gained_stats_compensated['power'])}")
             if gained_stats['guts'] > 0:
-                out_lines.append(f"Gut: {gained_stats['guts']}")
+                out_lines.append(f"Gut: {display_value(gained_stats['guts'], gained_stats_compensated['guts'])}")
             if gained_stats['wiz'] > 0:
-                out_lines.append(f"Wis: {gained_stats['wiz']}")
+                out_lines.append(f"Wis: {display_value(gained_stats['wiz'], gained_stats_compensated['wiz'])}")
 
             if self.settings.s_include_skillpts.value and command['gained_skillpt'] > 0:
                 out_lines.append(f"Skl: {command['gained_skillpt']}")
@@ -214,7 +299,7 @@ class GainedSkillptSettings(hte.Settings):
         self.s_highlight_max = hte.Setting(
             "Highlight max",
             "Highlights the facility with the most gained skill points.",
-            False,
+            True,
             hte.SettingType.BOOL
         )
 
