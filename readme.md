@@ -7,12 +7,12 @@ For questions and feedback, join the Discord server:
 
 ## Requirements (Optional but recommended)
 - [EXNOA-CarrotJuicer](https://github.com/CNA-Bld/EXNOA-CarrotJuicer)
-  - Download the latest version: [![Latest release](https://img.shields.io/github/v/release/CNA-Bld/EXNOA-CarrotJuicer)](https://github.com/CNA-Bld/EXNOA-CarrotJuicer/releases/latest)
-  - Make sure CarrotJuicer's `version.dll` is located in the same directory as `umamusume.exe`.
+  - Download the latest version's `Umamusume.7z`: [![Latest release](https://img.shields.io/github/v/release/CNA-Bld/EXNOA-CarrotJuicer)](https://github.com/CNA-Bld/EXNOA-CarrotJuicer/releases/latest)
+  - Extract CarrotJuicer's `version.dll` to the game's installation folder.<br>(The same folder where `umamusume.exe` is located.)
   - While optional, CarrotJuicer allows Uma Launcher to extract information from the network packets the game sends/receives. This information is necessary to determine the current status of the game, and needed for most of the features of Uma Launcher to work.
 
 ## Download
-First, read the requirements above. Then download the latest version:
+First, read the requirements above. Then download the latest version's `UmaLauncher.exe`:
 
 [![Latest release](https://img.shields.io/github/v/release/KevinVG207/UmaLauncher)](https://github.com/KevinVG207/UmaLauncher/releases/latest)
 
@@ -54,6 +54,7 @@ If you understand json files, you can manually add `"carrotjuicer.dll"` to the c
 - Automatically start a browser window with the current trained character and support cards.
 - Automatically selects and scrolls to event choices when needed.
 - Displays a useful table of the current training facilities' details.
+  - Customize the table's rows and settings to your liking.
 - Supports Edge, Chrome and Firefox browsers.
 ### Inspect your training runs
 **(CarrotJuicer required)**
@@ -76,7 +77,7 @@ If you understand json files, you can manually add `"carrotjuicer.dll"` to the c
   - Take screenshots.
 
 ## Disclaimer
-Uma Launcher is in no way associated with Uma Musume, Cygames or DMM.  
+Uma Launcher is in no way associated with Uma Musume, Cygames Inc., DMM or DMM Games/EXNOA LLC.
 It is the developer's belief that this tool is harmless to the above companies and brands and merely acts as a tool to improve the user experience.  
 
 ## License
