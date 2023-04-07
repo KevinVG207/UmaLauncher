@@ -22,7 +22,7 @@ a.datas += Tree('./_assets', prefix='_assets')
 a.datas += Tree('./external', prefix='external')
 a.datas += Tree('./ff_profile', prefix='ff_profile')
 
-a.datas += Tree('./venv/Lib/site-packages/google', prefix='external/google')
+a.datas += Tree('../venv/Lib/site-packages/google', prefix='external/google')
 
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 

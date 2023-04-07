@@ -627,11 +627,11 @@ class UmaUpdateConfirm(UmaMainWidget):
 
         self.cancel_button = qtw.QPushButton("No")
         self.cancel_button.clicked.connect(self._no)
+        self.cancel_button.setDefault(True)
         self.button_layout.addWidget(self.cancel_button)
 
         self.skip_button = qtw.QPushButton("Skip this version")
         self.skip_button.clicked.connect(self._skip)
-        self.skip_button.setDefault(True)
         self.button_layout.addWidget(self.skip_button)
 
         # Hide maxminize and minimize buttons

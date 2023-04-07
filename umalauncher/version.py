@@ -81,8 +81,7 @@ def auto_update(umasettings, script_version, skip_version):
     # Check if we're coming from an update
     if os.path.exists("update.tmp"):
         os.remove("update.tmp")
-        util.show_info_box("Update complete!", f"Uma Launcher updated successfully.<br>You can read what's new <a href=\"https://github.com/KevinVG207/UmaLauncher/releases/tag/v{vstr(script_version)}\">here</a>.")
-        return True
+        util.show_info_box("Update complete!", f"Uma Launcher updated successfully.<br>To see what's new, <a href=\"https://github.com/KevinVG207/UmaLauncher/releases/tag/v{vstr(script_version)}\">click here</a>.")
 
     response = requests.get("https://api.github.com/repos/KevinVG207/UmaLauncher/releases")
     if not response.ok:
@@ -121,7 +120,7 @@ def auto_update(umasettings, script_version, skip_version):
 
     choice = [1]  # Default to no
     app = gui.UmaApp()
-    app.run(gui.UmaUpdateConfirm(app, latest_release, vstr(release_version), choice))
+    app.run(gui.UmaUpdateConfirm(app, latest_release, vstr(release_version), choice), True)
     choice = choice[-1]
 
     logger.debug(f"User choice: {choice}")
