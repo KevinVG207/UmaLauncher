@@ -155,7 +155,8 @@ class CarrotJuicer():
                 driver = browser_setup(self.helper_url)
                 break
             except Exception:
-                pass
+                logger.error("Failed to start browser")
+                logger.error(traceback.format_exc())
         if not driver:
             util.show_warning_box("Uma Launcher: Unable to start browser.", "Selected webbrowser cannot be started. Use the tray icon to select a browser that is installed on your system.")
         return driver
