@@ -115,6 +115,7 @@ class CarrotJuicer():
         options = options_class()
         options.add_argument("--user-data-dir=" + str(util.get_asset(profile)))
         options.add_argument("--app=" + helper_url)
+        options.add_experimental_option("useAutomationExtension", False)
         browser = driver_class(service=service, options=options)
         return browser
 

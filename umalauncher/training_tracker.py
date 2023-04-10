@@ -113,7 +113,6 @@ class TrainingTracker():
         # Append to gzip if file exists
         is_first = not os.path.exists(self.get_sav_path())
         if packet is not None:
-            logger.debug(os.getcwd())
             with gzip.open(self.get_sav_path(), 'ab') as f:
                 if not is_first:
                     f.write(','.encode('utf-8'))
