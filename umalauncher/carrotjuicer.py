@@ -113,9 +113,10 @@ class CarrotJuicer():
     def chromium_setup(self, service, options_class, driver_class, profile, helper_url):
         service.creation_flags = CREATE_NO_WINDOW
         options = options_class()
-        options.add_argument("--user-data-dir=" + str(util.get_asset(profile)))
+        options.add_argument("--guest")
+        options.add_argument("--profile-directory=" + str(util.get_asset(profile + "/profile")))
+        options.add_argument("--user-data-dir=" + str(util.get_asset(profile + "/userdata")))
         options.add_argument("--app=" + helper_url)
-        options.add_experimental_option("useAutomationExtension", False)
         browser = driver_class(service=service, options=options)
         return browser
 
