@@ -1,5 +1,6 @@
 import time
 import asyncio
+import traceback
 from enum import Enum
 from io import BytesIO
 import requests
@@ -138,8 +139,14 @@ class ScreenStateHandler():
         chara_icons = []
         music_icons = []
         logger.info("Requesting Rich Presence assets.")
-        response = requests.get("https://discord.com/api/v9/oauth2/applications/954453106765225995/assets")
-        if not response.ok:
+        try:
+            response = requests.get("https://umapyoi.net/uma-launcher/discord-assets")
+            if not response.ok:
+                logger.error(response.text)
+                util.show_warning_box("Uma Launcher: Internet error.", "Cannot download the image assets for the Discord Rich Presence. Please check your internet connection.")
+                return chara_icons, music_icons
+        except:
+            logger.error(traceback.format_exc())
             util.show_warning_box("Uma Launcher: Internet error.", "Cannot download the image assets for the Discord Rich Presence. Please check your internet connection.")
             return chara_icons, music_icons
 
