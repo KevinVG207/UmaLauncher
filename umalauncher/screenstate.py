@@ -1,13 +1,13 @@
 import time
 import asyncio
+import traceback
 from enum import Enum
 from io import BytesIO
 import requests
 import win32gui
 import win32con
-import pyautogui
 import pypresence
-from PIL import Image
+from PIL import ImageGrab
 from loguru import logger
 import win32clipboard
 import presence_screens as scr
@@ -139,8 +139,14 @@ class ScreenStateHandler():
         chara_icons = []
         music_icons = []
         logger.info("Requesting Rich Presence assets.")
-        response = requests.get("https://discord.com/api/v9/oauth2/applications/954453106765225995/assets")
-        if not response.ok:
+        try:
+            response = requests.get("https://umapyoi.net/uma-launcher/discord-assets")
+            if not response.ok:
+                logger.error(response.text)
+                util.show_warning_box("Uma Launcher: Internet error.", "Cannot download the image assets for the Discord Rich Presence. Please check your internet connection.")
+                return chara_icons, music_icons
+        except:
+            logger.error(traceback.format_exc())
             util.show_warning_box("Uma Launcher: Internet error.", "Cannot download the image assets for the Discord Rich Presence. Please check your internet connection.")
             return chara_icons, music_icons
 
@@ -155,7 +161,7 @@ class ScreenStateHandler():
         self.available_music_icons = music_icons
 
 
-    def get_screenshot(self, debug=False):
+    def get_screenshot(self):
         if util.is_minimized(self.game_handle):
             logger.warning("Game is minimized, cannot get screenshot.")
             return None
@@ -163,8 +169,10 @@ class ScreenStateHandler():
             x, y, x1, y1 = win32gui.GetClientRect(self.game_handle)
             x, y = win32gui.ClientToScreen(self.game_handle, (x, y))
             x1, y1 = win32gui.ClientToScreen(self.game_handle, (x1 - x, y1 - y))
-            image = pyautogui.screenshot(region=(x, y, x1, y1)).convert("RGB")
-            if debug:
+            
+            image = ImageGrab.grab(bbox=(x, y, x+x1, y+y1), all_screens=True)
+
+            if util.is_debug:
                 image.save("screenshot.png", "PNG")
             return image
         except Exception:
