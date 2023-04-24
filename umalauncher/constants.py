@@ -93,3 +93,10 @@ GL_TOKEN_LIST = [
     'visual',
     'mental'
 ]
+
+ORIENTATION_DICT = {
+    True: 'portrait',
+    False: 'landscape',
+    'portrait': True,
+    'landscape': False,
+}
