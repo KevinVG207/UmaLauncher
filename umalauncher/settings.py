@@ -6,17 +6,11 @@ from win32com.shell import shell
 import traceback
 from loguru import logger
 import util
+import constants
 import version
 import gui
 import helper_table_defaults as htd
 import helper_table_elements as hte
-
-ORIENTATION_DICT = {
-    True: 'portrait',
-    False: 'landscape',
-    'portrait': True,
-    'landscape': False,
-}
 
 class Settings():
 
@@ -182,20 +176,20 @@ class Settings():
 
     def save_game_position(self, pos, portrait):
         if util.is_minimized(self.threader.screenstate.game_handle):
-            logger.warning(f"Game minimized, cannot save {ORIENTATION_DICT[portrait]} position: {pos}")
+            logger.warning(f"Game minimized, cannot save {constants.ORIENTATION_DICT[portrait]} position: {pos}")
             return
 
         if (pos[0] == -32000 and pos[1] == -32000):
-            logger.warning(f"Game minimized, cannot save {ORIENTATION_DICT[portrait]} position: {pos}")
+            logger.warning(f"Game minimized, cannot save {constants.ORIENTATION_DICT[portrait]} position: {pos}")
             return
 
-        orientation_key = ORIENTATION_DICT[portrait]
+        orientation_key = constants.ORIENTATION_DICT[portrait]
         self.loaded_settings['game_position'][orientation_key] = pos
         logger.info(f"Saving {orientation_key} position: {pos}")
         self.save_settings()
 
     def load_game_position(self, portrait):
-        orientation_key = ORIENTATION_DICT[portrait]
+        orientation_key = constants.ORIENTATION_DICT[portrait]
         return self.loaded_settings['game_position'][orientation_key]
 
     def get_browsers(self):

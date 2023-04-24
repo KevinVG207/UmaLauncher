@@ -2,6 +2,7 @@ import sqlite3
 import os
 from loguru import logger
 import util
+import constants
 
 DB_PATH = os.path.expandvars("%userprofile%\\appdata\\locallow\\Cygames\\umamusume\\master\\master.mdb")
 SUPPORT_CARD_DICT = {}
@@ -15,7 +16,7 @@ class Connection():
         self.conn.close()
 
 def create_support_card_string(rarity, command_id, support_card_type, chara_id):
-    return f"{util.SUPPORT_CARD_RARITY_DICT[rarity]} {util.SUPPORT_CARD_TYPE_DISPLAY_DICT[util.SUPPORT_CARD_TYPE_DICT[(command_id, support_card_type)]]} {util.get_character_name_dict()[chara_id]}"
+    return f"{constants.SUPPORT_CARD_RARITY_DICT[rarity]} {constants.SUPPORT_CARD_TYPE_DISPLAY_DICT[constants.SUPPORT_CARD_TYPE_DICT[(command_id, support_card_type)]]} {util.get_character_name_dict()[chara_id]}"
 
 def get_event_title(story_id):
     with Connection() as (_, cursor):
@@ -173,7 +174,7 @@ def get_support_card_dict():
     return SUPPORT_CARD_DICT
 
 def get_support_card_type(support_data):
-    return util.SUPPORT_CARD_TYPE_DICT[(support_data[1], support_data[2])]
+    return constants.SUPPORT_CARD_TYPE_DICT[(support_data[1], support_data[2])]
 
 def get_support_card_string_dict():
     support_card_dict = get_support_card_dict()

@@ -2,6 +2,7 @@ import enum
 from loguru import logger
 import gui
 import util
+import constants
 
 TABLE_HEADERS = [
     "Facility",
@@ -239,7 +240,7 @@ class Preset():
         top_row = []
         bottom_row = []
 
-        for token_type in util.gl_token_list:
+        for token_type in constants.GL_TOKEN_LIST:
             top_row.append(f"<th><img src=\"{self.gl_token_dict[token_type]}\" height=\"32\" width=\"31\" style=\"display:block; margin: auto; width: auto; height: 32px;\" /></th>")
             bottom_row.append(f"<td>{main_info['gl_stats'][token_type]}</td>")
         
