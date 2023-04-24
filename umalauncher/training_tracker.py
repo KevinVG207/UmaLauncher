@@ -19,6 +19,7 @@ from matplotlib.figure import Figure
 import gui
 import mdb
 import util
+import constants
 from external import race_data_parser
 
 
@@ -389,7 +390,7 @@ class TrainingAnalyzer():
             prev_resp = resp
 
         # Write to CSV
-        scenario_str = util.SCENARIO_DICT.get(self.scenario_id, 'Unknown')
+        scenario_str = constants.SCENARIO_DICT.get(self.scenario_id, 'Unknown')
         chara_str = f"{self.chara_names_dict.get(self.chara_id, 'Unknown')} {self.outfit_name_dict[self.card_id]}"
         support_1_str = f"{self.support_cards[0]['support_card_id']} - {self.support_card_string_dict[self.support_cards[0]['support_card_id']]}"
         support_2_str = f"{self.support_cards[1]['support_card_id']} - {self.support_card_string_dict[self.support_cards[1]['support_card_id']]}"
@@ -418,7 +419,7 @@ class TrainingAnalyzer():
                 ("INT", lambda x: x.wisdom),
                 ("SKLPT", lambda x: x.skill_pt),
                 ("ERG", lambda x: x.energy),
-                ("MOT", lambda x: util.MOTIVATION_DICT.get(x.motivation, "Unknown")),
+                ("MOT", lambda x: constants.MOTIVATION_DICT.get(x.motivation, "Unknown")),
                 ("FAN", lambda x: x.fans),
 
                 ("ΔSPD", lambda x: x.dspeed),
