@@ -218,3 +218,16 @@ def get_group_card_effect_ids():
         return []
 
     return rows
+
+def get_program_id_grade(program_id):
+    with Connection() as (_, cursor):
+        cursor.execute(
+            """SELECT r.grade FROM single_mode_program smp JOIN race_instance ri on smp.race_instance_id = ri.id JOIN race r on ri.race_id = r.id WHERE smp.id = ?;""",
+            (program_id,)
+        )
+        row = cursor.fetchone()
+
+    if not row:
+        return None
+
+    return row[0]

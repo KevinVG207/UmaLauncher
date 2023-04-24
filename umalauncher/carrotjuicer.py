@@ -35,6 +35,7 @@ class CarrotJuicer():
     training_tracker = None
     previous_request = None
     last_helper_data = None
+    previous_race_program_id = None
 
     _browser_list = None
 
@@ -347,6 +348,33 @@ class CarrotJuicer():
         if should_track:
             self.training_tracker.add_response(data)
 
+
+    EVENT_ID_TO_POS_STRING = {
+        7005: '(1st)',
+        7006: '(2nd-5th)',
+        7007: '(6th or worse)'
+    }
+
+    def get_after_race_event_title(self, event_id):
+        if not self.previous_race_program_id:
+            return "PREVIOUS RACE UNKNOWN"
+
+        race_grade = mdb.get_program_id_grade(self.previous_race_program_id)
+
+        if not race_grade:
+            logger.error(f"Race grade not found for program id {self.previous_race_program_id}")
+            return "RACE GRADE NOT FOUND"
+
+        grade_text = ""
+        if race_grade > 300:
+            grade_text = "OP/Pre-OP"
+        elif race_grade > 100:
+            grade_text = "G2/G3"
+        else:
+            grade_text = "G1"
+
+        return f"{grade_text} {self.EVENT_ID_TO_POS_STRING[event_id]}"
+
     def handle_response(self, message):
         data = self.load_response(message)
 
@@ -388,10 +416,16 @@ class CarrotJuicer():
             
             # Race starts.
             if 'race_scenario' in data and 'race_start_info' in data and data['race_scenario']:
+                self.previous_race_program_id = data['race_start_info']['program_id']
                 # Currently starting a race. Add packet to training tracker.
                 logger.debug("Race packet received.")
                 self.add_response_to_tracker(data)
                 return
+
+
+            # Update history
+            if 'race_history' in data and data['race_history']:
+                self.previous_race_program_id = data['race_history'][-1]['program_id']
 
 
             # Gametora
@@ -468,6 +502,11 @@ class CarrotJuicer():
                     else:
                         logger.debug("Trained character or support card detected")
 
+                    # Check for after-race event.
+                    if event_data['event_id'] in (7005, 7006, 7007):
+                        logger.debug("After-race event detected.")
+                        event_title = self.get_after_race_event_title(event_data['event_id'])
+
                     # Activate and scroll to the outcome.
                     self.previous_element = self.browser.execute_script(
                         """a = document.querySelectorAll("[class^='compatibility_viewer_item_']");
@@ -486,7 +525,7 @@ class CarrotJuicer():
                         event_title
                     )
                     if not self.previous_element:
-                        logger.debug("Could not find event on GT page.")
+                        logger.debug(f"Could not find event on GT page: {event_title} {event_data['story_id']}")
                     self.browser.execute_script("""
                         if (arguments[0]) {
                             // document.querySelector(".tippy-box").scrollIntoView({behavior:"smooth", block:"center"});
