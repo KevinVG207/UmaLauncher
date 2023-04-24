@@ -23,7 +23,6 @@ class Location(Enum):
     THEATER = 2
     TRAINING = 3
 
-
 class ScreenState:
     location = Location.MAIN_MENU
     main = "Launching game..."
