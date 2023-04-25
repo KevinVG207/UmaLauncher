@@ -50,10 +50,10 @@ class TrainingTracker():
             if not os.path.exists(self.training_log_folder):
                 os.makedirs(self.training_log_folder)
 
-        self.training_id = self.make_training_id_safe(training_id)
+        self.training_id = self.make_string_safe(training_id)
 
 
-    def make_training_id_safe(self, training_id: str):
+    def make_string_safe(self, training_id: str):
         def convert_char(c: str):
             if c.isalnum():
                 return c
@@ -62,7 +62,7 @@ class TrainingTracker():
 
 
     def training_id_matches(self, training_id: str):
-        return self.make_training_id_safe(training_id) == self.training_id
+        return self.make_string_safe(training_id) == self.training_id
 
 
     def add_packet(self, packet: dict):
@@ -93,7 +93,7 @@ class TrainingTracker():
 
         card_segment = ""
         if self.card_id:
-            card_segment = f"{util.get_character_name_dict().get(int(str(self.card_id)[:4]), 'Unknown Chara')} {util.get_outfit_name_dict().get(self.card_id, 'Unknown Outfit')} - "
+            card_segment = f"{self.make_string_safe(util.get_character_name_dict().get(int(str(self.card_id)[:4]), 'Unknown Chara'))} [{self.make_string_safe(util.get_outfit_name_dict().get(self.card_id, '[Unknown Outfit]')[1:-1])}] - "
         return str(os.path.join(
             self.training_log_folder,
             card_segment + self.training_id
