@@ -543,8 +543,9 @@ class CarrotJuicer():
         except Exception:
             logger.error("ERROR IN HANDLING RESPONSE MSGPACK")
             logger.error(data)
-            logger.error(traceback.format_exc())
-            util.show_warning_box("Uma Launcher: Error in response msgpack.", "This should not happen. You may contact the developer about this issue.")
+            exception_string = traceback.format_exc()
+            logger.error(exception_string)
+            util.show_warning_box("Uma Launcher: Error in response msgpack.", f"This should not happen. You may contact the developer about this issue.\n\n{exception_string}")
             # self.close_browser()
 
     def check_browser(self):
@@ -604,8 +605,9 @@ class CarrotJuicer():
         except Exception:
             logger.error("ERROR IN HANDLING REQUEST MSGPACK")
             logger.error(data)
-            logger.error(traceback.format_exc())
-            util.show_warning_box("Uma Launcher: Error in request msgpack.", "This should not happen. You may contact the developer about this issue.")
+            exception_string = traceback.format_exc()
+            logger.error(exception_string)
+            util.show_warning_box("Uma Launcher: Error in request msgpack.", f"This should not happen. You may contact the developer about this issue.\n\n{exception_string}")
             # self.close_browser()
 
 
