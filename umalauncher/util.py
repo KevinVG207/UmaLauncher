@@ -6,13 +6,21 @@ from PIL import Image
 from loguru import logger
 import constants
 
-unpack_dir = os.getcwd()
+relative_dir = os.path.abspath(os.getcwd())
+unpack_dir = relative_dir
 is_script = True
 if hasattr(sys, "_MEIPASS"):
     unpack_dir = sys._MEIPASS
     is_script = False
-    os.chdir(os.path.dirname(os.path.abspath(sys.argv[0])))
+    relative_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
+    os.chdir(relative_dir)
 is_debug = is_script
+
+def get_relative(relative_path):
+    return os.path.join(relative_dir, relative_path)
+
+def get_asset(asset_path):
+    return os.path.join(unpack_dir, asset_path)
 
 def log_reset():
     logger.remove()
@@ -22,12 +30,12 @@ def log_reset():
 
 def log_set_info():
     log_reset()
-    logger.add("log.log", rotation="1 week", compression="zip", retention="1 month", encoding='utf-8', level="INFO")
+    logger.add(get_relative("log.log"), rotation="1 week", compression="zip", retention="1 month", encoding='utf-8', level="INFO")
     return
 
 def log_set_trace():
     log_reset()
-    logger.add("log.log", rotation="1 week", compression="zip", retention="1 month", encoding='utf-8', level="TRACE")
+    logger.add(get_relative("log.log"), rotation="1 week", compression="zip", retention="1 month", encoding='utf-8', level="TRACE")
     return
 
 if is_script:
@@ -48,9 +56,6 @@ import mdb
 import gui
 
 window_handle = None
-
-def get_asset(asset_path):
-    return os.path.join(unpack_dir, asset_path)
 
 def get_width_from_height(height, portrait):
     if portrait:

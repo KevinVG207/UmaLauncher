@@ -101,7 +101,7 @@ class CarrotJuicer():
 
 
     def to_json(self, packet, out_name="packet.json"):
-        with open(out_name, 'w', encoding='utf-8') as f:
+        with open(util.get_relative(out_name), 'w', encoding='utf-8') as f:
             f.write(json.dumps(packet, indent=4, ensure_ascii=False))
 
     # def to_python_dict_file(self, packet, out_name="packet.py"):

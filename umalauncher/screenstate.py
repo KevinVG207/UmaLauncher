@@ -172,7 +172,7 @@ class ScreenStateHandler():
             image = ImageGrab.grab(bbox=(x, y, x+x1, y+y1), all_screens=True)
 
             if util.is_debug:
-                image.save("screenshot.png", "PNG")
+                image.save(util.get_relative("screenshot.png"), "PNG")
             return image
         except Exception:
             logger.error("Couldn't get screenshot.")
