@@ -100,3 +100,19 @@ ORIENTATION_DICT = {
     'portrait': True,
     'landscape': False,
 }
+
+# Request packets contain keys that should not be kept for privacy reasons.
+REQUEST_KEYS_TO_BE_REMOVED = [
+    "device",
+    "device_id",
+    "device_name",
+    "graphics_device_name",
+    "ip_address",
+    "platform_os_version",
+    "carrier",
+    "keychain",
+    "locale",
+    "button_info",
+    "dmm_viewer_id",
+    "dmm_onetime_token",
+]

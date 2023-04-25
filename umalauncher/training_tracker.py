@@ -24,22 +24,6 @@ from external import race_data_parser
 
 
 class TrainingTracker():
-    request_remove_keys = [
-        "viewer_id",
-        "device",
-        "device_id",
-        "device_name",
-        "graphics_device_name",
-        "ip_address",
-        "platform_os_version",
-        "carrier",
-        "keychain",
-        "locale",
-        "button_info",
-        "dmm_viewer_id",
-        "dmm_onetime_token",
-    ]
-
 
     def __init__(self, training_id: str, card_id: int=None, training_log_folder: str="training_logs", full_path: str=None):
         self.full_path=full_path
@@ -75,7 +59,7 @@ class TrainingTracker():
         request['_direction'] = 0
 
         # Remove keys that should not be saved
-        for key in self.request_remove_keys:
+        for key in constants.REQUEST_KEYS_TO_BE_REMOVED:
             if key in request:
                 del request[key]
 

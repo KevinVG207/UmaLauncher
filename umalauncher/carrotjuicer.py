@@ -69,7 +69,12 @@ class CarrotJuicer():
     def load_request(self, msg_path):
         try:
             with open(msg_path, "rb") as in_file:
-                return msgpack.unpackb(in_file.read()[170:], strict_map_key=False)
+                unpacked = msgpack.unpackb(in_file.read()[170:], strict_map_key=False)
+                # Remove keys that are not needed
+                for key in constants.REQUEST_KEYS_TO_BE_REMOVED:
+                    if key in unpacked:
+                        del unpacked[key]
+                return unpacked
         except PermissionError:
             logger.warning("Could not load request because it is already in use!")
             time.sleep(0.1)
