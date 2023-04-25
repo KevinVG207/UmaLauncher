@@ -794,7 +794,9 @@ def training_csv_dialog(training_paths=None):
                 dir_path = training_paths[0]
                 training_paths = [os.path.join(dir_path, training_path) for training_path in training_paths[1:]]
 
-        except util.pywinerror:
+        except util.pywinerror as e:
+            logger.error(e)
+            logger.error(traceback.format_exc())
             # os.chdir(cwd_before)
             util.show_error_box("Error", "No file(s) selected.")
             return
