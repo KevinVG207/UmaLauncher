@@ -785,7 +785,8 @@ def training_csv_dialog(training_paths=None):
                 Title="Select training log(s)",
                 Flags=win32con.OFN_ALLOWMULTISELECT | win32con.OFN_FILEMUSTEXIST | win32con.OFN_EXPLORER | win32con.OFN_NOCHANGEDIR,
                 DefExt="gz",
-                Filter="Training logs (*.gz)\0*.gz\0\0"
+                Filter="Training logs (*.gz)\0*.gz\0\0",
+                MaxFile=2147483647
             )
             # os.chdir(cwd_before)
 
@@ -795,8 +796,10 @@ def training_csv_dialog(training_paths=None):
                 training_paths = [os.path.join(dir_path, training_path) for training_path in training_paths[1:]]
 
         except util.pywinerror as e:
-            logger.error(e)
-            logger.error(traceback.format_exc())
+            if e.winerror == 12291:
+                # Ran out of buffer space
+                util.show_error_box("Error", "Too many files selected. / File names too long.")
+                return
             # os.chdir(cwd_before)
             util.show_error_box("Error", "No file(s) selected.")
             return
