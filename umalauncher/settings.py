@@ -48,7 +48,7 @@ class Settings():
     def __init__(self, threader):
         self.threader = threader
         # Load settings on import.
-        if not os.path.exists(self.settings_file):
+        if not os.path.exists(util.get_relative(self.settings_file)):
             logger.warning("Settings file not found. Starting with default settings.")
             self.loaded_settings = self.default_settings
             self.save_settings()
@@ -78,13 +78,13 @@ class Settings():
                 sys.exit()
 
     def save_settings(self):
-        with open(self.settings_file, 'w', encoding='utf-8') as f:
+        with open(util.get_relative(self.settings_file), 'w', encoding='utf-8') as f:
             json.dump(self.loaded_settings, f, ensure_ascii=False, indent=2)
 
 
     def load_settings(self):
         logger.info("Loading settings file.")
-        with open(self.settings_file, 'r', encoding='utf-8') as f:
+        with open(util.get_relative(self.settings_file), 'r', encoding='utf-8') as f:
             try:
                 self.loaded_settings = json.load(f)
 
