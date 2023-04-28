@@ -8,10 +8,7 @@ if gzips:
     training_tracker.training_csv_dialog(gzips)
     sys.exit()
 
-from elevate import elevate
-try:
-    elevate()
-except OSError:
+if not util.elevate():
     util.show_error_box("Launch Error", "Uma Launcher needs administrator privileges to start.")
     sys.exit()
 
