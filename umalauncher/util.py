@@ -37,13 +37,15 @@ def elevate():
     
     # Elevate the script.
     proc_info = None
+    executable = sys.executable
+    params = " ".join(sys.argv if is_script else sys.argv[1:])  # Add the script path if it's a script.
     try:
         proc_info = ShellExecuteEx(
             nShow=win32con.SW_SHOWNORMAL,
             fMask=shellcon.SEE_MASK_NOCLOSEPROCESS | shellcon.SEE_MASK_NO_CONSOLE,
             lpVerb="runas",
-            lpFile=sys.executable,
-            lpParameters=" ".join(sys.argv[1:]),
+            lpFile=executable,
+            lpParameters=params,
         )
     except Exception as e:
         return False
