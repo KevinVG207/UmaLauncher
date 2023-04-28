@@ -237,7 +237,9 @@ class ScreenStateHandler():
                 carrotjuicer_handle = util.get_window_handle("Umapyoi", type=util.EXACT)
                 if carrotjuicer_handle:
                     logger.info("Attempting to minimize CarrotJuicer.")
-                    success = util.show_window(carrotjuicer_handle, win32con.SW_MINIMIZE)
+                    success1 = util.show_window(carrotjuicer_handle, win32con.SW_MINIMIZE)
+                    success2 = util.hide_window_from_taskbar(carrotjuicer_handle)
+                    success = success1 and success2
                     if not success:
                         logger.error("Failed to minimize CarrotJuicer")
                     else:
