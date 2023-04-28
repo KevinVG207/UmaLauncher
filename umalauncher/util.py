@@ -2,6 +2,11 @@ import os
 import sys
 import base64
 import io
+import ctypes
+import win32event
+from win32com.shell.shell import ShellExecuteEx
+from win32com.shell import shellcon
+import win32con
 from PIL import Image
 from loguru import logger
 import constants
@@ -21,6 +26,35 @@ def get_relative(relative_path):
 
 def get_asset(asset_path):
     return os.path.join(unpack_dir, asset_path)
+
+def elevate():
+    """Elevate the script if it's not already running as admin.
+    Based on PyUAC https://github.com/Preston-Landers/pyuac
+    """
+
+    if ctypes.windll.shell32.IsUserAnAdmin():
+        return True
+    
+    # Elevate the script.
+    proc_info = None
+    try:
+        proc_info = ShellExecuteEx(
+            nShow=win32con.SW_SHOWNORMAL,
+            fMask=shellcon.SEE_MASK_NOCLOSEPROCESS | shellcon.SEE_MASK_NO_CONSOLE,
+            lpVerb="runas",
+            lpFile=sys.executable,
+            lpParameters=" ".join(sys.argv[1:]),
+        )
+    except Exception as e:
+        return False
+
+    if not proc_info:
+        return False
+    
+    handle = proc_info["hProcess"]
+    _ = win32event.WaitForSingleObject(handle, win32event.INFINITE)
+    sys.exit(1)
+
 
 def log_reset():
     logger.remove()
@@ -57,10 +91,12 @@ import gui
 
 window_handle = None
 
+
 def get_width_from_height(height, portrait):
     if portrait:
         return math.ceil((height * 0.5626065430) - 6.2123937177)
     return math.ceil((height * 1.7770777107) - 52.7501897551)
+
 
 def _show_alert_box(error, message, icon):
     app = gui.UmaApp()
