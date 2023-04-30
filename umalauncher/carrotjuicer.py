@@ -15,6 +15,7 @@ from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.common.exceptions import NoSuchWindowException
 import screenstate_utils
 import util
+import constants
 import mdb
 import helper_table
 import training_tracker
@@ -34,6 +35,7 @@ class CarrotJuicer():
     training_tracker = None
     previous_request = None
     last_helper_data = None
+    previous_race_program_id = None
     last_data = None
 
     _browser_list = None
@@ -68,7 +70,12 @@ class CarrotJuicer():
     def load_request(self, msg_path):
         try:
             with open(msg_path, "rb") as in_file:
-                return msgpack.unpackb(in_file.read()[170:], strict_map_key=False)
+                unpacked = msgpack.unpackb(in_file.read()[170:], strict_map_key=False)
+                # Remove keys that are not needed
+                for key in constants.REQUEST_KEYS_TO_BE_REMOVED:
+                    if key in unpacked:
+                        del unpacked[key]
+                return unpacked
         except PermissionError:
             logger.warning("Could not load request because it is already in use!")
             time.sleep(0.1)
@@ -95,7 +102,7 @@ class CarrotJuicer():
 
 
     def to_json(self, packet, out_name="packet.json"):
-        with open(out_name, 'w', encoding='utf-8') as f:
+        with open(util.get_relative(out_name), 'w', encoding='utf-8') as f:
             f.write(json.dumps(packet, indent=4, ensure_ascii=False))
 
     # def to_python_dict_file(self, packet, out_name="packet.py"):
@@ -116,7 +123,7 @@ class CarrotJuicer():
         options = options_class()
         options.add_argument("--user-data-dir=" + str(util.get_asset(profile)))
         options.add_argument("--app=" + helper_url)
-        options.add_experimental_option("useAutomationExtension", False)
+        options.add_argument("--remote-debugging-port=9222")
         browser = driver_class(service=service, options=options)
         return browser
 
@@ -347,6 +354,33 @@ class CarrotJuicer():
         if should_track:
             self.training_tracker.add_response(data)
 
+
+    EVENT_ID_TO_POS_STRING = {
+        7005: '(1st)',
+        7006: '(2nd-5th)',
+        7007: '(6th or worse)'
+    }
+
+    def get_after_race_event_title(self, event_id):
+        if not self.previous_race_program_id:
+            return "PREVIOUS RACE UNKNOWN"
+
+        race_grade = mdb.get_program_id_grade(self.previous_race_program_id)
+
+        if not race_grade:
+            logger.error(f"Race grade not found for program id {self.previous_race_program_id}")
+            return "RACE GRADE NOT FOUND"
+
+        grade_text = ""
+        if race_grade > 300:
+            grade_text = "OP/Pre-OP"
+        elif race_grade > 100:
+            grade_text = "G2/G3"
+        else:
+            grade_text = "G1"
+
+        return f"{grade_text} {self.EVENT_ID_TO_POS_STRING[event_id]}"
+
     def handle_response(self, message):
         data = self.load_response(message)
 
@@ -388,10 +422,16 @@ class CarrotJuicer():
             
             # Race starts.
             if self.training_tracker and 'race_scenario' in data and 'race_start_info' in data and data['race_scenario']:
+                self.previous_race_program_id = data['race_start_info']['program_id']
                 # Currently starting a race. Add packet to training tracker.
                 logger.debug("Race packet received.")
                 self.add_response_to_tracker(data)
                 return
+
+
+            # Update history
+            if 'race_history' in data and data['race_history']:
+                self.previous_race_program_id = data['race_history'][-1]['program_id']
 
 
             # Gametora
@@ -456,6 +496,11 @@ class CarrotJuicer():
                     else:
                         logger.debug("Trained character or support card detected")
 
+                    # Check for after-race event.
+                    if event_data['event_id'] in (7005, 7006, 7007):
+                        logger.debug("After-race event detected.")
+                        event_title = self.get_after_race_event_title(event_data['event_id'])
+
                     # Activate and scroll to the outcome.
                     self.previous_element = self.browser.execute_script(
                         """a = document.querySelectorAll("[class^='compatibility_viewer_item_']");
@@ -474,7 +519,7 @@ class CarrotJuicer():
                         event_title
                     )
                     if not self.previous_element:
-                        logger.debug("Could not find event on GT page.")
+                        logger.debug(f"Could not find event on GT page: {event_title} {event_data['story_id']}")
                     self.browser.execute_script("""
                         if (arguments[0]) {
                             // document.querySelector(".tippy-box").scrollIntoView({behavior:"smooth", block:"center"});
@@ -489,8 +534,9 @@ class CarrotJuicer():
         except Exception:
             logger.error("ERROR IN HANDLING RESPONSE MSGPACK")
             logger.error(data)
-            logger.error(traceback.format_exc())
-            util.show_warning_box("Uma Launcher: Error in response msgpack.", "This should not happen. You may contact the developer about this issue.")
+            exception_string = traceback.format_exc()
+            logger.error(exception_string)
+            util.show_warning_box("Uma Launcher: Error in response msgpack.", f"This should not happen. You may contact the developer about this issue.\n\n{exception_string}")
             # self.close_browser()
 
     def check_browser(self):
@@ -547,8 +593,9 @@ class CarrotJuicer():
         except Exception:
             logger.error("ERROR IN HANDLING REQUEST MSGPACK")
             logger.error(data)
-            logger.error(traceback.format_exc())
-            util.show_warning_box("Uma Launcher: Error in request msgpack.", "This should not happen. You may contact the developer about this issue.")
+            exception_string = traceback.format_exc()
+            logger.error(exception_string)
+            util.show_warning_box("Uma Launcher: Error in request msgpack.", f"This should not happen. You may contact the developer about this issue.\n\n{exception_string}")
             # self.close_browser()
 
 

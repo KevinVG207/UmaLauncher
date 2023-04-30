@@ -1,6 +1,7 @@
 from loguru import logger
 import screenstate as ss
 import util
+import constants
 import mdb
 
 def _make_default_training_state(data, handler) -> ss.ScreenState:
@@ -13,7 +14,7 @@ def _make_default_training_state(data, handler) -> ss.ScreenState:
     outfit_id = data['chara_info']['card_id']
     chara_id = int(str(outfit_id)[:-2])
     scenario_id = data['chara_info']['scenario_id']
-    scenario_name = util.SCENARIO_DICT.get(scenario_id, None)
+    scenario_name = constants.SCENARIO_DICT.get(scenario_id, None)
     if not scenario_name:
         logger.error(f"Scenario ID not found in scenario dict: {scenario_id}")
         scenario_name = "You are now breathing manually."

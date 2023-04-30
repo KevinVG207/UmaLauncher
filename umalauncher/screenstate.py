@@ -1,5 +1,6 @@
 import time
 import asyncio
+import traceback
 from enum import Enum
 from io import BytesIO
 import requests
@@ -21,7 +22,6 @@ class Location(Enum):
     CIRCLE = 1
     THEATER = 2
     TRAINING = 3
-
 
 class ScreenState:
     location = Location.MAIN_MENU
@@ -138,8 +138,14 @@ class ScreenStateHandler():
         chara_icons = []
         music_icons = []
         logger.info("Requesting Rich Presence assets.")
-        response = requests.get("https://discord.com/api/v9/oauth2/applications/954453106765225995/assets")
-        if not response.ok:
+        try:
+            response = requests.get("https://umapyoi.net/uma-launcher/discord-assets")
+            if not response.ok:
+                logger.error(response.text)
+                util.show_warning_box("Uma Launcher: Internet error.", "Cannot download the image assets for the Discord Rich Presence. Please check your internet connection.")
+                return chara_icons, music_icons
+        except:
+            logger.error(traceback.format_exc())
             util.show_warning_box("Uma Launcher: Internet error.", "Cannot download the image assets for the Discord Rich Presence. Please check your internet connection.")
             return chara_icons, music_icons
 
@@ -166,7 +172,7 @@ class ScreenStateHandler():
             image = ImageGrab.grab(bbox=(x, y, x+x1, y+y1), all_screens=True)
 
             if util.is_debug:
-                image.save("screenshot.png", "PNG")
+                image.save(util.get_relative("screenshot.png"), "PNG")
             return image
         except Exception:
             logger.error("Couldn't get screenshot.")
@@ -231,7 +237,9 @@ class ScreenStateHandler():
                 carrotjuicer_handle = util.get_window_handle("Umapyoi", type=util.EXACT)
                 if carrotjuicer_handle:
                     logger.info("Attempting to minimize CarrotJuicer.")
-                    success = util.show_window(carrotjuicer_handle, win32con.SW_MINIMIZE)
+                    success1 = util.show_window(carrotjuicer_handle, win32con.SW_MINIMIZE)
+                    success2 = util.hide_window_from_taskbar(carrotjuicer_handle)
+                    success = success1 and success2
                     if not success:
                         logger.error("Failed to minimize CarrotJuicer")
                     else:

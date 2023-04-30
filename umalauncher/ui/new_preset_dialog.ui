@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>321</width>
-    <height>91</height>
+    <height>121</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -43,7 +43,7 @@
    <property name="geometry">
     <rect>
      <x>230</x>
-     <y>60</y>
+     <y>90</y>
      <width>81</width>
      <height>23</height>
     </rect>
@@ -56,7 +56,7 @@
    <property name="geometry">
     <rect>
      <x>140</x>
-     <y>60</y>
+     <y>90</y>
      <width>81</width>
      <height>23</height>
     </rect>
@@ -64,6 +64,40 @@
    <property name="text">
     <string notr="true">OK</string>
    </property>
+  </widget>
+  <widget class="QCheckBox" name="checkBox">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>60</y>
+     <width>121</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Copy existing:</string>
+   </property>
+  </widget>
+  <widget class="QComboBox" name="comboBox">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="geometry">
+    <rect>
+     <x>108</x>
+     <y>60</y>
+     <width>201</width>
+     <height>22</height>
+    </rect>
+   </property>
+   <property name="currentText">
+    <string>Default</string>
+   </property>
+   <item>
+    <property name="text">
+     <string>Default</string>
+    </property>
+   </item>
   </widget>
  </widget>
  <resources/>
