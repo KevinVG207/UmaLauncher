@@ -11,7 +11,7 @@ import dmm
 import util
 import gui
 
-VERSION = "1.4.3"
+VERSION = "1.4.4"
 
 def parse_version(version_string: str):
     """Convert version string to tuple."""
@@ -145,8 +145,8 @@ def auto_update(umasettings, script_version, skip_version):
     app.run(gui.UmaUpdatePopup(app, update_object))
 
     logger.debug("Update window closed: Update failed.")
-    if os.path.exists("update.tmp"):
-        os.remove("update.tmp")
+    if os.path.exists(util.get_relative("update.tmp")):
+        os.remove(util.get_relative("update.tmp"))
     util.show_error_box("Update failed.", "Could not update. Please check your internet connection.<br>Uma Launcher will now close.")
     return False
 
@@ -174,7 +174,7 @@ class Updater():
                     urllib.request.urlretrieve(download_url, "UmaLauncher.exe_")
                     # Start a process that starts the new exe.
                     logger.info("Download complete, now trying to open the new launcher.")
-                    open("update.tmp", "wb").close()
+                    open(util.get_relative("update.tmp"), "wb").close()
                     sub = subprocess.Popen("taskkill /F /IM UmaLauncher.exe && move /y .\\UmaLauncher.exe .\\UmaLauncher.old && move /y .\\UmaLauncher.exe_ .\\UmaLauncher.exe && .\\UmaLauncher.exe", shell=True)
                     while True:
                         # Check if subprocess is still running

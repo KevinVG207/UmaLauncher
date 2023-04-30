@@ -19,29 +19,16 @@ from matplotlib.figure import Figure
 import gui
 import mdb
 import util
+import constants
 from external import race_data_parser
 
 
 class TrainingTracker():
-    request_remove_keys = [
-        "viewer_id",
-        "device",
-        "device_id",
-        "device_name",
-        "graphics_device_name",
-        "ip_address",
-        "platform_os_version",
-        "carrier",
-        "keychain",
-        "locale",
-        "button_info",
-        "dmm_viewer_id",
-        "dmm_onetime_token",
-    ]
-
 
     def __init__(self, training_id: str, card_id: int=None, training_log_folder: str="training_logs", full_path: str=None):
         self.full_path=full_path
+        if not training_log_folder:
+            training_log_folder = util.get_relative("training_logs")
         self.training_log_folder = training_log_folder
         self.card_id = card_id
 
@@ -74,7 +61,7 @@ class TrainingTracker():
         request['_direction'] = 0
 
         # Remove keys that should not be saved
-        for key in self.request_remove_keys:
+        for key in constants.REQUEST_KEYS_TO_BE_REMOVED:
             if key in request:
                 del request[key]
 
@@ -389,7 +376,7 @@ class TrainingAnalyzer():
             prev_resp = resp
 
         # Write to CSV
-        scenario_str = util.SCENARIO_DICT.get(self.scenario_id, 'Unknown')
+        scenario_str = constants.SCENARIO_DICT.get(self.scenario_id, 'Unknown')
         chara_str = f"{self.chara_names_dict.get(self.chara_id, 'Unknown')} {self.outfit_name_dict[self.card_id]}"
         support_1_str = f"{self.support_cards[0]['support_card_id']} - {self.support_card_string_dict[self.support_cards[0]['support_card_id']]}"
         support_2_str = f"{self.support_cards[1]['support_card_id']} - {self.support_card_string_dict[self.support_cards[1]['support_card_id']]}"
@@ -418,7 +405,7 @@ class TrainingAnalyzer():
                 ("INT", lambda x: x.wisdom),
                 ("SKLPT", lambda x: x.skill_pt),
                 ("ERG", lambda x: x.energy),
-                ("MOT", lambda x: util.MOTIVATION_DICT.get(x.motivation, "Unknown")),
+                ("MOT", lambda x: constants.MOTIVATION_DICT.get(x.motivation, "Unknown")),
                 ("FAN", lambda x: x.fans),
 
                 ("ΔSPD", lambda x: x.dspeed),
@@ -780,11 +767,12 @@ def training_csv_dialog(training_paths=None):
     if training_paths is None:
         try:
             training_paths, _, _ = win32gui.GetOpenFileNameW(
-                InitialDir="training_logs",
+                InitialDir=util.get_relative("training_logs"),
                 Title="Select training log(s)",
                 Flags=win32con.OFN_ALLOWMULTISELECT | win32con.OFN_FILEMUSTEXIST | win32con.OFN_EXPLORER | win32con.OFN_NOCHANGEDIR,
                 DefExt="gz",
-                Filter="Training logs (*.gz)\0*.gz\0\0"
+                Filter="Training logs (*.gz)\0*.gz\0\0",
+                MaxFile=2147483647
             )
             # os.chdir(cwd_before)
 
@@ -793,7 +781,11 @@ def training_csv_dialog(training_paths=None):
                 dir_path = training_paths[0]
                 training_paths = [os.path.join(dir_path, training_path) for training_path in training_paths[1:]]
 
-        except util.pywinerror:
+        except util.pywinerror as e:
+            if e.winerror == 12291:
+                # Ran out of buffer space
+                util.show_error_box("Error", "Too many files selected. / File names too long.")
+                return
             # os.chdir(cwd_before)
             util.show_error_box("Error", "No file(s) selected.")
             return
@@ -807,7 +799,7 @@ def training_csv_dialog(training_paths=None):
 
     try:
         output_file_path, _, _ = win32gui.GetSaveFileNameW(
-            InitialDir="training_logs",
+            InitialDir=util.get_relative("training_logs"),
             Title="Select output file",
             Flags=win32con.OFN_EXPLORER | win32con.OFN_OVERWRITEPROMPT | win32con.OFN_PATHMUSTEXIST | win32con.OFN_NOCHANGEDIR,
             File="training",

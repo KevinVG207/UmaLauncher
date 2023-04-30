@@ -8,7 +8,6 @@ charset-normalizer==3.0.1
 colorama==0.4.6
 contourpy==1.0.7
 cycler==0.11.0
-elevate==0.1.3
 exceptiongroup==1.1.0
 fonttools==4.38.0
 h11==0.14.0

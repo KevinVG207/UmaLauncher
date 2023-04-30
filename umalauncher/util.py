@@ -2,16 +2,61 @@ import os
 import sys
 import base64
 import io
+import ctypes
+import win32event
+from win32com.shell.shell import ShellExecuteEx
+from win32com.shell import shellcon
+import win32con
 from PIL import Image
 from loguru import logger
+import constants
 
-unpack_dir = os.getcwd()
+relative_dir = os.path.abspath(os.getcwd())
+unpack_dir = relative_dir
 is_script = True
 if hasattr(sys, "_MEIPASS"):
     unpack_dir = sys._MEIPASS
     is_script = False
-    os.chdir(os.path.dirname(os.path.abspath(sys.argv[0])))
+    relative_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
+    os.chdir(relative_dir)
 is_debug = is_script
+
+def get_relative(relative_path):
+    return os.path.join(relative_dir, relative_path)
+
+def get_asset(asset_path):
+    return os.path.join(unpack_dir, asset_path)
+
+def elevate():
+    """Elevate the script if it's not already running as admin.
+    Based on PyUAC https://github.com/Preston-Landers/pyuac
+    """
+
+    if ctypes.windll.shell32.IsUserAnAdmin():
+        return True
+    
+    # Elevate the script.
+    proc_info = None
+    executable = sys.executable
+    params = " ".join(sys.argv if is_script else sys.argv[1:])  # Add the script path if it's a script.
+    try:
+        proc_info = ShellExecuteEx(
+            nShow=win32con.SW_SHOWNORMAL,
+            fMask=shellcon.SEE_MASK_NOCLOSEPROCESS | shellcon.SEE_MASK_NO_CONSOLE,
+            lpVerb="runas",
+            lpFile=executable,
+            lpParameters=params,
+        )
+    except Exception as e:
+        return False
+
+    if not proc_info:
+        return False
+    
+    handle = proc_info["hProcess"]
+    _ = win32event.WaitForSingleObject(handle, win32event.INFINITE)
+    sys.exit(1)
+
 
 def log_reset():
     logger.remove()
@@ -21,12 +66,12 @@ def log_reset():
 
 def log_set_info():
     log_reset()
-    logger.add("log.log", rotation="1 week", compression="zip", retention="1 month", encoding='utf-8', level="INFO")
+    logger.add(get_relative("log.log"), rotation="1 week", compression="zip", retention="1 month", encoding='utf-8', level="INFO")
     return
 
 def log_set_trace():
     log_reset()
-    logger.add("log.log", rotation="1 week", compression="zip", retention="1 month", encoding='utf-8', level="TRACE")
+    logger.add(get_relative("log.log"), rotation="1 week", compression="zip", retention="1 month", encoding='utf-8', level="TRACE")
     return
 
 if is_script:
@@ -48,86 +93,12 @@ import gui
 
 window_handle = None
 
-SCENARIO_DICT = {
-    1: "URA Finals",
-    2: "Aoharu Cup",
-    3: "Grand Live",
-    4: "Make a New Track",
-    5: "Grand Masters",
-}
-
-MOTIVATION_DICT = {
-    5: "Very High",
-    4: "High",
-    3: "Normal",
-    2: "Low",
-    1: "Very Low"
-}
-
-SUPPORT_CARD_RARITY_DICT = {
-    1: "R",
-    2: "SR",
-    3: "SSR"
-}
-
-SUPPORT_CARD_TYPE_DICT = {
-    (101, 1): "speed",
-    (105, 1): "stamina",
-    (102, 1): "power",
-    (103, 1): "guts",
-    (106, 1): "wiz",
-    (0, 2): "friend",
-    (0, 3): "group"
-}
-
-SUPPORT_CARD_TYPE_DISPLAY_DICT = {
-    "speed": "Speed",
-    "stamina": "Stamina",
-    "power": "Power",
-    "guts": "Guts",
-    "wiz": "Wisdom",
-    "friend": "Friend",
-    "group": "Group"
-}
-
-SUPPORT_TYPE_TO_COMMAND_IDS = {
-    "speed": [101, 601],
-    "stamina": [105, 602],
-    "power": [102, 603],
-    "guts": [103, 604],
-    "wiz": [106, 605],
-    "friend": [],
-    "group": []
-}
-
-COMMAND_ID_TO_KEY = {
-    101: "speed",
-    105: "stamina",
-    102: "power",
-    103: "guts",
-    106: "wiz",
-    601: "speed",
-    602: "stamina",
-    603: "power",
-    604: "guts",
-    605: "wiz"
-}
-
-TARGET_TYPE_TO_KEY = {
-    1: "speed",
-    2: "stamina",
-    3: "power",
-    4: "guts",
-    5: "wiz"
-}
-
-def get_asset(asset_path):
-    return os.path.join(unpack_dir, asset_path)
 
 def get_width_from_height(height, portrait):
     if portrait:
         return math.ceil((height * 0.5626065430) - 6.2123937177)
     return math.ceil((height * 1.7770777107) - 52.7501897551)
+
 
 def _show_alert_box(error, message, icon):
     app = gui.UmaApp()
@@ -205,21 +176,6 @@ def similar_color(col1: tuple[int,int,int], col2: tuple[int,int,int], threshold:
         total_diff += abs(col1[i] - col2[i])
     return total_diff < threshold
 
-MONTH_DICT = {
-    1: 'January',
-    2: 'February',
-    3: 'March',
-    4: 'April',
-    5: 'May',
-    6: 'June',
-    7: 'July',
-    8: 'August',
-    9: 'September',
-    10: 'October',
-    11: 'November',
-    12: 'December'
-}
-
 def turn_to_string(turn):
     turn = turn - 1
 
@@ -230,7 +186,7 @@ def turn_to_string(turn):
     month = int(turn) % 12 + 1
     year = math.floor(turn / 12) + 1
 
-    return f"Y{year}, {'Late' if second_half else 'Early'} {MONTH_DICT[month]}"
+    return f"Y{year}, {'Late' if second_half else 'Early'} {constants.MONTH_DICT[month]}"
 
 def get_window_rect(*args, **kwargs):
     try:
@@ -264,6 +220,17 @@ def show_window(*args, **kwargs):
     except pywinerror:
         return False
 
+def hide_window_from_taskbar(window_handle):
+    try:
+        style = win32gui.GetWindowLong(window_handle, win32con.GWL_EXSTYLE)
+        style |= win32con.WS_EX_TOOLWINDOW
+        win32gui.ShowWindow(window_handle, win32con.SW_HIDE)
+        win32gui.SetWindowLong(window_handle, win32con.GWL_EXSTYLE, style)
+        return True
+    except pywinerror:
+        return False
+
+
 def is_minimized(handle):
     try:
         tup = win32gui.GetWindowPlacement(handle)
@@ -275,7 +242,6 @@ def is_minimized(handle):
         return True
 
 downloaded_chara_dict = None
-
 def get_character_name_dict():
     global downloaded_chara_dict
 
@@ -311,6 +277,24 @@ def get_outfit_name_dict():
         downloaded_outfit_dict = outfit_dict
     return downloaded_outfit_dict
 
+downloaded_race_name_dict = None
+def get_race_name_dict():
+    global downloaded_race_name_dict
+
+    if not downloaded_race_name_dict:
+        race_name_dict = mdb.get_race_program_name_dict()
+        logger.info("Requesting race names from umapyoi.net")
+        response = requests.get("https://umapyoi.net/api/v1/race_program")
+        if not response.ok:
+            show_warning_box("Uma Launcher: Internet error.", "Cannot download the race names from umapyoi.net for the Discord Rich Presence. Please check your internet connection.")
+            return race_name_dict
+        
+        for race_program in response.json():
+            race_name_dict[race_program['id']] = race_program['name']
+        
+        downloaded_race_name_dict = race_name_dict
+    return downloaded_race_name_dict
+
 def create_gametora_helper_url(card_id, scenario_id, support_ids):
     support_ids = list(map(str, support_ids))
     return f"https://gametora.com/umamusume/training-event-helper?deck={np.base_repr(int(str(card_id) + str(scenario_id)), 36)}-{np.base_repr(int(support_ids[0] + support_ids[1] + support_ids[2]), 36)}-{np.base_repr(int(support_ids[3] + support_ids[4] + support_ids[5]), 36)}".lower()
@@ -344,14 +328,6 @@ def get_gm_fragment_dict():
             buffer.close()
     return gm_fragment_dict
 
-
-gl_token_list = [
-    'dance',
-    'passion',
-    'vocal',
-    'visual',
-    'mental'
-]
 
 gl_token_dict = None
 def get_gl_token_dict():

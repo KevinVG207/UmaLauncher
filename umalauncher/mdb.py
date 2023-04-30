@@ -2,6 +2,7 @@ import sqlite3
 import os
 from loguru import logger
 import util
+import constants
 
 DB_PATH = os.path.expandvars("%userprofile%\\appdata\\locallow\\Cygames\\umamusume\\master\\master.mdb")
 SUPPORT_CARD_DICT = {}
@@ -15,7 +16,7 @@ class Connection():
         self.conn.close()
 
 def create_support_card_string(rarity, command_id, support_card_type, chara_id):
-    return f"{util.SUPPORT_CARD_RARITY_DICT[rarity]} {util.SUPPORT_CARD_TYPE_DISPLAY_DICT[util.SUPPORT_CARD_TYPE_DICT[(command_id, support_card_type)]]} {util.get_character_name_dict()[chara_id]}"
+    return f"{constants.SUPPORT_CARD_RARITY_DICT[rarity]} {constants.SUPPORT_CARD_TYPE_DISPLAY_DICT[constants.SUPPORT_CARD_TYPE_DICT[(command_id, support_card_type)]]} {util.get_character_name_dict()[chara_id]}"
 
 def get_event_title(story_id):
     with Connection() as (_, cursor):
@@ -115,15 +116,17 @@ def get_event_title_dict():
             out[row[1]] = row[2]
     return out
 
-
+RACE_PROGRAM_NAME_DICT = None
 def get_race_program_name_dict():
-    with Connection() as (_, cursor):
-        cursor.execute(
-            """SELECT s.id, t.text FROM single_mode_program s INNER JOIN text_data t ON s.race_instance_id = t."index" AND t.category = 28"""
-        )
-        rows = cursor.fetchall()
-
-    return {row[0]: row[1] for row in rows}
+    global RACE_PROGRAM_NAME_DICT
+    if not RACE_PROGRAM_NAME_DICT:
+        with Connection() as (_, cursor):
+            cursor.execute(
+                """SELECT s.id, t.text FROM single_mode_program s INNER JOIN text_data t ON s.race_instance_id = t."index" AND t.category = 28"""
+            )
+            rows = cursor.fetchall()
+        RACE_PROGRAM_NAME_DICT = {row[0]: row[1] for row in rows}
+    return RACE_PROGRAM_NAME_DICT
 
 def get_skill_name_dict():
     with Connection() as (_, cursor):
@@ -173,7 +176,7 @@ def get_support_card_dict():
     return SUPPORT_CARD_DICT
 
 def get_support_card_type(support_data):
-    return util.SUPPORT_CARD_TYPE_DICT[(support_data[1], support_data[2])]
+    return constants.SUPPORT_CARD_TYPE_DICT[(support_data[1], support_data[2])]
 
 def get_support_card_string_dict():
     support_card_dict = get_support_card_dict()
@@ -217,3 +220,16 @@ def get_group_card_effect_ids():
         return []
 
     return rows
+
+def get_program_id_grade(program_id):
+    with Connection() as (_, cursor):
+        cursor.execute(
+            """SELECT r.grade FROM single_mode_program smp JOIN race_instance ri on smp.race_instance_id = ri.id JOIN race r on ri.race_id = r.id WHERE smp.id = ?;""",
+            (program_id,)
+        )
+        row = cursor.fetchone()
+
+    if not row:
+        return None
+
+    return row[0]

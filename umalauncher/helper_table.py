@@ -2,6 +2,7 @@ import copy
 from loguru import logger
 import mdb
 import util
+import constants
 
 
 class TrainingPartner():
@@ -72,7 +73,7 @@ class HelperTable():
                 all_commands[command['command_id']]['performance_inc_dec_info_array'] = command['performance_inc_dec_info_array']
 
         for command in all_commands.values():
-            if command['command_id'] not in util.COMMAND_ID_TO_KEY:
+            if command['command_id'] not in constants.COMMAND_ID_TO_KEY:
                 continue
 
             eval_dict = {
@@ -81,7 +82,7 @@ class HelperTable():
             }
             level = command['level']
             failure_rate = command['failure_rate']
-            gained_stats = {stat_type: 0 for stat_type in set(util.COMMAND_ID_TO_KEY.values())}
+            gained_stats = {stat_type: 0 for stat_type in set(constants.COMMAND_ID_TO_KEY.values())}
             skillpt = 0
             total_bond = 0
             useful_bond = 0
@@ -90,7 +91,7 @@ class HelperTable():
 
             for param in command['params_inc_dec_info_array']:
                 if param['target_type'] < 6:
-                    gained_stats[util.TARGET_TYPE_TO_KEY[param['target_type']]] += param['value']
+                    gained_stats[constants.TARGET_TYPE_TO_KEY[param['target_type']]] += param['value']
                 elif param['target_type'] == 30:
                     skillpt += param['value']
                 elif param['target_type'] == 10:
@@ -135,7 +136,7 @@ class HelperTable():
                 if partner_id <= 6:
                     support_card_id = data['chara_info']['support_card_array'][partner_id - 1]['support_card_id']
                     support_card_data = mdb.get_support_card_dict()[support_card_id]
-                    support_card_type = util.SUPPORT_CARD_TYPE_DICT[(support_card_data[1], support_card_data[2])]
+                    support_card_type = constants.SUPPORT_CARD_TYPE_DICT[(support_card_data[1], support_card_data[2])]
                     if support_card_type in ("group", "friend"):
                         return 0
 
@@ -163,7 +164,7 @@ class HelperTable():
                     support_id = data['chara_info']['support_card_array'][training_partner_id - 1]['support_card_id']
                     support_data = mdb.get_support_card_dict()[support_id]
                     support_card_type = mdb.get_support_card_type(support_data)
-                    if support_card_type not in ("group", "friend") and training_partner.starting_bond >= 80 and command['command_id'] in util.SUPPORT_TYPE_TO_COMMAND_IDS[support_card_type]:
+                    if support_card_type not in ("group", "friend") and training_partner.starting_bond >= 80 and command['command_id'] in constants.SUPPORT_TYPE_TO_COMMAND_IDS[support_card_type]:
                         rainbow_count += 1
                     elif support_card_type == "group" and util.get_group_support_id_to_passion_zone_effect_id_dict()[support_id] in data['chara_info']['chara_effect_id_array']:
                         rainbow_count += 1
@@ -199,13 +200,13 @@ class HelperTable():
                 total_bond += sum(tip_gains_total)
                 useful_bond += sum(tip_gains_useful)
 
-            current_stats = data['chara_info'][util.COMMAND_ID_TO_KEY[command['command_id']]]
+            current_stats = data['chara_info'][constants.COMMAND_ID_TO_KEY[command['command_id']]]
 
-            gl_tokens = {token_type: 0 for token_type in util.gl_token_list}
+            gl_tokens = {token_type: 0 for token_type in constants.GL_TOKEN_LIST}
             # Grand Live tokens
             if 'live_data_set' in data:
                 for token_data in command['performance_inc_dec_info_array']:
-                    gl_tokens[util.gl_token_list[token_data['performance_type']-1]] += token_data['value']
+                    gl_tokens[constants.GL_TOKEN_LIST[token_data['performance_type']-1]] += token_data['value']
 
             command_info[command['command_id']] = {
                 'scenario_id': data['chara_info']['scenario_id'],
@@ -226,9 +227,9 @@ class HelperTable():
         # Simplify everything down to a dict with only the keys we care about.
         # No distinction between normal and summer training.
         command_info = {
-            util.COMMAND_ID_TO_KEY[command_id]: command_info[command_id]
+            constants.COMMAND_ID_TO_KEY[command_id]: command_info[command_id]
             for command_id in command_info
-            if command_id in util.COMMAND_ID_TO_KEY
+            if command_id in constants.COMMAND_ID_TO_KEY
         }
 
         # Grand Masters Fragments
