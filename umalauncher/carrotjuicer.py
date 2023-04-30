@@ -13,7 +13,7 @@ from selenium.webdriver.firefox.service import Service as FirefoxService
 from selenium.webdriver.edge.service import Service as EdgeService
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.common.exceptions import NoSuchWindowException
-from screenstate import ScreenState, Location
+import screenstate_utils
 import util
 import constants
 import mdb
@@ -36,6 +36,7 @@ class CarrotJuicer():
     previous_request = None
     last_helper_data = None
     previous_race_program_id = None
+    last_data = None
 
     _browser_list = None
 
@@ -411,8 +412,8 @@ class CarrotJuicer():
             # Concert Theater
             if "live_theater_save_info_array" in data:
                 if self.screen_state_handler:
-                    new_state = ScreenState(self.threader.screenstate)
-                    new_state.location = Location.THEATER
+                    new_state = screenstate_utils.ss.ScreenState(self.threader.screenstate)
+                    new_state.location = screenstate_utils.ss.Location.THEATER
                     new_state.main = "Concert Theater"
                     new_state.sub = "Vibing"
 
@@ -420,7 +421,7 @@ class CarrotJuicer():
                 return
             
             # Race starts.
-            if 'race_scenario' in data and 'race_start_info' in data and data['race_scenario']:
+            if self.training_tracker and 'race_scenario' in data and 'race_start_info' in data and data['race_scenario']:
                 self.previous_race_program_id = data['race_start_info']['program_id']
                 # Currently starting a race. Add packet to training tracker.
                 logger.debug("Race packet received.")
@@ -446,27 +447,15 @@ class CarrotJuicer():
 
                 # Training info
                 outfit_id = data['chara_info']['card_id']
-                chara_id = int(str(outfit_id)[:-2])
                 supports = [card_data['support_card_id'] for card_data in data['chara_info']['support_card_array']]
                 scenario_id = data['chara_info']['scenario_id']
 
                 # Training stats
                 if self.screen_state_handler:
-                    new_state = ScreenState(self.threader.screenstate)
-
-                    new_state.location = Location.TRAINING
-
-                    new_state.main = f"Training - {util.turn_to_string(data['chara_info']['turn'])}"
-                    new_state.sub = f"{data['chara_info']['speed']} {data['chara_info']['stamina']} {data['chara_info']['power']} {data['chara_info']['guts']} {data['chara_info']['wiz']} | {data['chara_info']['skill_point']}"
-
-                    scenario_id = data['chara_info']['scenario_id']
-                    scenario_name = constants.SCENARIO_DICT.get(scenario_id, None)
-                    if not scenario_name:
-                        logger.error(f"Scenario ID not found in scenario dict: {scenario_id}")
-                        scenario_name = "You are now breathing manually."
-                    new_state.set_chara(chara_id, outfit_id=outfit_id, small_text=scenario_name)
-
-                    self.screen_state_handler.carrotjuicer_state = new_state
+                    if data.get('race_start_info', None):
+                        self.screen_state_handler.carrotjuicer_state = screenstate_utils.make_training_race_state(data, self.threader.screenstate)
+                    else:
+                        self.screen_state_handler.carrotjuicer_state = screenstate_utils.make_training_state(data, self.threader.screenstate)
 
                 if not self.browser or not self.browser.current_url.startswith("https://gametora.com/umamusume/training-event-helper"):
                     logger.info("GT tab not open, opening tab")
@@ -540,6 +529,8 @@ class CarrotJuicer():
                         """,
                         self.previous_element
                     )
+
+            self.last_data = data
         except Exception:
             logger.error("ERROR IN HANDLING RESPONSE MSGPACK")
             logger.error(data)
@@ -563,10 +554,7 @@ class CarrotJuicer():
 
     def start_concert(self, music_id):
         logger.debug("Starting concert")
-        new_state = ScreenState(self.threader.screenstate)
-        new_state.location = Location.THEATER
-        new_state.set_music(music_id)
-        self.screen_state_handler.carrotjuicer_state = new_state
+        self.screen_state_handler.carrotjuicer_state = screenstate_utils.make_concert_state(music_id, self.threader.screenstate)
         return
 
     def handle_request(self, message):

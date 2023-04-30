@@ -242,7 +242,6 @@ def is_minimized(handle):
         return True
 
 downloaded_chara_dict = None
-
 def get_character_name_dict():
     global downloaded_chara_dict
 
@@ -277,6 +276,24 @@ def get_outfit_name_dict():
 
         downloaded_outfit_dict = outfit_dict
     return downloaded_outfit_dict
+
+downloaded_race_name_dict = None
+def get_race_name_dict():
+    global downloaded_race_name_dict
+
+    if not downloaded_race_name_dict:
+        race_name_dict = mdb.get_race_program_name_dict()
+        logger.info("Requesting race names from umapyoi.net")
+        response = requests.get("https://umapyoi.net/api/v1/race_program")
+        if not response.ok:
+            show_warning_box("Uma Launcher: Internet error.", "Cannot download the race names from umapyoi.net for the Discord Rich Presence. Please check your internet connection.")
+            return race_name_dict
+        
+        for race_program in response.json():
+            race_name_dict[race_program['id']] = race_program['name']
+        
+        downloaded_race_name_dict = race_name_dict
+    return downloaded_race_name_dict
 
 def create_gametora_helper_url(card_id, scenario_id, support_ids):
     support_ids = list(map(str, support_ids))

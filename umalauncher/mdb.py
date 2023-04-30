@@ -116,15 +116,17 @@ def get_event_title_dict():
             out[row[1]] = row[2]
     return out
 
-
+RACE_PROGRAM_NAME_DICT = None
 def get_race_program_name_dict():
-    with Connection() as (_, cursor):
-        cursor.execute(
-            """SELECT s.id, t.text FROM single_mode_program s INNER JOIN text_data t ON s.race_instance_id = t."index" AND t.category = 28"""
-        )
-        rows = cursor.fetchall()
-
-    return {row[0]: row[1] for row in rows}
+    global RACE_PROGRAM_NAME_DICT
+    if not RACE_PROGRAM_NAME_DICT:
+        with Connection() as (_, cursor):
+            cursor.execute(
+                """SELECT s.id, t.text FROM single_mode_program s INNER JOIN text_data t ON s.race_instance_id = t."index" AND t.category = 28"""
+            )
+            rows = cursor.fetchall()
+        RACE_PROGRAM_NAME_DICT = {row[0]: row[1] for row in rows}
+    return RACE_PROGRAM_NAME_DICT
 
 def get_skill_name_dict():
     with Connection() as (_, cursor):
