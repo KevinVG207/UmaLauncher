@@ -138,16 +138,11 @@ class ScreenStateHandler():
         chara_icons = []
         music_icons = []
         logger.info("Requesting Rich Presence assets.")
-        try:
-            response = requests.get("https://umapyoi.net/uma-launcher/discord-assets")
-            if not response.ok:
-                logger.error(response.text)
-                util.show_warning_box("Uma Launcher: Internet error.", "Cannot download the image assets for the Discord Rich Presence. Please check your internet connection.")
-                return chara_icons, music_icons
-        except:
-            logger.error(traceback.format_exc())
-            util.show_warning_box("Uma Launcher: Internet error.", "Cannot download the image assets for the Discord Rich Presence. Please check your internet connection.")
-            return chara_icons, music_icons
+        response = util.do_get_request("https://umapyoi.net/uma-launcher/discord-assets")
+        if not response:
+            self.available_chara_icons = chara_icons
+            self.available_music_icons = music_icons
+            return
 
         assets = response.json()
         for asset in assets:
