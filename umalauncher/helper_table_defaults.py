@@ -397,9 +397,9 @@ class LevelRow(hte.Row):
     
 
 class GrandMastersFragmentsRow(hte.Row):
-    long_name = "Grand Masters fragments (scenario-specific)"
+    long_name = "Grand Masters fragments"
     short_name = "Fragments"
-    description = "Shows the total Grand Masters fragments on each facility. Hidden in other scenarios."
+    description = "[Scenario-specific] Shows the total Grand Masters fragments on each facility. Hidden in other scenarios."
 
     def _generate_cells(self, game_state) -> list[hte.Cell]:
         if game_state['speed']['scenario_id'] != 5:
@@ -439,9 +439,9 @@ class GrandLiveTotalTokensSettings(hte.Settings):
         )
 
 class GrandLiveTotalTokensRow(hte.Row):
-    long_name = "Grand Live tokens total (scenario-specific)"
+    long_name = "Grand Live tokens total"
     short_name = "Token Gain"
-    description = "Shows the total Grand Live tokens on each facility. Hidden in other scenarios."
+    description = "[Scenario-specific] Shows the total Grand Live tokens on each facility. Hidden in other scenarios."
 
     def __init__(self):
         super().__init__()
@@ -467,9 +467,9 @@ class GrandLiveTotalTokensRow(hte.Row):
 
 
 class GrandLiveTokensDistributionRow(hte.Row):
-    long_name = "Grand Live tokens gained distribution (scenario-specific)"
+    long_name = "Grand Live tokens gained distribution"
     short_name = "Token Gain <br>Distribution"
-    description = "Shows the distribution of Grand Live tokens on each facility. Hidden in other scenarios."
+    description = "[Scenario-specific] Shows the distribution of Grand Live tokens on each facility. Hidden in other scenarios."
 
     def _generate_cells(self, game_state) -> list[hte.Cell]:
         if game_state['speed']['scenario_id'] != 3:
@@ -515,6 +515,34 @@ class RainbowCountRow(hte.Row):
         return cells
 
 
+class PartnerCountRow(hte.Row):
+    long_name = "Support partner count"
+    short_name = "Supports"
+    description = "Shows the total number of support partners on each facility. This includes non-support card partners."
+
+    def _generate_cells(self, game_state) -> list[hte.Cell]:
+        cells = [hte.Cell(self.short_name, title=self.description)]
+
+        for command in game_state.values():
+            cells.append(hte.Cell(command['partner_count']))
+
+        return cells
+
+
+class UsefulPartnerCountRow(hte.Row):
+    long_name = "Useful support partner count"
+    short_name = "Useful<br>Supports"
+    description = "Shows the total number of useful support partners on each facility. Useful supports only support cards excepting friend cards."
+
+    def _generate_cells(self, game_state) -> list[hte.Cell]:
+        cells = [hte.Cell(self.short_name, title=self.description)]
+
+        for command in game_state.values():
+            cells.append(hte.Cell(command['useful_partner_count']))
+
+        return cells
+
+
 class RowTypes(Enum):
     CURRENT_STATS = CurrentStatsRow
     GAINED_STATS = GainedStatsRow
@@ -525,6 +553,8 @@ class RowTypes(Enum):
     GAINED_SKILLPT = GainedSkillptRow
     FAIL_PERCENTAGE = FailPercentageRow
     LEVEL = LevelRow
+    PARTNER_COUNT = PartnerCountRow
+    USEFUL_PARTNER_COUNT = UsefulPartnerCountRow
     RAINBOW_COUNT = RainbowCountRow
     GL_TOKENS = GrandLiveTokensDistributionRow
     GL_TOKENS_TOTAL = GrandLiveTotalTokensRow
