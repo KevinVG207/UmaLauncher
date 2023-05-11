@@ -156,7 +156,11 @@ class HelperTable():
 
             tip_gains_total = [0]
             tip_gains_useful = [0]
+            partner_count = 0
+            useful_partner_count = 0
             for training_partner_id in command['training_partner_array']:
+                partner_count += 1
+
                 # Detect if training_partner is rainbowing
                 training_partner = eval_dict[training_partner_id]
                 if training_partner_id <= 6:
@@ -164,6 +168,11 @@ class HelperTable():
                     support_id = data['chara_info']['support_card_array'][training_partner_id - 1]['support_card_id']
                     support_data = mdb.get_support_card_dict()[support_id]
                     support_card_type = mdb.get_support_card_type(support_data)
+
+                    # TODO: Add aoharu/GL-added supports as useful
+                    if support_card_type != 'friend':
+                        useful_partner_count += 1
+
                     if support_card_type not in ("group", "friend") and training_partner.starting_bond >= 80 and command['command_id'] in constants.SUPPORT_TYPE_TO_COMMAND_IDS[support_card_type]:
                         rainbow_count += 1
                     elif support_card_type == "group" and util.get_group_support_id_to_passion_zone_effect_id_dict()[support_id] in data['chara_info']['chara_effect_id_array']:
@@ -172,6 +181,8 @@ class HelperTable():
                             len(data['venus_data_set']['venus_spirit_active_effect_info_array']) > 0 and \
                                 data['venus_data_set']['venus_spirit_active_effect_info_array'][0]['chara_id'] == 9042:
                         rainbow_count += 1
+                elif training_partner_id > 1000:
+                    useful_partner_count += 1
 
                 # Cap bond at 100
                 new_bond = min(training_partner.starting_bond + training_partner.training_bond, 100)
@@ -212,6 +223,8 @@ class HelperTable():
                 'scenario_id': data['chara_info']['scenario_id'],
                 'current_stats': current_stats,
                 'level': level,
+                'partner_count': partner_count,
+                'useful_partner_count': useful_partner_count,
                 'failure_rate': failure_rate,
                 'gained_stats': gained_stats,
                 'gained_skillpt': skillpt,
