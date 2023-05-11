@@ -181,6 +181,8 @@ class HelperTable():
                             len(data['venus_data_set']['venus_spirit_active_effect_info_array']) > 0 and \
                                 data['venus_data_set']['venus_spirit_active_effect_info_array'][0]['chara_id'] == 9042:
                         rainbow_count += 1
+                elif training_partner_id > 1000:
+                    useful_partner_count += 1
 
                 # Cap bond at 100
                 new_bond = min(training_partner.starting_bond + training_partner.training_bond, 100)

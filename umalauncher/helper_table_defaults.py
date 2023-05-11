@@ -516,9 +516,9 @@ class RainbowCountRow(hte.Row):
 
 
 class PartnerCountRow(hte.Row):
-    long_name = "Support partner count"
-    short_name = "Supports"
-    description = "Shows the total number of support partners on each facility. This includes non-support card partners."
+    long_name = "Training partner count"
+    short_name = "Partners"
+    description = "Shows the total number of training partners on each facility. This includes partners that don't give extra stats when training together."
 
     def _generate_cells(self, game_state) -> list[hte.Cell]:
         cells = [hte.Cell(self.short_name, title=self.description)]
@@ -530,9 +530,9 @@ class PartnerCountRow(hte.Row):
 
 
 class UsefulPartnerCountRow(hte.Row):
-    long_name = "Useful support partner count"
-    short_name = "Useful<br>Supports"
-    description = "Shows the total number of useful support partners on each facility. Useful supports only support cards excepting friend cards."
+    long_name = "Useful training partner count"
+    short_name = "Useful<br>Partners"
+    description = "Shows the number of useful training partners on each facility. Useful partners are any that give extra stats when training together."
 
     def _generate_cells(self, game_state) -> list[hte.Cell]:
         cells = [hte.Cell(self.short_name, title=self.description)]
