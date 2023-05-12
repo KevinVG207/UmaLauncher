@@ -116,3 +116,19 @@ REQUEST_KEYS_TO_BE_REMOVED = [
     "dmm_viewer_id",
     "dmm_onetime_token",
 ]
+
+HEROES_SCORE_TO_LEAGUE_DICT = {
+    0: "Bronze 1",
+    1000: "Bronze 2",
+    2000: "Bronze 3",
+    3000: "Bronze 4",
+    4000: "Silver 1",
+    5500: "Silver 2",
+    7000: "Silver 3",
+    8500: "Silver 4",
+    10000: "Gold 1",
+    12500: "Gold 2",
+    15000: "Gold 3",
+    17500: "Gold 4",
+    20000: "Platinum"
+}

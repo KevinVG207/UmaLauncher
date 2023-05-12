@@ -393,3 +393,12 @@ def get_group_support_id_to_passion_zone_effect_id_dict():
         GROUP_SUPPORT_ID_TO_PASSION_ZONE_EFFECT_ID_DICT = {card[0]: card[1] for card in cards}
 
     return GROUP_SUPPORT_ID_TO_PASSION_ZONE_EFFECT_ID_DICT
+
+def heroes_score_to_league_string(score):
+    current_league = list(constants.HEROES_SCORE_TO_LEAGUE_DICT.keys())[0]
+    for score_threshold, league in constants.HEROES_SCORE_TO_LEAGUE_DICT.items():
+        if score >= score_threshold:
+            current_league = league
+        else:
+            break
+    return current_league

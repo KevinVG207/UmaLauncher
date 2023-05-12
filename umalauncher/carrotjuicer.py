@@ -420,6 +420,16 @@ class CarrotJuicer():
                     self.screen_state_handler.carrotjuicer_state = new_state
                 return
             
+            # League of Heroes
+            if 'heroes_id' in data:
+                if data.get("own_team_info") and data['own_team_info']['team_name'] and data['own_team_info']['league_score'] and self.screen_state_handler:
+                    self.screen_state_handler.carrotjuicer_state = screenstate_utils.make_league_of_heroes_state(
+                        self.threader.screenstate,
+                        data['own_team_info']['team_name'],
+                        data['own_team_info']['league_score']
+                    )
+                return
+            
             # Race starts.
             if self.training_tracker and 'race_scenario' in data and 'race_start_info' in data and data['race_scenario']:
                 self.previous_race_program_id = data['race_start_info']['program_id']

@@ -22,6 +22,7 @@ class Location(Enum):
     CIRCLE = 1
     THEATER = 2
     TRAINING = 3
+    EVENT = 4
 
 class ScreenState:
     location = Location.MAIN_MENU
