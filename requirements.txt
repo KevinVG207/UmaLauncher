@@ -7,6 +7,7 @@ cffi==1.15.1
 charset-normalizer==3.0.1
 colorama==0.4.6
 contourpy==1.0.7
+cryptography==40.0.2
 cycler==0.11.0
 exceptiongroup==1.1.0
 fonttools==4.38.0
@@ -19,16 +20,19 @@ lxml==4.9.2
 MarkupSafe==2.1.2
 matplotlib==3.7.0
 msgpack==1.0.4
+ndg-httpsclient==0.5.1
 numpy==1.24.2
 outcome==1.2.0
 packaging==23.0
 pefile==2023.2.7
 Pillow==9.4.0
 protobuf==4.22.1
+pyasn1==0.5.0
 pycparser==2.21
 pyinstaller==5.8.0
 pyinstaller-hooks-contrib==2023.0
 pyinstaller-versionfile==2.1.1
+pyOpenSSL==23.1.1
 pyparsing==3.0.9
 pypresence==4.2.1
 PyQt5==5.15.9
