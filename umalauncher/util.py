@@ -83,13 +83,42 @@ else:
 import win32api
 import win32gui
 import win32con
+import traceback
 import math
+import time
 import requests
 from pywintypes import error as pywinerror  # pylint: disable=no-name-in-module
 from PIL import Image
 import numpy as np
 import mdb
 import gui
+
+last_failed_request = None
+has_failed_once = False
+def do_get_request(url, error_title=None, error_message=None, ignore_timeout=False):
+    global last_failed_request
+
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        if not ignore_timeout and last_failed_request is not None:
+            # Ignore everything from umapyoi.net for 5 minutes to avoid spamming requests.
+            if time.perf_counter() - last_failed_request > 60 * 5:
+                last_failed_request = None
+            else:
+                return None
+        return response
+    except requests.exceptions.RequestException:
+        if (last_failed_request is None and not has_failed_once) or ignore_timeout:
+            logger.warning(traceback.format_exc())
+            show_warning_box(
+                "Failed to connect to server" if error_title is None else error_title,
+                "Uma Launcher failed to connect to umapyoi.net to load English translations.<br>You can still use Uma Launcher, but some text (rich presence, CSV) may be in Japanese." if error_message is None else error_message
+            )
+        if not ignore_timeout:
+            last_failed_request = time.perf_counter()
+        return None
+
 
 window_handle = None
 
@@ -247,10 +276,8 @@ def get_character_name_dict():
 
     if not downloaded_chara_dict:
         chara_dict = mdb.get_chara_name_dict()
-        logger.info("Requesting character names from umapyoi.net")
-        response = requests.get("https://umapyoi.net/api/v1/character/names")
-        if not response.ok:
-            show_warning_box("Uma Launcher: Internet error.", "Cannot download the character names from umapyoi.net for the Discord Rich Presence. Please check your internet connection.")
+        response = do_get_request("https://umapyoi.net/api/v1/character/names")
+        if not response:
             return chara_dict
 
         for character in response.json():
@@ -265,10 +292,8 @@ def get_outfit_name_dict():
 
     if not downloaded_outfit_dict:
         outfit_dict = mdb.get_outfit_name_dict()
-        logger.info("Requesting outfit names from umapyoi.net")
-        response = requests.get("https://umapyoi.net/api/v1/outfit")
-        if not response.ok:
-            show_warning_box("Uma Launcher: Internet error.", "Cannot download the outfit names from umapyoi.net for the Discord Rich Presence. Please check your internet connection.")
+        response = do_get_request("https://umapyoi.net/api/v1/outfit")
+        if not response:
             return outfit_dict
 
         for outfit in response.json():
@@ -284,9 +309,8 @@ def get_race_name_dict():
     if not downloaded_race_name_dict:
         race_name_dict = mdb.get_race_program_name_dict()
         logger.info("Requesting race names from umapyoi.net")
-        response = requests.get("https://umapyoi.net/api/v1/race_program")
-        if not response.ok:
-            show_warning_box("Uma Launcher: Internet error.", "Cannot download the race names from umapyoi.net for the Discord Rich Presence. Please check your internet connection.")
+        response = do_get_request("https://umapyoi.net/api/v1/race_program")
+        if not response:
             return race_name_dict
         
         for race_program in response.json():
@@ -369,3 +393,12 @@ def get_group_support_id_to_passion_zone_effect_id_dict():
         GROUP_SUPPORT_ID_TO_PASSION_ZONE_EFFECT_ID_DICT = {card[0]: card[1] for card in cards}
 
     return GROUP_SUPPORT_ID_TO_PASSION_ZONE_EFFECT_ID_DICT
+
+def heroes_score_to_league_string(score):
+    current_league = list(constants.HEROES_SCORE_TO_LEAGUE_DICT.keys())[0]
+    for score_threshold, league in constants.HEROES_SCORE_TO_LEAGUE_DICT.items():
+        if score >= score_threshold:
+            current_league = league
+        else:
+            break
+    return current_league

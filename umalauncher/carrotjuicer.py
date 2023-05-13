@@ -412,13 +412,33 @@ class CarrotJuicer():
             # Concert Theater
             if "live_theater_save_info_array" in data:
                 if self.screen_state_handler:
-                    new_state = screenstate_utils.ss.ScreenState(self.threader.screenstate)
+                    new_state = screenstate_utils.ss.ScreenState(self.screen_state_handler)
                     new_state.location = screenstate_utils.ss.Location.THEATER
                     new_state.main = "Concert Theater"
                     new_state.sub = "Vibing"
 
                     self.screen_state_handler.carrotjuicer_state = new_state
                 return
+            
+            # League of Heroes
+            if 'heroes_id' in data:
+                if data.get("own_team_info") and data['own_team_info']['team_name'] and data['own_team_info']['league_score'] and self.screen_state_handler:
+                    self.screen_state_handler.carrotjuicer_state = screenstate_utils.make_league_of_heroes_state(
+                        self.screen_state_handler,
+                        data['own_team_info']['team_name'],
+                        data['own_team_info']['league_score']
+                    )
+                return
+            
+            if data.get('stage1_grand_result'):
+                if self.screen_state_handler and \
+                        self.screen_state_handler.screen_state and \
+                        self.screen_state_handler.screen_state.location == screenstate_utils.ss.Location.LEAGUE_OF_HEROES and \
+                        data['stage1_grand_result'].get('after_league_score'):
+                    tmp = self.screen_state_handler.screen_state
+                    tmp.sub = screenstate_utils.get_league_of_heroes_substate(data['stage1_grand_result']['after_league_score'])
+                    self.screen_state_handler.carrotjuicer_state = tmp
+                    return
             
             # Race starts.
             if self.training_tracker and 'race_scenario' in data and 'race_start_info' in data and data['race_scenario']:

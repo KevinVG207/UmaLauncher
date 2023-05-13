@@ -22,6 +22,8 @@ class Location(Enum):
     CIRCLE = 1
     THEATER = 2
     TRAINING = 3
+    EVENT = 4
+    LEAGUE_OF_HEROES = 5
 
 class ScreenState:
     location = Location.MAIN_MENU
@@ -34,6 +36,11 @@ class ScreenState:
 
     def __init__(self, handler):
         self.handler = handler
+    
+    def __eq__(self, __value: object) -> bool:
+        if not isinstance(__value, ScreenState):
+            return False
+        return self.to_dict() == __value.to_dict()
 
     def to_dict(self) -> dict:
         return {
@@ -138,16 +145,11 @@ class ScreenStateHandler():
         chara_icons = []
         music_icons = []
         logger.info("Requesting Rich Presence assets.")
-        try:
-            response = requests.get("https://umapyoi.net/uma-launcher/discord-assets")
-            if not response.ok:
-                logger.error(response.text)
-                util.show_warning_box("Uma Launcher: Internet error.", "Cannot download the image assets for the Discord Rich Presence. Please check your internet connection.")
-                return chara_icons, music_icons
-        except:
-            logger.error(traceback.format_exc())
-            util.show_warning_box("Uma Launcher: Internet error.", "Cannot download the image assets for the Discord Rich Presence. Please check your internet connection.")
-            return chara_icons, music_icons
+        response = util.do_get_request("https://umapyoi.net/uma-launcher/discord-assets")
+        if not response:
+            self.available_chara_icons = chara_icons
+            self.available_music_icons = music_icons
+            return
 
         assets = response.json()
         for asset in assets:
@@ -288,10 +290,12 @@ class ScreenStateHandler():
 
     def update(self):
         new_state = self.determine_state()
-        if new_state != self.screen_state:
-            # New state is different
-            self.screen_state = new_state
-            logger.debug(f"Determined state: {self.screen_state.main}, {self.screen_state.sub}")
+        if new_state == self.screen_state:
+            return
+
+        # New state is different
+        self.screen_state = new_state
+        logger.debug(f"Determined state: {self.screen_state.main}, {self.screen_state.sub}")
 
     def determine_state(self):
         # Carrotjuicer takes priority

@@ -11,7 +11,7 @@ import dmm
 import util
 import gui
 
-VERSION = "1.4.4"
+VERSION = "1.4.6"
 
 def parse_version(version_string: str):
     """Convert version string to tuple."""
@@ -83,9 +83,8 @@ def auto_update(umasettings, script_version, skip_version):
         os.remove("update.tmp")
         util.show_info_box("Update complete!", f"Uma Launcher updated successfully.<br>To see what's new, <a href=\"https://github.com/KevinVG207/UmaLauncher/releases/tag/v{vstr(script_version)}\">click here</a>.")
 
-    response = requests.get("https://api.github.com/repos/KevinVG207/UmaLauncher/releases")
-    if not response.ok:
-        logger.error("Could not fetch latest release.")
+    response = util.do_get_request("https://api.github.com/repos/KevinVG207/UmaLauncher/releases", error_message="Could not check for updates on Github. Please check your internet connection.", ignore_timeout=True)
+    if not response:
         return True
     response_json = response.json()
 

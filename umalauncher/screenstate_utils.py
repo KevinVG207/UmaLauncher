@@ -36,3 +36,13 @@ def make_concert_state(music_id, handler) -> ss.ScreenState:
     new_state.location = ss.Location.THEATER
     new_state.set_music(music_id)
     return new_state
+
+def get_league_of_heroes_substate(league_score):
+    return f"Rank: {util.heroes_score_to_league_string(league_score)} ({league_score}pt)"
+
+def make_league_of_heroes_state(handler, team_name, league_score) -> ss.ScreenState:
+    new_state = ss.ScreenState(handler)
+    new_state.location = ss.Location.LEAGUE_OF_HEROES
+    new_state.main = f"League of Heroes - {team_name}"
+    new_state.sub = get_league_of_heroes_substate(league_score)
+    return new_state
