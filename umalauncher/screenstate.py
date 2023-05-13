@@ -23,6 +23,7 @@ class Location(Enum):
     THEATER = 2
     TRAINING = 3
     EVENT = 4
+    LEAGUE_OF_HEROES = 5
 
 class ScreenState:
     location = Location.MAIN_MENU
@@ -35,6 +36,11 @@ class ScreenState:
 
     def __init__(self, handler):
         self.handler = handler
+    
+    def __eq__(self, __value: object) -> bool:
+        if not isinstance(__value, ScreenState):
+            return False
+        return self.to_dict() == __value.to_dict()
 
     def to_dict(self) -> dict:
         return {
@@ -284,10 +290,12 @@ class ScreenStateHandler():
 
     def update(self):
         new_state = self.determine_state()
-        if new_state != self.screen_state:
-            # New state is different
-            self.screen_state = new_state
-            logger.debug(f"Determined state: {self.screen_state.main}, {self.screen_state.sub}")
+        if new_state == self.screen_state:
+            return
+
+        # New state is different
+        self.screen_state = new_state
+        logger.debug(f"Determined state: {self.screen_state.main}, {self.screen_state.sub}")
 
     def determine_state(self):
         # Carrotjuicer takes priority
