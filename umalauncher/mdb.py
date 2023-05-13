@@ -9,7 +9,7 @@ SUPPORT_CARD_DICT = {}
 
 class Connection():
     def __init__(self):
-        self.conn = sqlite3.connect(DB_PATH)
+        self.conn = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
     def __enter__(self):
         return self.conn, self.conn.cursor()
     def __exit__(self, type, value, traceback):
