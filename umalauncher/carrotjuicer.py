@@ -436,8 +436,11 @@ class CarrotJuicer():
                         self.screen_state_handler.screen_state.location == screenstate_utils.ss.Location.LEAGUE_OF_HEROES and \
                         data['stage1_grand_result'].get('after_league_score'):
                     tmp = self.screen_state_handler.screen_state
-                    tmp.sub = screenstate_utils.get_league_of_heroes_substate(data['stage1_grand_result']['after_league_score'])
-                    self.screen_state_handler.carrotjuicer_state = tmp
+                    tmp2 = screenstate_utils.ss.ScreenState(self.screen_state_handler)
+                    tmp2.location = screenstate_utils.ss.Location.LEAGUE_OF_HEROES
+                    tmp2.main = tmp.main
+                    tmp2.sub = screenstate_utils.get_league_of_heroes_substate(data['stage1_grand_result']['after_league_score'])
+                    self.screen_state_handler.carrotjuicer_state = tmp2
                     return
             
             # Race starts.

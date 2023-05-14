@@ -26,16 +26,23 @@ class Location(Enum):
     LEAGUE_OF_HEROES = 5
 
 class ScreenState:
-    location = Location.MAIN_MENU
-    main = "Launching game..."
-    sub = "Ready your umapyois!"
-    large_image = "umaicon"
-    large_text = "It's Special Week!"
+    location = None
+    main = None
+    sub = None
+    large_image = None
+    large_text = None
     small_image = None
     small_text = None
 
     def __init__(self, handler):
         self.handler = handler
+        self.location = Location.MAIN_MENU
+        self.main = "Launching game..."
+        self.sub = "Ready your umapyois!"
+        self.large_image = "umaicon"
+        self.large_text = "It's Special Week!"
+        self.small_image = None
+        self.small_text = None
     
     def __eq__(self, __value: object) -> bool:
         if not isinstance(__value, ScreenState):
@@ -291,6 +298,7 @@ class ScreenStateHandler():
     def update(self):
         new_state = self.determine_state()
         if new_state == self.screen_state:
+            logger.debug("State is the same, not updating.")
             return
 
         # New state is different
