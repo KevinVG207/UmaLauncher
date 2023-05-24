@@ -24,6 +24,7 @@ class SettingType(enum.Enum):
     BOOL = "bool"
     INT = "int"
     LIST = "list"
+    COLOR = "color"
 
 class Settings():
     def get_settings_keys(self):
@@ -72,7 +73,7 @@ class Cell():
         if self.bold:
             style += "font-weight:bold;"
         if self.color:
-            style += f"color:{self.color.value};"
+            style += f"color:{self.color};"
         if style:
             style = f" style=\"{style}\""
         

@@ -557,21 +557,25 @@ class UmaPresetSettingsDialog(UmaMainDialog):
         lbl_setting_description = qtw.QLabel(grp_setting)
         lbl_setting_description.setObjectName(u"lbl_setting_description")
         lbl_setting_description.setText(setting.description)
+        lbl_setting_description.setWordWrap(True)
 
         horizontalLayout.addWidget(lbl_setting_description)
 
-        input_widget = None
+        input_widgets = []
         if setting.type == self.setting_types_enum.BOOL:
-            input_widget, value_func = self.add_checkbox(setting, grp_setting)
+            input_widgets, value_func = self.add_checkbox(setting, grp_setting)
         elif setting.type == self.setting_types_enum.INT:
-            input_widget, value_func = self.add_spinbox(setting, grp_setting)
+            input_widgets, value_func = self.add_spinbox(setting, grp_setting)
         elif setting.type == self.setting_types_enum.LIST:
-            input_widget, value_func = self.add_combobox(setting, grp_setting)
+            input_widgets, value_func = self.add_combobox(setting, grp_setting)
+        elif setting.type == self.setting_types_enum.COLOR:
+            input_widgets, value_func = self.add_colorpicker(setting, grp_setting)
         
-        if not input_widget:
+        if not input_widgets:
             return None, None
-
-        horizontalLayout.addWidget(input_widget)
+        
+        for input_widget in input_widgets:
+            horizontalLayout.addWidget(input_widget)
 
         return grp_setting, value_func
 
@@ -586,7 +590,7 @@ class UmaPresetSettingsDialog(UmaMainDialog):
         ckb_setting_checkbox.setSizePolicy(sizePolicy)
         ckb_setting_checkbox.setText(u"")
         ckb_setting_checkbox.setChecked(setting.value)
-        return ckb_setting_checkbox, lambda: ckb_setting_checkbox.isChecked()
+        return [ckb_setting_checkbox], lambda: ckb_setting_checkbox.isChecked()
 
     def add_spinbox(self, setting, parent):
         spn_setting_spinbox = qtw.QSpinBox(parent)
@@ -601,7 +605,7 @@ class UmaPresetSettingsDialog(UmaMainDialog):
         spn_setting_spinbox.setMinimum(setting.min_value)
         spn_setting_spinbox.setMaximum(setting.max_value)
         spn_setting_spinbox.setValue(setting.value)
-        return spn_setting_spinbox, lambda: spn_setting_spinbox.value()
+        return [spn_setting_spinbox], lambda: spn_setting_spinbox.value()
 
     def add_combobox(self, setting, parent):
         cmb_setting_combobox = qtw.QComboBox(parent)
@@ -617,7 +621,66 @@ class UmaPresetSettingsDialog(UmaMainDialog):
             cmb_setting_combobox.addItem(choice)
 
         cmb_setting_combobox.setCurrentIndex(setting.value)
-        return cmb_setting_combobox, lambda: cmb_setting_combobox.currentIndex()
+        return [cmb_setting_combobox], lambda: cmb_setting_combobox.currentIndex()
+
+    def add_colorpicker(self, setting, parent):
+        lbl_picked_color = qtw.QLabel(parent)
+        lbl_picked_color.setObjectName(f"lbl_picked_color_{setting.name}")
+        sizePolicy3 = qtw.QSizePolicy(qtw.QSizePolicy.Fixed, qtw.QSizePolicy.Preferred)
+        sizePolicy3.setHorizontalStretch(0)
+        sizePolicy3.setVerticalStretch(0)
+        sizePolicy3.setHeightForWidth(lbl_picked_color.sizePolicy().hasHeightForWidth())
+        lbl_picked_color.setSizePolicy(sizePolicy3)
+        lbl_picked_color.setMaximumSize(qtc.QSize(20, 20))
+        lbl_picked_color.setAutoFillBackground(False)
+        lbl_picked_color.setStyleSheet(f"background-color: {setting.value};")
+        lbl_picked_color.setText("")
+
+        lne_color_hex = qtw.QLineEdit(parent)
+        lne_color_hex.setObjectName(f"lne_color_hex{setting.name}")
+        sizePolicy4 = qtw.QSizePolicy(qtw.QSizePolicy.Fixed, qtw.QSizePolicy.Fixed)
+        sizePolicy4.setHorizontalStretch(0)
+        sizePolicy4.setVerticalStretch(0)
+        sizePolicy4.setHeightForWidth(lne_color_hex.sizePolicy().hasHeightForWidth())
+        lne_color_hex.setSizePolicy(sizePolicy4)
+        lne_color_hex.setMaximumSize(qtc.QSize(52, 16777215))
+        lne_color_hex.setText(setting.value)
+        lne_color_hex.setMaxLength(7)
+
+        def update_color():
+            tmp_color = lne_color_hex.text()
+            if not tmp_color.startswith("#") and len(tmp_color) == 6 and tmp_color.isalnum():
+                tmp_color = "#" + tmp_color
+            if tmp_color.startswith("#") and len(tmp_color) == 7 and tmp_color[1:].isalnum():
+                lbl_picked_color.setStyleSheet(f"background-color: {tmp_color};")
+
+        lne_color_hex.textChanged.connect(update_color)
+
+        btn_pick_color = qtw.QPushButton(parent)
+        btn_pick_color.setObjectName(f"btn_pick_color_{setting.name}")
+        btn_pick_color.setMaximumSize(qtc.QSize(50, 16777215))
+        btn_pick_color.setText("Picker")
+
+        def pick_color():
+            tmp_color = qtw.QColorDialog.getColor()
+            if tmp_color.isValid():
+                lne_color_hex.setText(tmp_color.name().upper())
+
+        btn_pick_color.clicked.connect(pick_color)
+
+        def get_color():
+            out_color = None
+            tmp_color = lne_color_hex.text()
+            if not tmp_color.startswith("#") and len(tmp_color) == 6 and tmp_color.isalnum():
+                tmp_color = "#" + tmp_color
+            if tmp_color.startswith("#") and len(tmp_color) == 7 and tmp_color[1:].isalnum():
+                out_color = tmp_color
+            else:
+                raise ValueError("Invalid color format")
+            return out_color
+
+        return [lbl_picked_color, lne_color_hex, btn_pick_color], lambda: get_color()
+
 
 
 class UmaSimpleDialog(UmaMainDialog):
