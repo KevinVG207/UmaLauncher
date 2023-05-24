@@ -298,7 +298,6 @@ class ScreenStateHandler():
     def update(self):
         new_state = self.determine_state()
         if new_state == self.screen_state:
-            logger.debug("State is the same, not updating.")
             return
 
         # New state is different
