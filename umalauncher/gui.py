@@ -381,7 +381,7 @@ class UmaPresetMenu(UmaMainWidget):
         sel_preset_name = self.selected_preset.name
         self.cmb_select_preset.clear()
         self.cmb_select_preset.addItem(self.default_preset.name)
-        self.preset_list.sort()
+        self.preset_list.sort(key=lambda x: x.name.lower())
         for i, preset in enumerate(self.preset_list):
             self.cmb_select_preset.addItem(preset.name)
             if preset.name == sel_preset_name:
@@ -394,7 +394,7 @@ class UmaNewPresetDialog(UmaMainDialog):
     def init_ui(self, new_preset_class, *args, **kwargs):
         self.new_presets_class = new_preset_class
 
-        self.resize(321, 91)
+        self.resize(321, 121)
         # Disable resizing
         self.setFixedSize(self.size())
         self.setWindowFlags(qtc.Qt.WindowCloseButtonHint)
@@ -409,31 +409,65 @@ class UmaNewPresetDialog(UmaMainDialog):
         self.lne_preset_name.setText(u"")
         self.btn_cancel = qtw.QPushButton(self)
         self.btn_cancel.setObjectName(u"btn_cancel")
-        self.btn_cancel.setGeometry(qtc.QRect(230, 60, 81, 23))
+        self.btn_cancel.setGeometry(qtc.QRect(230, 90, 81, 23))
         self.btn_cancel.setText(u"Cancel")
         self.btn_cancel.clicked.connect(self.close)
         self.btn_ok = qtw.QPushButton(self)
         self.btn_ok.setObjectName(u"btn_ok")
-        self.btn_ok.setGeometry(qtc.QRect(140, 60, 81, 23))
+        self.btn_ok.setGeometry(qtc.QRect(140, 90, 81, 23))
         self.btn_ok.setText(u"OK")
         self.btn_ok.setDefault(True)
         self.btn_ok.clicked.connect(self.on_ok)
-    
+        self.checkBox = qtw.QCheckBox(self)
+        self.checkBox.setObjectName(u"checkBox")
+        self.checkBox.setGeometry(qtc.QRect(10, 60, 121, 21))
+        self.checkBox.setText(u"Copy existing:")
+        self.comboBox = qtw.QComboBox(self)
+        self.comboBox.setObjectName(u"comboBox")
+        self.comboBox.setEnabled(False)
+        self.comboBox.setGeometry(qtc.QRect(108, 60, 201, 22))
+        # Fill the combobox with presets.
+        for preset in [self._parent.default_preset] + self._parent.preset_list:
+            self.comboBox.addItem(preset.name)
+        self.comboBox.setCurrentIndex(0)
+        # Connect the checkbox to the combobox.
+        self.checkBox.stateChanged.connect(self.on_checkbox_change)
+
+
+    @qtc.pyqtSlot()
+    def on_checkbox_change(self):
+        if self.checkBox.isChecked():
+            self.comboBox.setEnabled(True)
+        else:
+            self.comboBox.setEnabled(False)
+
+
     @qtc.pyqtSlot()
     def on_ok(self):
         if self.lne_preset_name.text() == "":
             UmaInfoPopup("Error", "Preset name cannot be empty.", ICONS.Critical).exec_()
-            self.close()
             return
+
         names_list = [preset.name for preset in self._parent.preset_list + [self._parent.default_preset]]
-        logger.debug(names_list)
         if self.lne_preset_name.text() in names_list:
             UmaInfoPopup("Error", "Preset with this name already exists.", ICONS.Critical).exec_()
-            self.close()
             return
-        new_preset = self.new_presets_class(self._parent.row_types_enum)
+        
+        # Check if the user wants to copy a preset.
+        if self.checkBox.isChecked():
+            selected_preset_name = self.comboBox.currentText()
+            for preset in self._parent.preset_list + [self._parent.default_preset]:
+                if preset.name == selected_preset_name:
+                    selected_preset = preset
+                    break
+            new_preset = copy.deepcopy(selected_preset)
+
+        else:
+            new_preset = self.new_presets_class(self._parent.row_types_enum)
+
         new_preset.name = self.lne_preset_name.text()
         self._parent.preset_list.append(new_preset)
+
         self._parent.selected_preset = new_preset
         self.close()
 
