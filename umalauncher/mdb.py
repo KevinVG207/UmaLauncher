@@ -18,6 +18,12 @@ class Connection():
 def create_support_card_string(rarity, command_id, support_card_type, chara_id):
     return f"{constants.SUPPORT_CARD_RARITY_DICT[rarity]} {constants.SUPPORT_CARD_TYPE_DISPLAY_DICT[constants.SUPPORT_CARD_TYPE_DICT[(command_id, support_card_type)]]} {util.get_character_name_dict()[chara_id]}"
 
+def get_columns(cursor):
+    return [desc[0] for desc in cursor.description]
+
+def rows_to_dict(rows, columns, keep_newline=False):
+    return [{columns[i]: data if not isinstance(data, str) or keep_newline else data.replace("\\n", "") for i, data in enumerate(row)} for row in rows]
+
 def get_event_title(story_id):
     with Connection() as (_, cursor):
         cursor.execute(
@@ -233,3 +239,16 @@ def get_program_id_grade(program_id):
         return None
 
     return row[0]
+
+def get_program_id_data(program_id):
+    with Connection() as (_, cursor):
+        cursor.execute(
+            """SELECT * FROM single_mode_program WHERE id = ?;""",
+            (program_id,)
+        )
+        rows = cursor.fetchall()
+        columns = get_columns(cursor)
+    
+    if not rows:
+        return None
+    return rows_to_dict(rows, columns)[0]
