@@ -183,6 +183,7 @@ class UmaPresetMenu(UmaMainWidget):
         self.lst_current.setDragDropMode(qtw.QAbstractItemView.DragDrop)
         self.lst_current.setDefaultDropAction(qtc.Qt.MoveAction)
         self.lst_current.itemSelectionChanged.connect(self.on_current_row_select)
+        self.lst_current.itemDoubleClicked.connect(self.on_row_options)
         
         # Signal on drop
         self.lst_current.dropEvent = self.on_current_row_drop
@@ -272,8 +273,9 @@ class UmaPresetMenu(UmaMainWidget):
         row = self.lst_current.currentItem()
         if row:
             row_object = row.data(qtc.Qt.UserRole + 1)
-            row_object.display_settings_dialog(self)
-            self.update_selected_preset_rows()
+            if row_object.settings:
+                row_object.display_settings_dialog(self)
+                self.update_selected_preset_rows()
 
     @qtc.pyqtSlot()
     def on_available_row_select(self):
