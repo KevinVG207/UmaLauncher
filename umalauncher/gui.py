@@ -503,6 +503,31 @@ class UmaPresetSettingsDialog(UmaMainDialog):
         self.verticalLayout = qtw.QVBoxLayout(self.scrollAreaWidgetContents)
         self.verticalLayout.setObjectName(f"verticalLayout")
 
+        self.load_settings()
+
+        self.scrollArea.setWidget(self.scrollAreaWidgetContents)
+        self.btn_cancel = qtw.QPushButton(self)
+        self.btn_cancel.setObjectName(u"btn_cancel")
+        self.btn_cancel.setGeometry(qtc.QRect(400, 370, 71, 23))
+        self.btn_cancel.setText(u"Cancel")
+        self.btn_cancel.setDefault(True)
+        self.btn_save_close = qtw.QPushButton(self)
+        self.btn_save_close.setObjectName(u"btn_save_close")
+        self.btn_save_close.setGeometry(qtc.QRect(300, 370, 91, 23))
+        self.btn_save_close.setText(u"Save && close")
+        self.btn_restore = qtw.QPushButton(self)
+        self.btn_restore.setObjectName(u"btn_restore")
+        self.btn_restore.setGeometry(qtc.QRect(10, 370, 101, 23))
+        self.btn_restore.setText(u"Restore defaults")
+
+        self.btn_cancel.clicked.connect(self.close)
+        self.btn_save_close.clicked.connect(self.save_and_close)
+        self.btn_restore.clicked.connect(self.restore_defaults)
+
+    def load_settings(self):
+        # Empty the verticalLayout.
+        for i in reversed(range(self.verticalLayout.count())):
+            self.verticalLayout.itemAt(i).widget().setParent(None)
 
         # Adding group boxes to the scroll area
         settings_keys = self.settings_parent_object.settings.get_settings_keys()
@@ -520,23 +545,15 @@ class UmaPresetSettingsDialog(UmaMainDialog):
                 self.verticalLayout.addWidget(group_box, 0, qtc.Qt.AlignTop)
             else:
                 self.verticalLayout.addWidget(group_box)
-
-        self.scrollArea.setWidget(self.scrollAreaWidgetContents)
-        self.btn_cancel = qtw.QPushButton(self)
-        self.btn_cancel.setObjectName(u"btn_cancel")
-        self.btn_cancel.setGeometry(qtc.QRect(400, 370, 71, 23))
-        self.btn_cancel.setText(u"Cancel")
-        self.btn_cancel.setDefault(True)
-        self.btn_save_close = qtw.QPushButton(self)
-        self.btn_save_close.setObjectName(u"btn_save_close")
-        self.btn_save_close.setGeometry(qtc.QRect(300, 370, 91, 23))
-        self.btn_save_close.setText(u"Save && close")
-
-        self.btn_cancel.clicked.connect(self.close)
-        self.btn_save_close.clicked.connect(self.save_and_close)
+    
+    def restore_defaults(self):
+        self.settings_parent_object.settings = type(self.settings_parent_object.settings)()
+        self.settings_elements = {}
+        self.load_settings()
     
     def save_and_close(self):
         for setting_key, value_func in self.setting_elements.items():
+            logger.info(f"Setting {setting_key} to {value_func()}")
             getattr(self.settings_parent_object.settings, setting_key).value = value_func()
 
         self.close()
@@ -662,7 +679,13 @@ class UmaPresetSettingsDialog(UmaMainDialog):
         btn_pick_color.setText("Picker")
 
         def pick_color():
-            tmp_color = qtw.QColorDialog.getColor()
+            initial_color = qtg.QColor(lne_color_hex.text())
+            if not initial_color.isValid():
+                initial_color = qtg.QColor(setting.value)
+            if not initial_color.isValid():
+                initial_color = qtg.QColor("#000000")
+            logger.debug(f"Initial color: {initial_color.name()}")
+            tmp_color = qtw.QColorDialog.getColor(initial_color)
             if tmp_color.isValid():
                 lne_color_hex.setText(tmp_color.name().upper())
 

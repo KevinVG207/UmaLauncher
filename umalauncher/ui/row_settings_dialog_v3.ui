@@ -281,6 +281,19 @@
     <string notr="true">Save and close</string>
    </property>
   </widget>
+  <widget class="QPushButton" name="btn_restore">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>370</y>
+     <width>101</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string notr="true">Restore defaults</string>
+   </property>
+  </widget>
  </widget>
  <resources/>
  <connections/>
