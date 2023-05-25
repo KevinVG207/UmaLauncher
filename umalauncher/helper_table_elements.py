@@ -146,6 +146,12 @@ class PresetSettings(Settings):
             True,
             SettingType.BOOL
         )
+        self.s_schedule_enabled = Setting(
+            "Show schedule countdown",
+            "Displays the amount of turns until your next scheduled race. (If there is one.)",
+            True,
+            SettingType.BOOL
+        )
         self.s_scenario_specific_enabled = Setting(
             "Show scenario specific elements",
             "Show scenario specific elements in the event helper. \n(Grand Live tokens/Grand Masters fragments)",
@@ -194,6 +200,9 @@ class Preset():
 
         if self.settings.s_energy_enabled.value:
             html_elements.append(self.generate_energy(main_info))
+        
+        if self.settings.s_schedule_enabled.value:
+            html_elements.append(self.generate_schedule(main_info))
 
         if self.settings.s_scenario_specific_enabled.value:
             html_elements.append(self.generate_gm_table(main_info))
@@ -249,6 +258,22 @@ class Preset():
         bottom_row = f"<tr>{''.join(bottom_row)}</tr>"
 
         return f"<table id=\"gl-tokens\"><thead>{top_row}</thead><tbody>{bottom_row}</tbody></table>"
+    
+    def generate_schedule(self, main_info):
+        cur_turn = main_info['turn']
+        next_race = None
+        for race in main_info['scheduled_races']:
+            if race['turn'] >= cur_turn:
+                next_race = race
+                break
+        
+        if not next_race:
+            return ""
+        
+        turns_left = next_race['turn'] - cur_turn
+        text = f"<p>{turns_left} turn{'' if turns_left == 1 else 's'} until</p>"
+        img = f"<img width=100 height=50 src=\"{next_race['thumb_url']}\"/>"
+        return f"""<div id="schedule" style="display: flex; align-items: center; gap: 0.5rem;">{text}{img}</div>"""
 
     def to_dict(self):
         return {

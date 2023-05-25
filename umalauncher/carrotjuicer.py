@@ -486,7 +486,6 @@ class CarrotJuicer():
                     logger.debug(f"Helper URL: {self.helper_url}")
                     self.open_helper()
                 
-                self.last_helper_data = data
                 self.update_helper_table(data)
 
             if 'unchecked_event_array' in data and data['unchecked_event_array']:
@@ -552,6 +551,12 @@ class CarrotJuicer():
                         """,
                         self.previous_element
                     )
+
+            if 'reserved_race_array' in data and 'chara_info' not in data and self.last_helper_data:
+                # User changed reserved races
+                self.last_helper_data['reserved_race_array'] = data['reserved_race_array']
+                data = self.last_helper_data
+                self.update_helper_table(data)
 
             self.last_data = data
         except Exception:
@@ -653,7 +658,8 @@ class CarrotJuicer():
 
 
     def update_helper_table(self, data):
-        helper_table = self.helper_table.create_helper_elements(data)
+        helper_table = self.helper_table.create_helper_elements(data, self.last_helper_data)
+        self.last_helper_data = data
         if helper_table:
             self.browser.execute_script("""
                 window.UL_DATA.overlay_html = arguments[0];
