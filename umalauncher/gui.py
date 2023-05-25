@@ -154,6 +154,7 @@ class UmaPresetMenu(UmaMainWidget):
         self.lst_available.setObjectName(u"lst_available")
         self.lst_available.setGeometry(qtc.QRect(10, 20, 311, 251))
         self.lst_available.itemSelectionChanged.connect(self.on_available_row_select)
+        self.lst_available.itemDoubleClicked.connect(self.on_copy_to_preset)
 
         for row_data in row_types_enum:
             new_item = qtw.QListWidgetItem(self.lst_available)
