@@ -578,30 +578,79 @@ class RainbowCountRow(hte.Row):
         return cells
 
 
+class PartnerCountSettings(hte.Settings):
+    def __init__(self):
+        self.s_highlight_max = hte.Setting(
+            "Highlight max",
+            "Highlights the facility with the most training partners.",
+            True,
+            hte.SettingType.BOOL
+        )
+        self.s_highlight_max_color = hte.Setting(
+            "Highlight max color",
+            "The color to use to highlight the facility with the most training partners.",
+            "#90EE90",
+            hte.SettingType.COLOR
+        )
+
+
 class PartnerCountRow(hte.Row):
     long_name = "Training partner count"
     short_name = "Partners"
     description = "Shows the total number of training partners on each facility. This includes partners that don't give extra stats when training together."
 
+    def __init__(self):
+        super().__init__()
+        self.settings = PartnerCountSettings()
+
     def _generate_cells(self, game_state) -> list[hte.Cell]:
         cells = [hte.Cell(self.short_name, title=self.description)]
 
+        highest_partner_count = max(command['partner_count'] for command in game_state.values())
+
         for command in game_state.values():
-            cells.append(hte.Cell(command['partner_count']))
+            if self.settings.s_highlight_max.value and highest_partner_count > 0 and command['partner_count'] == highest_partner_count:
+                cells.append(hte.Cell(command['partner_count'], bold=True, color=self.settings.s_highlight_max_color.value))
+            else:
+                cells.append(hte.Cell(command['partner_count']))
 
         return cells
 
+
+class UsefulPartnerCountSettings(hte.Settings):
+    def __init__(self):
+        self.s_highlight_max = hte.Setting(
+            "Highlight max",
+            "Highlights the facility with the most useful training partners.",
+            True,
+            hte.SettingType.BOOL
+        )
+        self.s_highlight_max_color = hte.Setting(
+            "Highlight max color",
+            "The color to use to highlight the facility with the most useful training partners.",
+            "#90EE90",
+            hte.SettingType.COLOR
+        )
 
 class UsefulPartnerCountRow(hte.Row):
     long_name = "Useful training partner count"
     short_name = "Useful<br>Partners"
     description = "Shows the number of useful training partners on each facility. Useful partners are any that give extra stats when training together."
 
+    def __init__(self):
+        super().__init__()
+        self.settings = UsefulPartnerCountSettings()
+
     def _generate_cells(self, game_state) -> list[hte.Cell]:
         cells = [hte.Cell(self.short_name, title=self.description)]
 
+        highest_useful_partner_count = max(command['useful_partner_count'] for command in game_state.values())
+
         for command in game_state.values():
-            cells.append(hte.Cell(command['useful_partner_count']))
+            if self.settings.s_highlight_max.value and highest_useful_partner_count > 0 and command['useful_partner_count'] == highest_useful_partner_count:
+                cells.append(hte.Cell(command['useful_partner_count'], bold=True, color=self.settings.s_highlight_max_color.value))
+            else:
+                cells.append(hte.Cell(command['useful_partner_count']))
 
         return cells
 
