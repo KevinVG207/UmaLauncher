@@ -33,7 +33,7 @@ class Settings():
     def to_dict(self):
         settings = self.get_settings_keys()
         return {setting: getattr(self, setting).value for setting in settings} if settings else {}
-    
+
     def import_dict(self, settings_dict):
         for key, value in settings_dict.items():
             if hasattr(self, key):

@@ -4,23 +4,57 @@ import PyQt5.QtCore as qtc
 import PyQt5.QtWidgets as qtw
 import PyQt5.QtGui as qtg
 import util
+import threading
+import traceback
 
 ICONS = qtw.QMessageBox.Icon
 
-class UmaApp():
-    app = None
-    main_widget = None
+THREADER = None
 
+APPLICATION = None
+
+
+def show_widget(widget, *args, **kwargs):
+    global APPLICATION
+
+    if threading.main_thread() != threading.current_thread():
+        if not THREADER:
+            logger.error("Widget called from non-main thread without threader instance")
+            return
+        THREADER.widget_queue.append((widget, args, kwargs))
+        return
+
+    if not APPLICATION:
+        logger.debug("Creating new QT app instance")
+        APPLICATION = UmaApp()
+
+    APPLICATION.run(widget(APPLICATION, *args, **kwargs))
+    APPLICATION.close_widget()
+
+
+def stop_application():
+    global APPLICATION
+
+    if APPLICATION:
+        logger.debug("Closing QT app instance")
+        APPLICATION.close()
+        APPLICATION = None
+
+
+class UmaApp():
     def __init__(self):
         self.app = qtw.QApplication([])
         self.app.setWindowIcon(qtg.QIcon(util.get_asset("favicon.ico")))
+        self.main_widget = None
 
         self.init_app()
 
     def init_app(self):
         pass
 
-    def run(self, main_widget: qtw.QWidget, retain_font=False):
+    def run(self, main_widget: qtw.QWidget, retain_font=True):
+        self.close_widget()
+
         if not retain_font:
             font = main_widget.font()
             font.setPointSizeF(8.75)
@@ -31,6 +65,12 @@ class UmaApp():
         self.main_widget.setFocus(True)
         self.main_widget.raise_()
         self.app.exec_()
+    
+    def close_widget(self):
+        if self.main_widget:
+            self.main_widget.close()
+            del self.main_widget
+            self.main_widget = None
 
     def close(self):
         self.app.exit()
@@ -765,17 +805,17 @@ class UmaUpdateConfirm(UmaMainWidget):
     @qtc.pyqtSlot()
     def _yes(self):
         self.choice.append(0)
-        self._parent.close()
+        self.close()
 
     @qtc.pyqtSlot()
     def _no(self):
         self.choice.append(1)
-        self._parent.close()
+        self.close()
 
     @qtc.pyqtSlot()
     def _skip(self):
         self.choice.append(2)
-        self._parent.close()
+        self.close()
 
 
 class UmaBorderlessPopup(UmaMainWidget):
@@ -811,7 +851,7 @@ class UmaBorderlessPopup(UmaMainWidget):
     def _update(self):
         if len(self.check_target) > 0:
             self.timer.stop()
-            self._parent.close()
+            self.close()
 
 
 class UmaUpdatePopup(UmaMainWidget):
@@ -850,11 +890,11 @@ class UmaUpdatePopup(UmaMainWidget):
     def _update(self):
         if self.update_object.close_me:
             self.timer.stop()
-            self._parent.close()
+            self.close()
 
 
 class UmaInfoPopup(qtw.QMessageBox):
-    def __init__(self, title: str, message: str, msg_icon: qtw.QMessageBox.Icon = qtw.QMessageBox.Icon.Information):
+    def __init__(self, parent, title: str, message: str, msg_icon: qtw.QMessageBox.Icon = qtw.QMessageBox.Icon.Information):
         super().__init__()
         self.setWindowTitle(title)
         self.setText(message)

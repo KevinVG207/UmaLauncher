@@ -227,17 +227,14 @@ class Settings():
         logger.debug("Showing helper table preset menu.")
         preset_dict, selected_preset = self.get_helper_table_data()
         new_preset_list = []
-        app = gui.UmaApp()
-        app.run(gui.UmaPresetMenu(
-            app,
+        gui.show_widget(gui.UmaPresetMenu,
             selected_preset=selected_preset,
             default_preset=htd.DefaultPreset(htd.RowTypes),
             new_preset_class=hte.Preset,
             preset_list=list(preset_dict.values()),
             row_types_enum=htd.RowTypes,
             output_list=new_preset_list
-        ), True)
-        app.close()
+        )
         if new_preset_list:
             logger.debug("Saving new helper table preset list.")
             selected_preset = new_preset_list.pop(0)
