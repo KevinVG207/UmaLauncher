@@ -390,8 +390,6 @@ class CarrotJuicer():
             self.to_json(data, "packet_in.json")
 
         try:
-            raise Exception("Test")
-
             if 'data' not in data:
                 # logger.info("This packet doesn't have data :)")
                 return

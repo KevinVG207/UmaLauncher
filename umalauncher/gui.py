@@ -13,19 +13,24 @@ THREADER = None
 
 APPLICATION = None
 
+
 def show_widget(widget, *args, **kwargs):
     global APPLICATION
 
-    if not APPLICATION:
-        if threading.main_thread() == threading.current_thread():
-            logger.debug("Creating new QT app instance")
-            APPLICATION = UmaApp()
-        else:
-            THREADER.widget_queue.append((widget, args, kwargs))
+    if threading.main_thread() != threading.current_thread():
+        if not THREADER:
+            logger.error("Widget called from non-main thread without threader instance")
             return
-    logger.debug(traceback.format_stack())
+        THREADER.widget_queue.append((widget, args, kwargs))
+        return
+
+    if not APPLICATION:
+        logger.debug("Creating new QT app instance")
+        APPLICATION = UmaApp()
+
     APPLICATION.run(widget(APPLICATION, *args, **kwargs))
     APPLICATION.close_widget()
+
 
 def stop_application():
     global APPLICATION
@@ -34,6 +39,7 @@ def stop_application():
         logger.debug("Closing QT app instance")
         APPLICATION.close()
         APPLICATION = None
+
 
 class UmaApp():
     def __init__(self):
