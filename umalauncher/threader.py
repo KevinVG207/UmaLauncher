@@ -14,6 +14,7 @@ if not util.elevate():
 
 import threading
 import time
+import win32api
 from loguru import logger
 import settings
 import carrotjuicer
@@ -21,7 +22,6 @@ import umatray
 import screenstate
 import windowmover
 import training_tracker
-import win32api
 import gui
 
 class Threader():
