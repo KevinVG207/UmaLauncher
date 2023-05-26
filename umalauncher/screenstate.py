@@ -138,7 +138,7 @@ class ScreenStateHandler():
         self.outfit_names_dict = util.get_outfit_name_dict()
         self.screen_state = ScreenState(self)
 
-        dmm_handle = util.get_window_handle("DMM GAME PLAYER", type=util.LAZY)
+        dmm_handle = dmm.get_dmm_handle()
         if dmm_handle:
             self.dmm_handle = dmm_handle
             self.dmm_seen = True
@@ -236,7 +236,7 @@ class ScreenStateHandler():
             # Close DMM
             if not self.dmm_closed and self.threader.settings.get("autoclose_dmm"):
                 # Attempt to close DMM, even if it doesn't exist
-                new_dmm_handle = util.get_window_handle("DMM GAME PLAYER", type=util.LAZY)
+                new_dmm_handle = dmm.get_dmm_handle()
                 if new_dmm_handle:
                     logger.info("Closing DMM.")
                     win32gui.PostMessage(new_dmm_handle, win32con.WM_CLOSE, 0, 0)
