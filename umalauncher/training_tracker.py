@@ -125,7 +125,6 @@ class TrainingTracker():
     def to_csv_list(self):
         app = TrainingAnalyzer(self)
         csv_list = app.to_csv_list()
-        app.close()
         return csv_list
 
 
@@ -753,10 +752,8 @@ def combine_trainings(training_paths, output_file_path):
     logger.debug("Starting thread to generate CSV")
     combiner_thread.start()
 
-    logger.debug("Starting GUI")
-    app = gui.UmaApp()
     logger.debug("Running popup")
-    app.run(gui.UmaBorderlessPopup(app, "Creating CSV", "Creating CSV...", combiner_thread, result))
+    gui.show_widget(gui.UmaBorderlessPopup, "Creating CSV", "Creating CSV...", combiner_thread, result)
     logger.debug("Finished popup")
 
     return result[0]

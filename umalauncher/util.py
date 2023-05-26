@@ -130,9 +130,7 @@ def get_width_from_height(height, portrait):
 
 
 def _show_alert_box(error, message, icon):
-    app = gui.UmaApp()
-    app.run(gui.UmaInfoPopup(error, message, icon))
-    app.close()
+    gui.show_widget(gui.UmaInfoPopup, error, message, icon)
 
 
 def show_error_box(error, message):
@@ -205,6 +203,7 @@ def similar_color(col1: tuple[int,int,int], col2: tuple[int,int,int], threshold:
         total_diff += abs(col1[i] - col2[i])
     return total_diff < threshold
 
+
 def turn_to_string(turn):
     turn = turn - 1
 
@@ -216,6 +215,7 @@ def turn_to_string(turn):
     year = math.floor(turn / 12) + 1
 
     return f"Y{year}, {'Late' if second_half else 'Early'} {constants.MONTH_DICT[month]}"
+
 
 def get_window_rect(*args, **kwargs):
     try:
