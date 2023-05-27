@@ -99,14 +99,15 @@ def do_get_request(url, error_title=None, error_message=None, ignore_timeout=Fal
     global last_failed_request
 
     try:
-        response = requests.get(url)
-        response.raise_for_status()
         if not ignore_timeout and last_failed_request is not None:
             # Ignore everything from umapyoi.net for 5 minutes to avoid spamming requests.
             if time.perf_counter() - last_failed_request > 60 * 5:
                 last_failed_request = None
             else:
                 return None
+        logger.debug(f"GET request to {url}")
+        response = requests.get(url)
+        response.raise_for_status()
         return response
     except requests.exceptions.RequestException:
         if (last_failed_request is None and not has_failed_once) or ignore_timeout:
