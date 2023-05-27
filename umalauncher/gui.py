@@ -4,23 +4,57 @@ import PyQt5.QtCore as qtc
 import PyQt5.QtWidgets as qtw
 import PyQt5.QtGui as qtg
 import util
+import threading
+import traceback
 
 ICONS = qtw.QMessageBox.Icon
 
-class UmaApp():
-    app = None
-    main_widget = None
+THREADER = None
 
+APPLICATION = None
+
+
+def show_widget(widget, *args, **kwargs):
+    global APPLICATION
+
+    if threading.main_thread() != threading.current_thread():
+        if not THREADER:
+            logger.error("Widget called from non-main thread without threader instance")
+            return
+        THREADER.widget_queue.append((widget, args, kwargs))
+        return
+
+    if not APPLICATION:
+        logger.debug("Creating new QT app instance")
+        APPLICATION = UmaApp()
+
+    APPLICATION.run(widget(APPLICATION, *args, **kwargs))
+    APPLICATION.close_widget()
+
+
+def stop_application():
+    global APPLICATION
+
+    if APPLICATION:
+        logger.debug("Closing QT app instance")
+        APPLICATION.close()
+        APPLICATION = None
+
+
+class UmaApp():
     def __init__(self):
         self.app = qtw.QApplication([])
         self.app.setWindowIcon(qtg.QIcon(util.get_asset("favicon.ico")))
+        self.main_widget = None
 
         self.init_app()
 
     def init_app(self):
         pass
 
-    def run(self, main_widget: qtw.QWidget, retain_font=False):
+    def run(self, main_widget: qtw.QWidget, retain_font=True):
+        self.close_widget()
+
         if not retain_font:
             font = main_widget.font()
             font.setPointSizeF(8.75)
@@ -31,6 +65,12 @@ class UmaApp():
         self.main_widget.setFocus(True)
         self.main_widget.raise_()
         self.app.exec_()
+    
+    def close_widget(self):
+        if self.main_widget:
+            self.main_widget.close()
+            del self.main_widget
+            self.main_widget = None
 
     def close(self):
         self.app.exit()
@@ -154,6 +194,7 @@ class UmaPresetMenu(UmaMainWidget):
         self.lst_available.setObjectName(u"lst_available")
         self.lst_available.setGeometry(qtc.QRect(10, 20, 311, 251))
         self.lst_available.itemSelectionChanged.connect(self.on_available_row_select)
+        self.lst_available.itemDoubleClicked.connect(self.on_copy_to_preset)
 
         for row_data in row_types_enum:
             new_item = qtw.QListWidgetItem(self.lst_available)
@@ -183,6 +224,7 @@ class UmaPresetMenu(UmaMainWidget):
         self.lst_current.setDragDropMode(qtw.QAbstractItemView.DragDrop)
         self.lst_current.setDefaultDropAction(qtc.Qt.MoveAction)
         self.lst_current.itemSelectionChanged.connect(self.on_current_row_select)
+        self.lst_current.itemDoubleClicked.connect(self.on_row_options)
         
         # Signal on drop
         self.lst_current.dropEvent = self.on_current_row_drop
@@ -272,8 +314,9 @@ class UmaPresetMenu(UmaMainWidget):
         row = self.lst_current.currentItem()
         if row:
             row_object = row.data(qtc.Qt.UserRole + 1)
-            row_object.display_settings_dialog(self)
-            self.update_selected_preset_rows()
+            if row_object.settings:
+                row_object.display_settings_dialog(self)
+                self.update_selected_preset_rows()
 
     @qtc.pyqtSlot()
     def on_available_row_select(self):
@@ -381,7 +424,7 @@ class UmaPresetMenu(UmaMainWidget):
         sel_preset_name = self.selected_preset.name
         self.cmb_select_preset.clear()
         self.cmb_select_preset.addItem(self.default_preset.name)
-        self.preset_list.sort()
+        self.preset_list.sort(key=lambda x: x.name.lower())
         for i, preset in enumerate(self.preset_list):
             self.cmb_select_preset.addItem(preset.name)
             if preset.name == sel_preset_name:
@@ -394,7 +437,7 @@ class UmaNewPresetDialog(UmaMainDialog):
     def init_ui(self, new_preset_class, *args, **kwargs):
         self.new_presets_class = new_preset_class
 
-        self.resize(321, 91)
+        self.resize(321, 121)
         # Disable resizing
         self.setFixedSize(self.size())
         self.setWindowFlags(qtc.Qt.WindowCloseButtonHint)
@@ -409,31 +452,65 @@ class UmaNewPresetDialog(UmaMainDialog):
         self.lne_preset_name.setText(u"")
         self.btn_cancel = qtw.QPushButton(self)
         self.btn_cancel.setObjectName(u"btn_cancel")
-        self.btn_cancel.setGeometry(qtc.QRect(230, 60, 81, 23))
+        self.btn_cancel.setGeometry(qtc.QRect(230, 90, 81, 23))
         self.btn_cancel.setText(u"Cancel")
         self.btn_cancel.clicked.connect(self.close)
         self.btn_ok = qtw.QPushButton(self)
         self.btn_ok.setObjectName(u"btn_ok")
-        self.btn_ok.setGeometry(qtc.QRect(140, 60, 81, 23))
+        self.btn_ok.setGeometry(qtc.QRect(140, 90, 81, 23))
         self.btn_ok.setText(u"OK")
         self.btn_ok.setDefault(True)
         self.btn_ok.clicked.connect(self.on_ok)
-    
+        self.checkBox = qtw.QCheckBox(self)
+        self.checkBox.setObjectName(u"checkBox")
+        self.checkBox.setGeometry(qtc.QRect(10, 60, 121, 21))
+        self.checkBox.setText(u"Copy existing:")
+        self.comboBox = qtw.QComboBox(self)
+        self.comboBox.setObjectName(u"comboBox")
+        self.comboBox.setEnabled(False)
+        self.comboBox.setGeometry(qtc.QRect(108, 60, 201, 22))
+        # Fill the combobox with presets.
+        for preset in [self._parent.default_preset] + self._parent.preset_list:
+            self.comboBox.addItem(preset.name)
+        self.comboBox.setCurrentIndex(0)
+        # Connect the checkbox to the combobox.
+        self.checkBox.stateChanged.connect(self.on_checkbox_change)
+
+
+    @qtc.pyqtSlot()
+    def on_checkbox_change(self):
+        if self.checkBox.isChecked():
+            self.comboBox.setEnabled(True)
+        else:
+            self.comboBox.setEnabled(False)
+
+
     @qtc.pyqtSlot()
     def on_ok(self):
         if self.lne_preset_name.text() == "":
             UmaInfoPopup("Error", "Preset name cannot be empty.", ICONS.Critical).exec_()
-            self.close()
             return
+
         names_list = [preset.name for preset in self._parent.preset_list + [self._parent.default_preset]]
-        logger.debug(names_list)
         if self.lne_preset_name.text() in names_list:
             UmaInfoPopup("Error", "Preset with this name already exists.", ICONS.Critical).exec_()
-            self.close()
             return
-        new_preset = self.new_presets_class(self._parent.row_types_enum)
+        
+        # Check if the user wants to copy a preset.
+        if self.checkBox.isChecked():
+            selected_preset_name = self.comboBox.currentText()
+            for preset in self._parent.preset_list + [self._parent.default_preset]:
+                if preset.name == selected_preset_name:
+                    selected_preset = preset
+                    break
+            new_preset = copy.deepcopy(selected_preset)
+
+        else:
+            new_preset = self.new_presets_class(self._parent.row_types_enum)
+
         new_preset.name = self.lne_preset_name.text()
         self._parent.preset_list.append(new_preset)
+
         self._parent.selected_preset = new_preset
         self.close()
 
@@ -469,6 +546,31 @@ class UmaPresetSettingsDialog(UmaMainDialog):
         self.verticalLayout = qtw.QVBoxLayout(self.scrollAreaWidgetContents)
         self.verticalLayout.setObjectName(f"verticalLayout")
 
+        self.load_settings()
+
+        self.scrollArea.setWidget(self.scrollAreaWidgetContents)
+        self.btn_cancel = qtw.QPushButton(self)
+        self.btn_cancel.setObjectName(u"btn_cancel")
+        self.btn_cancel.setGeometry(qtc.QRect(400, 370, 71, 23))
+        self.btn_cancel.setText(u"Cancel")
+        self.btn_cancel.setDefault(True)
+        self.btn_save_close = qtw.QPushButton(self)
+        self.btn_save_close.setObjectName(u"btn_save_close")
+        self.btn_save_close.setGeometry(qtc.QRect(300, 370, 91, 23))
+        self.btn_save_close.setText(u"Save && close")
+        self.btn_restore = qtw.QPushButton(self)
+        self.btn_restore.setObjectName(u"btn_restore")
+        self.btn_restore.setGeometry(qtc.QRect(10, 370, 101, 23))
+        self.btn_restore.setText(u"Restore defaults")
+
+        self.btn_cancel.clicked.connect(self.close)
+        self.btn_save_close.clicked.connect(self.save_and_close)
+        self.btn_restore.clicked.connect(self.restore_defaults)
+
+    def load_settings(self):
+        # Empty the verticalLayout.
+        for i in reversed(range(self.verticalLayout.count())):
+            self.verticalLayout.itemAt(i).widget().setParent(None)
 
         # Adding group boxes to the scroll area
         settings_keys = self.settings_parent_object.settings.get_settings_keys()
@@ -486,23 +588,15 @@ class UmaPresetSettingsDialog(UmaMainDialog):
                 self.verticalLayout.addWidget(group_box, 0, qtc.Qt.AlignTop)
             else:
                 self.verticalLayout.addWidget(group_box)
-
-        self.scrollArea.setWidget(self.scrollAreaWidgetContents)
-        self.btn_cancel = qtw.QPushButton(self)
-        self.btn_cancel.setObjectName(u"btn_cancel")
-        self.btn_cancel.setGeometry(qtc.QRect(400, 370, 71, 23))
-        self.btn_cancel.setText(u"Cancel")
-        self.btn_cancel.setDefault(True)
-        self.btn_save_close = qtw.QPushButton(self)
-        self.btn_save_close.setObjectName(u"btn_save_close")
-        self.btn_save_close.setGeometry(qtc.QRect(300, 370, 91, 23))
-        self.btn_save_close.setText(u"Save && close")
-
-        self.btn_cancel.clicked.connect(self.close)
-        self.btn_save_close.clicked.connect(self.save_and_close)
+    
+    def restore_defaults(self):
+        self.settings_parent_object.settings = type(self.settings_parent_object.settings)()
+        self.settings_elements = {}
+        self.load_settings()
     
     def save_and_close(self):
         for setting_key, value_func in self.setting_elements.items():
+            logger.info(f"Setting {setting_key} to {value_func()}")
             getattr(self.settings_parent_object.settings, setting_key).value = value_func()
 
         self.close()
@@ -523,21 +617,25 @@ class UmaPresetSettingsDialog(UmaMainDialog):
         lbl_setting_description = qtw.QLabel(grp_setting)
         lbl_setting_description.setObjectName(u"lbl_setting_description")
         lbl_setting_description.setText(setting.description)
+        lbl_setting_description.setWordWrap(True)
 
         horizontalLayout.addWidget(lbl_setting_description)
 
-        input_widget = None
+        input_widgets = []
         if setting.type == self.setting_types_enum.BOOL:
-            input_widget, value_func = self.add_checkbox(setting, grp_setting)
+            input_widgets, value_func = self.add_checkbox(setting, grp_setting)
         elif setting.type == self.setting_types_enum.INT:
-            input_widget, value_func = self.add_spinbox(setting, grp_setting)
+            input_widgets, value_func = self.add_spinbox(setting, grp_setting)
         elif setting.type == self.setting_types_enum.LIST:
-            input_widget, value_func = self.add_combobox(setting, grp_setting)
+            input_widgets, value_func = self.add_combobox(setting, grp_setting)
+        elif setting.type == self.setting_types_enum.COLOR:
+            input_widgets, value_func = self.add_colorpicker(setting, grp_setting)
         
-        if not input_widget:
+        if not input_widgets:
             return None, None
-
-        horizontalLayout.addWidget(input_widget)
+        
+        for input_widget in input_widgets:
+            horizontalLayout.addWidget(input_widget)
 
         return grp_setting, value_func
 
@@ -552,7 +650,7 @@ class UmaPresetSettingsDialog(UmaMainDialog):
         ckb_setting_checkbox.setSizePolicy(sizePolicy)
         ckb_setting_checkbox.setText(u"")
         ckb_setting_checkbox.setChecked(setting.value)
-        return ckb_setting_checkbox, lambda: ckb_setting_checkbox.isChecked()
+        return [ckb_setting_checkbox], lambda: ckb_setting_checkbox.isChecked()
 
     def add_spinbox(self, setting, parent):
         spn_setting_spinbox = qtw.QSpinBox(parent)
@@ -567,7 +665,7 @@ class UmaPresetSettingsDialog(UmaMainDialog):
         spn_setting_spinbox.setMinimum(setting.min_value)
         spn_setting_spinbox.setMaximum(setting.max_value)
         spn_setting_spinbox.setValue(setting.value)
-        return spn_setting_spinbox, lambda: spn_setting_spinbox.value()
+        return [spn_setting_spinbox], lambda: spn_setting_spinbox.value()
 
     def add_combobox(self, setting, parent):
         cmb_setting_combobox = qtw.QComboBox(parent)
@@ -583,7 +681,72 @@ class UmaPresetSettingsDialog(UmaMainDialog):
             cmb_setting_combobox.addItem(choice)
 
         cmb_setting_combobox.setCurrentIndex(setting.value)
-        return cmb_setting_combobox, lambda: cmb_setting_combobox.currentIndex()
+        return [cmb_setting_combobox], lambda: cmb_setting_combobox.currentIndex()
+
+    def add_colorpicker(self, setting, parent):
+        lbl_picked_color = qtw.QLabel(parent)
+        lbl_picked_color.setObjectName(f"lbl_picked_color_{setting.name}")
+        sizePolicy3 = qtw.QSizePolicy(qtw.QSizePolicy.Fixed, qtw.QSizePolicy.Preferred)
+        sizePolicy3.setHorizontalStretch(0)
+        sizePolicy3.setVerticalStretch(0)
+        sizePolicy3.setHeightForWidth(lbl_picked_color.sizePolicy().hasHeightForWidth())
+        lbl_picked_color.setSizePolicy(sizePolicy3)
+        lbl_picked_color.setMaximumSize(qtc.QSize(20, 20))
+        lbl_picked_color.setAutoFillBackground(False)
+        lbl_picked_color.setStyleSheet(f"background-color: {setting.value};")
+        lbl_picked_color.setText("")
+
+        lne_color_hex = qtw.QLineEdit(parent)
+        lne_color_hex.setObjectName(f"lne_color_hex{setting.name}")
+        sizePolicy4 = qtw.QSizePolicy(qtw.QSizePolicy.Fixed, qtw.QSizePolicy.Fixed)
+        sizePolicy4.setHorizontalStretch(0)
+        sizePolicy4.setVerticalStretch(0)
+        sizePolicy4.setHeightForWidth(lne_color_hex.sizePolicy().hasHeightForWidth())
+        lne_color_hex.setSizePolicy(sizePolicy4)
+        lne_color_hex.setMaximumSize(qtc.QSize(52, 16777215))
+        lne_color_hex.setText(setting.value)
+        lne_color_hex.setMaxLength(7)
+
+        def update_color():
+            tmp_color = lne_color_hex.text()
+            if not tmp_color.startswith("#") and len(tmp_color) == 6 and tmp_color.isalnum():
+                tmp_color = "#" + tmp_color
+            if tmp_color.startswith("#") and len(tmp_color) == 7 and tmp_color[1:].isalnum():
+                lbl_picked_color.setStyleSheet(f"background-color: {tmp_color};")
+
+        lne_color_hex.textChanged.connect(update_color)
+
+        btn_pick_color = qtw.QPushButton(parent)
+        btn_pick_color.setObjectName(f"btn_pick_color_{setting.name}")
+        btn_pick_color.setMaximumSize(qtc.QSize(50, 16777215))
+        btn_pick_color.setText("Picker")
+
+        def pick_color():
+            initial_color = qtg.QColor(lne_color_hex.text())
+            if not initial_color.isValid():
+                initial_color = qtg.QColor(setting.value)
+            if not initial_color.isValid():
+                initial_color = qtg.QColor("#000000")
+            logger.debug(f"Initial color: {initial_color.name()}")
+            tmp_color = qtw.QColorDialog.getColor(initial_color)
+            if tmp_color.isValid():
+                lne_color_hex.setText(tmp_color.name().upper())
+
+        btn_pick_color.clicked.connect(pick_color)
+
+        def get_color():
+            out_color = None
+            tmp_color = lne_color_hex.text()
+            if not tmp_color.startswith("#") and len(tmp_color) == 6 and tmp_color.isalnum():
+                tmp_color = "#" + tmp_color
+            if tmp_color.startswith("#") and len(tmp_color) == 7 and tmp_color[1:].isalnum():
+                out_color = tmp_color
+            else:
+                raise ValueError("Invalid color format")
+            return out_color
+
+        return [lbl_picked_color, lne_color_hex, btn_pick_color], lambda: get_color()
+
 
 
 class UmaSimpleDialog(UmaMainDialog):
@@ -642,17 +805,17 @@ class UmaUpdateConfirm(UmaMainWidget):
     @qtc.pyqtSlot()
     def _yes(self):
         self.choice.append(0)
-        self._parent.close()
+        self.close()
 
     @qtc.pyqtSlot()
     def _no(self):
         self.choice.append(1)
-        self._parent.close()
+        self.close()
 
     @qtc.pyqtSlot()
     def _skip(self):
         self.choice.append(2)
-        self._parent.close()
+        self.close()
 
 
 class UmaBorderlessPopup(UmaMainWidget):
@@ -688,7 +851,7 @@ class UmaBorderlessPopup(UmaMainWidget):
     def _update(self):
         if len(self.check_target) > 0:
             self.timer.stop()
-            self._parent.close()
+            self.close()
 
 
 class UmaUpdatePopup(UmaMainWidget):
@@ -727,11 +890,11 @@ class UmaUpdatePopup(UmaMainWidget):
     def _update(self):
         if self.update_object.close_me:
             self.timer.stop()
-            self._parent.close()
+            self.close()
 
 
 class UmaInfoPopup(qtw.QMessageBox):
-    def __init__(self, title: str, message: str, msg_icon: qtw.QMessageBox.Icon = qtw.QMessageBox.Icon.Information):
+    def __init__(self, parent, title: str, message: str, msg_icon: qtw.QMessageBox.Icon = qtw.QMessageBox.Icon.Information):
         super().__init__()
         self.setWindowTitle(title)
         self.setText(message)

@@ -32,9 +32,13 @@ class HelperTable():
             self.carrotjuicer.update_helper_table(self.carrotjuicer.last_helper_data)
 
 
-    def create_helper_elements(self, data) -> str:
+    def create_helper_elements(self, data, last_data) -> str:
         """Creates the helper elements for the given response packet.
         """
+        # Transfer data from last data if it does not exist in the current data
+        if last_data:
+            if 'reserved_race_array' not in data and 'reserved_race_array' in last_data:
+                data['reserved_race_array'] = last_data['reserved_race_array']
 
         if not 'home_info' in data:
             return None
@@ -245,6 +249,32 @@ class HelperTable():
             if command_id in constants.COMMAND_ID_TO_KEY
         }
 
+
+        # Process scheduled races
+        scheduled_races = []
+        if 'reserved_race_array' in data:
+            for race_data in data['reserved_race_array'][0]['race_array']:
+                # TODO: Maybe cache the mdb data for all race programs?
+                program_data = mdb.get_program_id_data(race_data['program_id'])
+                if not program_data:
+                    logger.warning(f"Could not get program data for program_id {race_data['program_id']}")
+                    continue
+                year = race_data['year'] - 1
+                month = program_data['month'] - 1
+                half = program_data['half'] - 1
+                turn = 24 * year
+                turn += month * 2
+                turn += half
+                turn += 1
+                thumb_url = f"https://gametora.com/images/umamusume/race_banners/thum_race_rt_000_{str(program_data['race_instance_id'])[:4]}_00.png"
+
+                scheduled_races.append({
+                    "turn": turn,
+                    "thumb_url": thumb_url
+                })
+            
+            scheduled_races.sort(key=lambda x: x['turn'])
+
         # Grand Masters Fragments
         gm_fragments = [0] * 8
         if 'venus_data_set' in data:
@@ -260,9 +290,11 @@ class HelperTable():
 
 
         main_info = {
+            "turn": data['chara_info']['turn'],
             "scenario_id": data['chara_info']['scenario_id'],
             "energy": data['chara_info']['vital'],
             "max_energy": data['chara_info']['max_vital'],
+            "scheduled_races": scheduled_races,
             "gm_fragments": gm_fragments,
             "gl_stats": gl_stats,
         }

@@ -99,14 +99,15 @@ def do_get_request(url, error_title=None, error_message=None, ignore_timeout=Fal
     global last_failed_request
 
     try:
-        response = requests.get(url)
-        response.raise_for_status()
         if not ignore_timeout and last_failed_request is not None:
             # Ignore everything from umapyoi.net for 5 minutes to avoid spamming requests.
             if time.perf_counter() - last_failed_request > 60 * 5:
                 last_failed_request = None
             else:
                 return None
+        logger.debug(f"GET request to {url}")
+        response = requests.get(url)
+        response.raise_for_status()
         return response
     except requests.exceptions.RequestException:
         if (last_failed_request is None and not has_failed_once) or ignore_timeout:
@@ -130,9 +131,7 @@ def get_width_from_height(height, portrait):
 
 
 def _show_alert_box(error, message, icon):
-    app = gui.UmaApp()
-    app.run(gui.UmaInfoPopup(error, message, icon))
-    app.close()
+    gui.show_widget(gui.UmaInfoPopup, error, message, icon)
 
 
 def show_error_box(error, message):
@@ -205,6 +204,7 @@ def similar_color(col1: tuple[int,int,int], col2: tuple[int,int,int], threshold:
         total_diff += abs(col1[i] - col2[i])
     return total_diff < threshold
 
+
 def turn_to_string(turn):
     turn = turn - 1
 
@@ -216,6 +216,7 @@ def turn_to_string(turn):
     year = math.floor(turn / 12) + 1
 
     return f"Y{year}, {'Late' if second_half else 'Early'} {constants.MONTH_DICT[month]}"
+
 
 def get_window_rect(*args, **kwargs):
     try:

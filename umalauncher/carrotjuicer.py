@@ -436,8 +436,11 @@ class CarrotJuicer():
                         self.screen_state_handler.screen_state.location == screenstate_utils.ss.Location.LEAGUE_OF_HEROES and \
                         data['stage1_grand_result'].get('after_league_score'):
                     tmp = self.screen_state_handler.screen_state
-                    tmp.sub = screenstate_utils.get_league_of_heroes_substate(data['stage1_grand_result']['after_league_score'])
-                    self.screen_state_handler.carrotjuicer_state = tmp
+                    tmp2 = screenstate_utils.ss.ScreenState(self.screen_state_handler)
+                    tmp2.location = screenstate_utils.ss.Location.LEAGUE_OF_HEROES
+                    tmp2.main = tmp.main
+                    tmp2.sub = screenstate_utils.get_league_of_heroes_substate(data['stage1_grand_result']['after_league_score'])
+                    self.screen_state_handler.carrotjuicer_state = tmp2
                     return
             
             # Race starts.
@@ -483,7 +486,6 @@ class CarrotJuicer():
                     logger.debug(f"Helper URL: {self.helper_url}")
                     self.open_helper()
                 
-                self.last_helper_data = data
                 self.update_helper_table(data)
 
             if 'unchecked_event_array' in data and data['unchecked_event_array']:
@@ -549,6 +551,12 @@ class CarrotJuicer():
                         """,
                         self.previous_element
                     )
+
+            if 'reserved_race_array' in data and 'chara_info' not in data and self.last_helper_data:
+                # User changed reserved races
+                self.last_helper_data['reserved_race_array'] = data['reserved_race_array']
+                data = self.last_helper_data
+                self.update_helper_table(data)
 
             self.last_data = data
         except Exception:
@@ -650,7 +658,8 @@ class CarrotJuicer():
 
 
     def update_helper_table(self, data):
-        helper_table = self.helper_table.create_helper_elements(data)
+        helper_table = self.helper_table.create_helper_elements(data, self.last_helper_data)
+        self.last_helper_data = data
         if helper_table:
             self.browser.execute_script("""
                 window.UL_DATA.overlay_html = arguments[0];

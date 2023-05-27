@@ -11,7 +11,7 @@ import dmm
 import util
 import gui
 
-VERSION = "1.4.6"
+VERSION = "1.4.7"
 
 def parse_version(version_string: str):
     """Convert version string to tuple."""
@@ -118,8 +118,7 @@ def auto_update(umasettings, script_version, skip_version):
     logger.info("Newer version found. Asking user to update.")
 
     choice = [1]  # Default to no
-    app = gui.UmaApp()
-    app.run(gui.UmaUpdateConfirm(app, latest_release, vstr(release_version), choice), True)
+    gui.show_widget(gui.UmaUpdateConfirm, latest_release, vstr(release_version), choice)
     choice = choice[-1]
 
     logger.debug(f"User choice: {choice}")
@@ -140,8 +139,7 @@ def auto_update(umasettings, script_version, skip_version):
     update_thread.start()
 
     # Show updater window
-    app = gui.UmaApp()
-    app.run(gui.UmaUpdatePopup(app, update_object))
+    gui.show_widget(gui.UmaUpdatePopup, update_object)
 
     logger.debug("Update window closed: Update failed.")
     if os.path.exists(util.get_relative("update.tmp")):

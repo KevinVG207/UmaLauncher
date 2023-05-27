@@ -90,15 +90,15 @@ class GameWindow():
 JANK_OFFSET = 8
 
 def dejankify(rect):
-    rect[0] = rect[0] + JANK_OFFSET
-    rect[2] = rect[2] - JANK_OFFSET
-    rect[3] = rect[3] - JANK_OFFSET
+    rect[0] += JANK_OFFSET
+    rect[2] -= JANK_OFFSET
+    rect[3] -= JANK_OFFSET
     return rect
 
 def jankify(rect):
-    rect[0] = rect[0] - JANK_OFFSET
-    rect[2] = rect[2] + JANK_OFFSET
-    rect[3] = rect[3] + JANK_OFFSET
+    rect[0] -= JANK_OFFSET
+    rect[2] += JANK_OFFSET
+    rect[3] += JANK_OFFSET
     return rect
 
 def rect_is_portrait(rect):

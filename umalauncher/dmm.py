@@ -1,5 +1,8 @@
 import shutil
 import os
+import util
+import win32gui
+import win32con
 from loguru import logger
 
 
@@ -29,3 +32,10 @@ def unpatch_dmm(dmm_path):
 def start():
     logger.info("Launching Uma Musume via DMM.")
     os.system("Start dmmgameplayer://play/GCL/umamusume/cl/win")
+
+def get_dmm_handle():
+    for window_title in ['DMM GAME PLAYER', 'マイゲーム']:
+        dmm_handle = util.get_window_handle(window_title, type=util.LAZY)
+        if dmm_handle:
+            return dmm_handle
+    return None
