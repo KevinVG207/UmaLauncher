@@ -28,7 +28,7 @@ class SettingType(enum.Enum):
 
 class Settings():
     def get_settings_keys(self):
-        return [attr for attr in dir(self) if attr.startswith("s_")]
+        return sorted([attr for attr in dir(self) if attr.startswith("s_")], key=lambda x: getattr(self, x).priority, reverse=True)
 
     def to_dict(self):
         settings = self.get_settings_keys()
@@ -43,17 +43,19 @@ class Settings():
 class Setting():
     name: str = None
     description: str = None
+    priority: int = 0
     value: ... = None
     type: SettingType = None
     min_value: int = None
     max_value: int = None
     choices: list = None
 
-    def __init__(self, name, description, value, type, min_value=0, max_value=100, choices=None):
+    def __init__(self, name, description, value, type, priority=0, min_value=0, max_value=100, choices=None):
         self.name = name
         self.description = description
         self.value = value
         self.type = type
+        self.priority = priority
         self.min_value = min_value
         self.max_value = max_value
         self.choices = choices if choices else []
