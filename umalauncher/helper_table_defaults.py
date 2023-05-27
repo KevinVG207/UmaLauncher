@@ -468,6 +468,10 @@ class GrandMastersFragmentsRow(hte.Row):
     short_name = "Fragments"
     description = "[Scenario-specific] Shows the total Grand Masters fragments on each facility. Hidden in other scenarios."
 
+    def __init__(self):
+        super().__init__()
+        self.settings = GrandMastersFragmentsSettings()
+
     def _generate_cells(self, game_state) -> list[hte.Cell]:
         if game_state['speed']['scenario_id'] != 5:
             return []
