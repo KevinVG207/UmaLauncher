@@ -596,7 +596,7 @@ class UmaPresetSettingsDialog(UmaMainDialog):
     
     def save_and_close(self):
         for setting_key, value_func in self.setting_elements.items():
-            logger.info(f"Setting {setting_key} to {value_func()}")
+            logger.debug(f"Setting {setting_key} to {value_func()}")
             getattr(self.settings_parent_object.settings, setting_key).value = value_func()
 
         self.close()

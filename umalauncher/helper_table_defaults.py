@@ -36,32 +36,37 @@ class GainedStatsSettings(hte.Settings):
             "Highlight max",
             "Highlights the facility with the most gained stats.",
             True,
-            hte.SettingType.BOOL
+            hte.SettingType.BOOL,
+            priority=8
         )
         self.s_enable_skillpts = hte.Setting(
             "Include skill points",
             "Include skill points in the total.",
             False,
-            hte.SettingType.BOOL
+            hte.SettingType.BOOL,
+            priority=10
         )
         self.s_displayed_value = hte.Setting(
             "Displayed value(s)",
             "Which value(s) to display.",
             0,
             hte.SettingType.LIST,
-            choices=["Raw gained stats", "Overcap-compensated gained stats", "Both"]
+            choices=["Raw gained stats", "Overcap-compensated gained stats", "Both"],
+            priority=9
         )
         self.s_highlight_max_overcapped = hte.Setting(
             "Highlight max (compensated)",
             "(Only when 'highlight max' is enabled and both stats types are displayed.)\nHighlights the facility with the most gained stats, using the compensated values.",
             True,
-            hte.SettingType.BOOL
+            hte.SettingType.BOOL,
+            priority=7
         )
         self.s_highlight_color = hte.Setting(
             "Highlight color",
             "The color to use for highlighting.",
             "#90EE90",
-            hte.SettingType.COLOR
+            hte.SettingType.COLOR,
+            priority=6
         )
 
 def make_gained_stats_text(gained_stats, gained_stats_compensated, highlight_color="#90EE90", highlight=0):
@@ -202,7 +207,8 @@ class GainedEnergySettings(hte.Settings):
             "Enable colors",
             "Enables coloring of the energy gained or lost.",
             False,
-            hte.SettingType.BOOL
+            hte.SettingType.BOOL,
+            priority=10
         )
         self.s_gain_color = hte.Setting(
             "Energy gain color",
@@ -369,35 +375,40 @@ class FailPercentageSettings(hte.Settings):
             "Enable colors",
             "Enables coloring of the fail percentage.",
             True,
-            hte.SettingType.BOOL
+            hte.SettingType.BOOL,
+            priority=10
         )
         self.s_warning_color = hte.Setting(
             "Warning color",
             "The color to use for the fail percentage when it is above the warning threshold.",
             "#FFA500",
-            hte.SettingType.COLOR
+            hte.SettingType.COLOR,
+            priority=9
         )
         self.s_warning_threshold = hte.Setting(
             "Warning threshold",
             "The number from which the fail percentage uses the warning color.",
             1,
             hte.SettingType.INT,
-            0,
-            100
+            priority=8,
+            min_value=0,
+            max_value=100
         )
         self.s_alert_color = hte.Setting(
             "Alert color",
             "The color to use for the fail percentage when it is above the alert threshold.",
             "#FF0000",
-            hte.SettingType.COLOR
+            hte.SettingType.COLOR,
+            priority=7
         )
         self.s_alert_threshold = hte.Setting(
             "Alert threshold",
             "The number from which the fail percentage uses the alert color.",
             30,
             hte.SettingType.INT,
-            0,
-            100
+            priority=6,
+            min_value=0,
+            max_value=100
         )
 
 class FailPercentageRow(hte.Row):
