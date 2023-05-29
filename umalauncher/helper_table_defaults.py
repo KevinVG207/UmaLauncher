@@ -431,9 +431,9 @@ class FailPercentageRow(hte.Row):
                 continue
 
             if fail_percentage >= self.settings.s_alert_threshold.value:
-                cells.append(hte.Cell(fail_string, color=self.settings.s_alert_color.value))
+                cells.append(hte.Cell(fail_string, color=self.settings.s_alert_color.value, bold=True))
             elif fail_percentage >= self.settings.s_warning_threshold.value:
-                cells.append(hte.Cell(fail_string, color=self.settings.s_warning_color.value))
+                cells.append(hte.Cell(fail_string, color=self.settings.s_warning_color.value, bold=True))
             else:
                 cells.append(hte.Cell(fail_string))
                 
