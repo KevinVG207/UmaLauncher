@@ -96,8 +96,6 @@ class Threader():
 @logger.catch
 def main():
     logger.info("==== Starting Launcher ====")
-    # Log the use of Uma Launcher anonymously.
-    util.do_get_request(f"https://umapyoi.net/api/v1/umalauncher/startup/{util.make_mac_hash()}")
     Threader()
 
 if __name__ == "__main__":
