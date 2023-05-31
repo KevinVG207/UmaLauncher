@@ -267,7 +267,10 @@ def is_minimized(handle):
         if tup[1] == win32con.SW_SHOWMINIMIZED:
             return True
         return False
-    except pywinerror:
+    except pywinerror as e:
+        logger.warning("Failed to get window placement.")
+        logger.warning(e)
+        logger.warning(traceback.format_exc())
         # Default to it being minimized as to not save the game window.
         return True
 
