@@ -90,8 +90,6 @@ import requests
 from pywintypes import error as pywinerror  # pylint: disable=no-name-in-module
 from PIL import Image
 import numpy as np
-import uuid
-import hashlib
 import mdb
 import gui
 
