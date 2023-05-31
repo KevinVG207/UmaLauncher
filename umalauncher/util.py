@@ -143,10 +143,11 @@ def make_mac_hash():
     """Creates an anonymous hash from the mac address.
     This is used to log unique users without being able identify them.
 
-    When mac == -1, hash = a8100ae6aa1940d0b663bb31cd466142ebbdbd5187131b92d93818987832eb89
+    When mac == -1, hash = 5bb2bd03350ba8709a490e092c075e43a22b1c3a75d717ed3bb015ec006d7b65
     """
     mac = get_mac()
-    return hashlib.sha256(mac.to_bytes(mac.bit_length(), 'big', signed=True)).hexdigest()
+    salt = b"umalauncher psRa5IZ9cwoz9Y7Q60x8SB2FUZt5kedd"
+    return hashlib.sha256(mac.to_bytes(mac.bit_length(), 'big', signed=True) + salt).hexdigest()
 
 
 window_handle = None
