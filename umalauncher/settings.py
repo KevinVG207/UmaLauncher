@@ -2,6 +2,7 @@ import os
 import json
 import copy
 import sys
+import uuid
 from win32com.shell import shell
 import traceback
 from loguru import logger
@@ -18,6 +19,7 @@ class Settings():
     default_settings = {
         "_version": version.VERSION,
         "_skip_update": None,
+        "_unique_id": str(uuid.uuid4()),
         "beta_optin": False,
         "debug_mode": False,
         "autoclose_dmm": True,
@@ -243,3 +245,6 @@ class Settings():
             if self.threader.carrotjuicer.helper_table:
                 self.threader.carrotjuicer.helper_table.update_presets(*self.get_helper_table_data())
             self.save_settings()
+    
+    def notify_server(self):
+        util.do_get_request(f"https://umapyoi.net/api/v1/umalauncher/startup/{self.loaded_settings['_unique_id']}")

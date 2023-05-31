@@ -43,6 +43,9 @@ class Threader():
         # Set directory to find assets
         self.settings = settings.Settings(self)
 
+        # Ping the server to track usage
+        self.settings.notify_server()
+
         self.screenstate = screenstate.ScreenStateHandler(self)
         self.threads.append(threading.Thread(target=self.screenstate.run, name="ScreenStateHandler"))
 
