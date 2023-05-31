@@ -90,6 +90,8 @@ import requests
 from pywintypes import error as pywinerror  # pylint: disable=no-name-in-module
 from PIL import Image
 import numpy as np
+import uuid
+import hashlib
 import mdb
 import gui
 
@@ -119,6 +121,32 @@ def do_get_request(url, error_title=None, error_message=None, ignore_timeout=Fal
         if not ignore_timeout:
             last_failed_request = time.perf_counter()
         return None
+
+
+def get_mac():
+    """Custom mac address getter function that returns -1 if no mac address is found.
+    """
+    if uuid._node is not None:
+        return uuid._node
+
+    _node = None
+    for getter in uuid._GETTERS:
+        try:
+            _node = getter()
+        except:
+            continue
+        if (_node is not None) and (0 <= _node < (1 << 48)):
+            return _node
+    return -1
+
+def make_mac_hash():
+    """Creates an anonymous hash from the mac address.
+    This is used to log unique users without being able identify them.
+
+    When mac == -1, hash = a8100ae6aa1940d0b663bb31cd466142ebbdbd5187131b92d93818987832eb89
+    """
+    mac = get_mac()
+    return hashlib.sha256(mac.to_bytes(mac.bit_length(), 'big', signed=True)).hexdigest()
 
 
 window_handle = None
