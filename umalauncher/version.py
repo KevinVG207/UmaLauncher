@@ -5,7 +5,6 @@ import os
 import sys
 import threading
 from urllib.parse import urlparse
-import requests
 from loguru import logger
 import dmm
 import util

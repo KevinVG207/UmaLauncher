@@ -2,7 +2,6 @@ import pystray
 import util
 from loguru import logger
 from PIL import Image
-import training_tracker
 
 class UmaTray():
     menu_items = None

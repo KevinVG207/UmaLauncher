@@ -5,7 +5,7 @@ import PyQt5.QtWidgets as qtw
 import PyQt5.QtGui as qtg
 import util
 import threading
-import traceback
+import requests
 
 ICONS = qtw.QMessageBox.Icon
 
@@ -908,3 +908,32 @@ class UmaInfoPopup(qtw.QMessageBox):
         self.setWindowFlag(qtc.Qt.WindowType.WindowStaysOnTopHint, True)
         self.setIcon(msg_icon)
         self.show()
+
+
+class UmaErrorPopup(qtw.QMessageBox):
+    def __init__(self, parent, title: str, message: str, traceback_str: str, user_id: str, msg_icon: qtw.QMessageBox.Icon = qtw.QMessageBox.Icon.Information):
+        super().__init__()
+        self.setWindowTitle(title)
+        self.setText(f"<b>{message}</b><br>{traceback_str}<br><b>You may send this error report to the developer to help fix this issue.</b>")
+        upload_button = qtw.QPushButton("Send error report")
+        upload_button.clicked.connect(lambda: self.upload_error_report(traceback_str, user_id))
+        self.addButton(upload_button, qtw.QMessageBox.ButtonRole.AcceptRole)
+        self.addButton(qtw.QPushButton("Close"), qtw.QMessageBox.ButtonRole.ActionRole)
+
+        msgbox_label = self.findChild(qtw.QLabel, "qt_msgbox_label")
+        msgbox_label.setSizePolicy(qtw.QSizePolicy.Expanding, qtw.QSizePolicy.Expanding)
+        msgbox_label.setTextFormat(qtc.Qt.TextFormat.RichText)
+        msgbox_label.setTextInteractionFlags(qtc.Qt.TextInteractionFlag.TextBrowserInteraction)
+        msgbox_label.setOpenExternalLinks(True)
+
+        self.setWindowFlag(qtc.Qt.WindowType.WindowStaysOnTopHint, True)
+        self.setIcon(msg_icon)
+        self.show()
+
+    def upload_error_report(self, traceback_str, user_id):
+        try:
+            logger.debug("Uploading error report")
+            resp = requests.post("https://umapyoi.net/api/v1/umalauncher/error", json={"traceback": traceback_str, "user_id": user_id})
+            resp.raise_for_status()
+        except Exception:
+            util.show_error_box("Error", "Failed to upload error report.")

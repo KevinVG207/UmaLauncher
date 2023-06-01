@@ -1,9 +1,7 @@
 import time
 import asyncio
-import traceback
 from enum import Enum
 from io import BytesIO
-import requests
 import win32gui
 import win32con
 import pypresence

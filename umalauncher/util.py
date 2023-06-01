@@ -135,10 +135,17 @@ def _show_alert_box(error, message, icon):
     gui.show_widget(gui.UmaInfoPopup, error, message, icon)
 
 
-def show_error_box(error, message):
+def show_error_box(error, message, custom_traceback=None):
     logger.error(f"{error}")
     logger.error(f"{message}")
-    _show_alert_box(error, message, gui.ICONS.Critical)
+    gui.show_widget(
+        gui.UmaErrorPopup,
+        error,
+        message,
+        traceback.format_exc() if custom_traceback is None else custom_traceback,
+        gui.THREADER.settings.get("_unique_id"),
+        gui.ICONS.Critical
+    )
 
 
 def show_warning_box(error, message):
