@@ -2,7 +2,6 @@ from loguru import logger
 import screenstate as ss
 import util
 import constants
-import mdb
 
 def _make_default_training_state(data, handler) -> ss.ScreenState:
     new_state = ss.ScreenState(handler)

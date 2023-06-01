@@ -1,8 +1,6 @@
 import shutil
 import os
 import util
-import win32gui
-import win32con
 from loguru import logger
 
 
