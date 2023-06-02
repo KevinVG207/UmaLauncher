@@ -3,6 +3,7 @@ import json
 import copy
 import sys
 import uuid
+import enum
 from win32com.shell import shell
 import traceback
 from loguru import logger
@@ -10,10 +11,194 @@ import util
 import constants
 import version
 import gui
+import settings_elements as se
 import helper_table_defaults as htd
 import helper_table_elements as hte
 
-class Settings():
+
+class DefaultSettings(se.Settings):
+    def __init__(self):
+        self.s_version = se.Setting(
+            "Version",
+            "(Private) Version of the settings file.",
+            version.VERSION,
+            se.SettingType.STRING,
+            priority=-1
+        )
+        self.s_skip_update = se.Setting(
+            "Skip update",
+            "(Private) Version to skip updating to.",
+            None,
+            se.SettingType.STRING,
+            priority=-1
+        )
+        self.s_unique_id = se.Setting(
+            "Unique ID",
+            "(Private) Unique ID for this installation.",
+            str(uuid.uuid4()),
+            se.SettingType.STRING,
+            priority=-1
+        )
+        self.s_beta_optin = se.Setting(
+            "Beta opt-in",
+            "Opt-in to the beta version. (Pre-release versions)",
+            False,
+            se.SettingType.BOOL
+        )
+        self.s_debug_mode = se.Setting(
+            "Debug mode",
+            "Enable debug mode. (Enables additional logging)",
+            False,
+            se.SettingType.BOOL
+        )
+        self.s_autoclose_dmm = se.Setting(
+            "Autoclose DMM Game Player",
+            "Automatically close DMM Game Player when the game is launched.",
+            True,
+            se.SettingType.BOOL
+        )
+        self.s_lock_game_window = se.Setting(
+            "Lock game window",
+            "Lock the game window to prevent accidental resizing.",
+            True,
+            se.SettingType.BOOL
+        )
+        self.s_discord_rich_presence = se.Setting(
+            "Discord rich presence",
+            "Display your current status in Discord.",
+            True,
+            se.SettingType.BOOL
+        )
+        self.s_enable_carrotjuicer = se.Setting(
+            "Enable CarrotJuicer",
+            "Enable CarrotJuicer functionality.",
+            True,
+            se.SettingType.BOOL
+        )
+        self.s_track_trainings = se.Setting(
+            "Track trainings",
+            "Track training events in /training_logs as gzip files.",
+            True,
+            se.SettingType.BOOL
+        )
+        self.s_game_install_path = se.Setting(
+            "Game install path",
+            "Path to the game's installation folder.",
+            "%userprofile%/Umamusume",
+            se.SettingType.STRING
+        )
+        self.s_game_position_portrait = se.Setting(
+            "Game position (portrait)",
+            "Position of the game window in portrait mode.",
+            None,
+            se.SettingType.LIST,
+            priority=-1
+        )
+        self.s_game_position_landscape = se.Setting(
+            "Game position (landscape)",
+            "Position of the game window in landscape mode.",
+            None,
+            se.SettingType.LIST,
+            priority=-1
+        )
+        self.s_browser_position = se.Setting(
+            "Browser position",
+            "Position of the browser window.",
+            None,
+            se.SettingType.LIST,
+            priority=-1
+        )
+        self.s_selected_browser = se.Setting(
+            "Selected browser",
+            "Browser to use for the Automatic Training Event Helper.",
+            {
+                "Auto": True,
+                "Chrome": False,
+                "Firefox": False,
+                "Edge": False
+            },
+            se.SettingType.RADIOBUTTONS
+        )
+        self.s_training_helper_table_preset = se.Setting(
+            "Training helper table preset",
+            "Preset to use for the Automatic Training Event Helper.",
+            "Default",
+            se.SettingType.LISTSELECT,
+            choices=['Default']  # Think of a way to get the choices from the presets
+        )
+        self.training_helper_table_preset_list = se.Setting(
+            "Training helper table preset list",
+            "List of presets for the Automatic Training Event Helper.",
+            [],
+            se.SettingType.LIST
+        )
+
+
+class SettingsHandler2():
+    settings_file = "umasettings2.json"
+    loaded_settings = DefaultSettings()
+
+    def __init__(self, threader):
+        self.threader = threader
+
+        # Load settings on import
+        if not os.path.exists(util.get_relative(self.settings_file)):
+            self.save_settings()
+        else:
+            self.load_settings()
+
+        # Check if the game install path is correct.
+        for folder_tuple in [
+            ('s_game_install_path', "umamusume.exe", "Please choose the game's installation folder.\n(Where umamusume.exe is located.)", "Selected folder does not include umamusume.exe.\nPlease try again.")
+        ]:
+            self.make_user_choose_folder(*folder_tuple)
+
+        logger.info(self.loaded_settings)
+
+    def make_user_choose_folder(self, setting, file_to_verify, title, error):
+        if not os.path.exists(os.path.join(self[setting], file_to_verify)):
+            logger.debug(self[setting])
+            pidl, _, _ = shell.SHBrowseForFolder(None, None, title)
+            try:
+                selected_directory = shell.SHGetPathFromIDListW(pidl)
+            except:
+                selected_directory = None
+
+            if selected_directory and os.path.exists(os.path.join(selected_directory, file_to_verify)):
+                self[setting] = selected_directory
+            else:
+                util.show_warning_box("Error", f"{error}<br>Uma Launcher will now close.")
+                sys.exit()
+    
+    def save_settings(self):
+        with open(util.get_relative(self.settings_file), "w", encoding="utf-8") as f:
+            json.dump(self.loaded_settings.to_dict(), f, ensure_ascii=False, indent=4)
+    
+    def load_settings(self):
+        with open(util.get_relative(self.settings_file), 'r', encoding='utf-8') as f:
+            try:
+                self.loaded_settings.import_dict(json.load(f), keep_undefined=True)
+                self.save_settings()
+            except (json.JSONDecodeError, TypeError) as _:
+                logger.error(traceback.format_exc())
+                util.show_warning_box("Error", "Failed to load settings file. Loading default settings instead.")
+                self.loaded_settings = DefaultSettings()
+    
+    def __getitem__(self, key):
+        value = getattr(self.loaded_settings, key).value
+        if isinstance(value, str):
+            value = os.path.expandvars(value)
+        return value
+    
+    def __setitem__(self, key, value):
+        logger.info(f"Setting {key} to {value}")
+        getattr(self.loaded_settings, key).value = value
+        self.save_settings()
+    
+    def __repr__(self):
+        return repr(self.loaded_settings)
+
+class SettingsHandler():
 
     settings_file = "umasettings.json"
     default_settings = {

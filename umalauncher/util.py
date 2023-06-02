@@ -143,7 +143,7 @@ def show_error_box(error, message, custom_traceback=None):
         error,
         message,
         traceback.format_exc() if custom_traceback is None else custom_traceback,
-        gui.THREADER.settings.get("_unique_id"),
+        gui.THREADER.settings.get("_unique_id") if gui.THREADER is not None else None,
         gui.ICONS.Critical
     )
 

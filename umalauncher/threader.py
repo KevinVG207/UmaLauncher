@@ -41,7 +41,7 @@ class Threader():
         gui.THREADER = self
 
         # Set directory to find assets
-        self.settings = settings.Settings(self)
+        self.settings = settings.SettingsHandler(self)
 
         # Ping the server to track usage
         self.settings.notify_server()
