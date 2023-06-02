@@ -51,6 +51,13 @@ class UmaTray():
 
     def run(self):
         self.icon_thread.run()
+    
+    def run_with_catch(self):
+        try:
+            self.run()
+        except Exception:
+            util.show_error_box("Critical Error", "Uma Launcher has encountered a critical error and will now close.")
+            self.threader.stop()
 
     def stop(self):
         self.icon_thread.stop()
