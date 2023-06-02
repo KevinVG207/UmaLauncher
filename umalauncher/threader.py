@@ -47,16 +47,16 @@ class Threader():
         self.settings.notify_server()
 
         self.screenstate = screenstate.ScreenStateHandler(self)
-        self.threads.append(threading.Thread(target=self.screenstate.run, name="ScreenStateHandler"))
+        self.threads.append(threading.Thread(target=self.screenstate.run_with_catch, name="ScreenStateHandler"))
 
         self.carrotjuicer = carrotjuicer.CarrotJuicer(self)
-        self.threads.append(threading.Thread(target=self.carrotjuicer.run, name="CarrotJuicer"))
+        self.threads.append(threading.Thread(target=self.carrotjuicer.run_with_catch, name="CarrotJuicer"))
 
         self.windowmover = windowmover.WindowMover(self)
-        self.threads.append(threading.Thread(target=self.windowmover.run, name="WindowMover"))
+        self.threads.append(threading.Thread(target=self.windowmover.run_with_catch, name="WindowMover"))
 
         self.tray = umatray.UmaTray(self)
-        self.threads.append(threading.Thread(target=self.tray.run, name="UmaTray"))
+        self.threads.append(threading.Thread(target=self.tray.run_with_catch, name="UmaTray"))
 
         for thread in self.threads:
             thread.start()
@@ -99,7 +99,10 @@ class Threader():
 @logger.catch
 def main():
     logger.info("==== Starting Launcher ====")
-    Threader()
+    try:
+        Threader()
+    except Exception:
+        util.show_error_box("Critical Error", "Uma Launcher has encountered a critical error and will now close.")
 
 if __name__ == "__main__":
     main()
