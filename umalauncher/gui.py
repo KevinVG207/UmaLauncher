@@ -917,8 +917,8 @@ class UmaErrorPopup(qtw.QMessageBox):
         self.setText(f"<b>{message}</b><br>{traceback_str}<br><b>You may send this error report to the developer to help fix this issue.</b>")
         upload_button = qtw.QPushButton("Send error report")
         upload_button.clicked.connect(lambda: self.upload_error_report(traceback_str, user_id))
-        self.addButton(upload_button, qtw.QMessageBox.ButtonRole.AcceptRole)
-        self.addButton(qtw.QPushButton("Close"), qtw.QMessageBox.ButtonRole.ActionRole)
+        self.addButton(upload_button, qtw.QMessageBox.ButtonRole.ActionRole)
+        self.addButton(qtw.QPushButton("Close"), qtw.QMessageBox.ButtonRole.RejectRole)
 
         msgbox_label = self.findChild(qtw.QLabel, "qt_msgbox_label")
         msgbox_label.setSizePolicy(qtw.QSizePolicy.Expanding, qtw.QSizePolicy.Expanding)

@@ -173,7 +173,6 @@ class HelperTable():
                     support_data = mdb.get_support_card_dict()[support_id]
                     support_card_type = mdb.get_support_card_type(support_data)
 
-                    # TODO: Add aoharu/GL-added supports as useful
                     if support_card_type != 'friend':
                         useful_partner_count += 1
 
@@ -185,7 +184,7 @@ class HelperTable():
                             len(data['venus_data_set']['venus_spirit_active_effect_info_array']) > 0 and \
                                 data['venus_data_set']['venus_spirit_active_effect_info_array'][0]['chara_id'] == 9042:
                         rainbow_count += 1
-                elif training_partner_id > 1000:
+                elif training_partner_id > 1000:  # TODO: Maybe 1000 < training_partner_id < 9000
                     useful_partner_count += 1
 
                 # Cap bond at 100

@@ -490,7 +490,6 @@ class GrandMastersFragmentsRow(hte.Row):
             
             cell_text += "</div>"
 
-            # TODO: Check if the coloring works as intended
             cells.append(hte.Cell(cell_text, bold=True, color=self.settings.s_double_color.value))
 
         return cells

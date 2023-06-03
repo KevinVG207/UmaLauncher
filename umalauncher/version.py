@@ -26,8 +26,8 @@ def vstr(version_tuple: tuple):
 def upgrade(umasettings):
     """Upgrades old versions."""
     script_version = parse_version(VERSION)
-    skip_version = parse_version(umasettings.get("_skip_update", None))
-    settings_version = parse_version(umasettings.get("_version", None))
+    skip_version = parse_version(umasettings["s_skip_update"])
+    settings_version = parse_version(umasettings["s_version"])
     logger.info(f"Script version: {vstr(script_version)}, Settings version: {vstr(settings_version)}")
 
     # Auto-update
@@ -87,7 +87,7 @@ def auto_update(umasettings, script_version, skip_version):
         return True
     response_json = response.json()
 
-    allow_prerelease = umasettings.get("beta_optin", False)
+    allow_prerelease = umasettings["s_beta_optin"]
     latest_release = None
     for release in response_json:
         if release.get('draft', False):

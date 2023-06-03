@@ -292,7 +292,7 @@ class CarrotJuicer():
 
         self.browser = self.init_browser()
 
-        saved_pos = self.threader.settings.get("browser_position")
+        saved_pos = self.threader.settings["s_browser_position"]
         if not saved_pos:
             self.reset_browser_position()
         else:
@@ -346,7 +346,7 @@ class CarrotJuicer():
         return
     
     def add_response_to_tracker(self, data):
-        should_track = self.threader.settings.get_tray_setting("Track trainings")
+        should_track = self.threader.settings["s_track_trainings"]
         if self.previous_request:
             if should_track:
                 self.training_tracker.add_request(self.previous_request)
@@ -384,7 +384,7 @@ class CarrotJuicer():
     def handle_response(self, message):
         data = self.load_response(message)
 
-        if self.threader.settings.loaded_settings.get("save_packet", False):
+        if self.threader.settings["s_save_packets"]:
             logger.debug("Response:")
             logger.debug(json.dumps(data))
             self.to_json(data, "packet_in.json")
@@ -588,7 +588,7 @@ class CarrotJuicer():
     def handle_request(self, message):
         data = self.load_request(message)
 
-        if self.threader.settings.loaded_settings.get("save_packet", False):
+        if self.threader.settings["s_save_packets"]:
             logger.debug("Request:")
             logger.debug(json.dumps(data))
             self.to_json(data, "packet_out.json")
@@ -678,7 +678,7 @@ class CarrotJuicer():
 
 
     def run(self):
-        msg_path = self.threader.settings.get("game_install_path")
+        msg_path = self.threader.settings["s_game_install_path"]
 
         if not msg_path:
             logger.error("Packet intercept enabled but no carrotjuicer path found")
@@ -693,7 +693,7 @@ class CarrotJuicer():
 
                 self.check_browser()
 
-                if not self.threader.settings.get_tray_setting("Enable CarrotJuicer"):
+                if not self.threader.settings["s_enable_carrotjuicer"]:
                     continue
 
                 if self.reset_browser:
