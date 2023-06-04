@@ -199,8 +199,11 @@ class SettingsHandler():
 
         if self['s_debug_mode']:
             util.is_debug = True
-            util.log_set_trace()
             logger.debug("Debug mode enabled. Logging more.")
+        else:
+            util.is_debug = False
+            logger.debug("Debug mode disabled. Logging less.")
+        util.log_set_info()
 
         self.save_settings()
     
@@ -296,7 +299,6 @@ class SettingsHandler():
         )
 
         # Update settings
-        logger.debug("Saving new settings.")
         self.loaded_settings = general_var[0]
 
         if new_preset_list:

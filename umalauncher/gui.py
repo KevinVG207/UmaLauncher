@@ -137,7 +137,7 @@ class UmaMainDialog(qtw.QDialog):
         pass
 
 
-class UmaPresetMenu(UmaMainWidget):
+class UmaPresetMenu(UmaMainDialog):
     default_preset = None
     selected_preset = None
     preset_list = None
@@ -234,10 +234,12 @@ class UmaPresetMenu(UmaMainWidget):
         self.btn_delete_from_preset.setObjectName(u"btn_delete_from_preset")
         self.btn_delete_from_preset.setGeometry(qtc.QRect(10, 280, 151, 23))
         self.btn_delete_from_preset.setText(u"Delete from current preset")
+        self.btn_delete_from_preset.setEnabled(False)
         self.btn_row_options = qtw.QPushButton(self.grp_current_preset)
         self.btn_row_options.setObjectName(u"btn_row_options")
         self.btn_row_options.setGeometry(qtc.QRect(170, 280, 151, 23))
         self.btn_row_options.setText(u"Row options")
+        self.btn_row_options.setEnabled(False)
 
         self.btn_copy_to_preset.clicked.connect(self.on_copy_to_preset)
         self.btn_delete_from_preset.clicked.connect(self.on_delete_from_preset)
@@ -248,12 +250,12 @@ class UmaPresetMenu(UmaMainWidget):
         self.btn_close.setGeometry(qtc.QRect(610, 440, 71, 23))
         self.btn_close.setText(u"Cancel")
         self.btn_close.setDefault(True)
-        self.btn_close.clicked.connect(self.on_close)
+        self.btn_close.clicked.connect(self._parent.cancel)
         self.btn_apply = qtw.QPushButton(self)
         self.btn_apply.setObjectName(u"btn_apply")
         self.btn_apply.setGeometry(qtc.QRect(510, 440, 91, 23))
-        self.btn_apply.setText("Apply && close")
-        self.btn_apply.clicked.connect(self.on_apply)
+        self.btn_apply.setText("Save && close")
+        self.btn_apply.clicked.connect(self._parent.save_and_close)
         self.grp_help = qtw.QGroupBox(self)
         self.grp_help.setObjectName(u"grp_help")
         self.grp_help.setGeometry(qtc.QRect(10, 370, 671, 61))
@@ -276,11 +278,10 @@ class UmaPresetMenu(UmaMainWidget):
         self.close()
     
     @qtc.pyqtSlot()
-    def on_apply(self):
+    def save_settings(self):
         self.output_list.append(self.selected_preset)
         for preset in self.preset_list:
             self.output_list.append(preset)
-        self.close()
 
     @qtc.pyqtSlot()
     def on_toggle_elements(self):
@@ -515,7 +516,7 @@ class UmaNewPresetDialog(UmaMainDialog):
         self._parent.selected_preset = new_preset
         self.close()
 
-class UmaPresetSettingsDialog(UmaMainDialog):
+class UmaSettingsDialog(UmaMainDialog):
     def init_ui(self, settings_var, window_title="Change options", *args, **kwargs):
         self.setting_elements = {}
         self.settings_var = settings_var
@@ -545,6 +546,13 @@ class UmaPresetSettingsDialog(UmaMainDialog):
         self.load_settings()
 
         self.scrollArea.setWidget(self.scrollAreaWidgetContents)
+
+        self.btn_restore = qtw.QPushButton(self)
+        self.btn_restore.setObjectName(u"btn_restore")
+        self.btn_restore.setGeometry(qtc.QRect(10, 370, 101, 23))
+        self.btn_restore.setText(u"Restore defaults")
+        self.btn_restore.clicked.connect(self.restore_defaults)
+
         self.btn_cancel = qtw.QPushButton(self)
         self.btn_cancel.setObjectName(u"btn_cancel")
         self.btn_cancel.setGeometry(qtc.QRect(400, 370, 71, 23))
@@ -554,14 +562,6 @@ class UmaPresetSettingsDialog(UmaMainDialog):
         self.btn_save_close.setObjectName(u"btn_save_close")
         self.btn_save_close.setGeometry(qtc.QRect(300, 370, 91, 23))
         self.btn_save_close.setText(u"Save && close")
-        self.btn_restore = qtw.QPushButton(self)
-        self.btn_restore.setObjectName(u"btn_restore")
-        self.btn_restore.setGeometry(qtc.QRect(10, 370, 101, 23))
-        self.btn_restore.setText(u"Restore defaults")
-
-        self.btn_cancel.clicked.connect(self.close)
-        self.btn_save_close.clicked.connect(self.save_and_close)
-        self.btn_restore.clicked.connect(self.restore_defaults)
 
     def load_settings(self):
         # Empty the verticalLayout.
@@ -594,13 +594,10 @@ class UmaPresetSettingsDialog(UmaMainDialog):
         self.settings_elements = {}
         self.load_settings()
     
-    def save_and_close(self):
+    def save_settings(self):
         for setting_key, value_func in self.setting_elements.items():
             logger.debug(f"Setting {setting_key} to {value_func()}")
             getattr(self.settings_var[0], setting_key).value = value_func()
-
-        self.close()
-
 
     def add_group_box(self, setting):
         grp_setting = qtw.QGroupBox(self.scrollAreaWidgetContents)
@@ -775,19 +772,43 @@ class UmaPresetSettingsDialog(UmaMainDialog):
             return out_color
 
         return [lbl_picked_color, lne_color_hex, btn_pick_color], lambda: get_color()
+
+
+class UmaPresetSettingsDialog(UmaSettingsDialog):
+    def init_ui(self, *args, **kwargs):
+        super().init_ui(*args, **kwargs)
+        self.btn_cancel.clicked.connect(self.close)
+        self.btn_save_close.clicked.connect(self.save_and_close)
     
+    def save_and_close(self):
+        self.save_settings()
+        self.close()
+
+
+class UmaGeneralSettingsDialog(UmaSettingsDialog):
+    def init_ui(self, *args, **kwargs):
+        super().init_ui(*args, **kwargs)
+        self.btn_cancel.clicked.connect(self._parent.cancel)
+        self.btn_save_close.clicked.connect(self._parent.save_and_close)
 
 
 class UmaPreferences(UmaMainWidget):
     def init_ui(self, general_var, preset_dict, selected_preset, new_preset_list, default_preset, new_preset_class, row_types_enum, *args, **kwargs):
+        self.previous_settings = copy.deepcopy(general_var[0])
+        self.previous_presets = copy.deepcopy(preset_dict)
+        self.previous_selected_preset = copy.deepcopy(selected_preset)
+
+        self.general_var = general_var
+
+        self.has_saved = False
+
         self.setWindowTitle("Preferences")
         self.tabWidget = qtw.QTabWidget(self)
         self.tabWidget.setObjectName("tabWidget")
         self.tabWidget.setSizePolicy(qtw.QSizePolicy.Preferred, qtw.QSizePolicy.Preferred)
         self.tabWidget.currentChanged.connect(self.tab_changed)
-        
 
-        self.general_widget = UmaPresetSettingsDialog(self, general_var, window_title="General")
+        self.general_widget = UmaGeneralSettingsDialog(self, general_var)
         # self.general_widget.setFixedSize(self.general_widget.size())
         # self.general_widget.setSizePolicy(qtw.QSizePolicy.Fixed, qtw.QSizePolicy.Fixed)
 
@@ -805,11 +826,19 @@ class UmaPreferences(UmaMainWidget):
         )
         self.tab_presets = self.presets_widget
         self.tab_presets.setObjectName("tab_presets")
-        self.tabWidget.addTab(self.tab_presets, "Presets")
+        self.tabWidget.addTab(self.tab_presets, "Helper Presets")
         self.tabWidget.setCurrentIndex(0)
 
         # JANKY HACK M8
         self.setFixedSize(self.tabWidget.widget(0).size() + qtc.QSize(0, self.tabWidget.tabBar().height() - 9))
+
+    def closeEvent(self, event):
+        if not self.has_saved:
+            self.cancel()
+
+    def cancel(self):
+        self.general_var[0] = self.previous_settings
+        self.close()
 
     def tab_changed(self, index):
         current_widget = self.tabWidget.widget(index)
@@ -821,6 +850,16 @@ class UmaPreferences(UmaMainWidget):
             self.tabWidget.resize(size)
             self.resize(size)
             self.setFixedSize(size)
+    
+    def save_and_close(self):
+        # Save general settings
+        self.general_widget.save_settings()
+
+        # Save presets
+        self.presets_widget.save_settings()
+
+        self.has_saved = True
+        self.close()
 
 
 class UmaSimpleDialog(UmaMainDialog):
