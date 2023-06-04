@@ -1,7 +1,5 @@
 import os
 import json
-import copy
-import sys
 import uuid
 from win32com.shell import shell
 import traceback
@@ -49,43 +47,50 @@ class DefaultSettings(se.Settings):
             "Beta opt-in",
             "Opt-in to the beta version. (Pre-release versions)",
             False,
-            se.SettingType.BOOL
+            se.SettingType.BOOL,
+            priority=1
         )
         self.s_debug_mode = se.Setting(
             "Debug mode",
             "Enable debug mode. (Enables additional logging)",
             False,
-            se.SettingType.BOOL
+            se.SettingType.BOOL,
+            priority=0
         )
         self.s_autoclose_dmm = se.Setting(
             "Autoclose DMM Game Player",
             "Automatically close DMM Game Player when the game is launched.",
             True,
-            se.SettingType.BOOL
+            se.SettingType.BOOL,
+            priority=96
         )
         self.s_lock_game_window = se.Setting(
             "Lock game window",
             "Lock the game window to prevent accidental resizing.",
             True,
-            se.SettingType.BOOL
+            se.SettingType.BOOL,
+            priority=-1
         )
         self.s_discord_rich_presence = se.Setting(
             "Discord rich presence",
             "Display your current status in Discord.",
             True,
-            se.SettingType.BOOL
+            se.SettingType.BOOL,
+            priority=100
         )
         self.s_enable_carrotjuicer = se.Setting(
             "Enable CarrotJuicer",
             "Enable CarrotJuicer functionality.",
             True,
-            se.SettingType.BOOL
+            se.SettingType.BOOL,
+            priority=99
         )
         self.s_track_trainings = se.Setting(
             "Track trainings",
             "Track training events in /training_logs as gzip files.",
             True,
-            se.SettingType.BOOL
+            se.SettingType.BOOL,
+            priority=97
         )
         self.s_game_install_path = se.Setting(
             "Game install path",
@@ -124,7 +129,8 @@ class DefaultSettings(se.Settings):
                 "Firefox": False,
                 "Edge": False
             },
-            se.SettingType.RADIOBUTTONS
+            se.SettingType.RADIOBUTTONS,
+            priority=98
         )
         self.s_training_helper_table_preset = se.Setting(
             "Training helper table preset",
@@ -153,8 +159,11 @@ class SettingsHandler():
         if not os.path.exists(util.get_relative(self.settings_file)):
             self.save_settings()
 
-        self.load_settings()
+        self.load_settings(first_load=True)
         logger.info(self.loaded_settings)
+    
+    def regenerate_unique_id(self):
+        self['s_unique_id'] = str(uuid.uuid4())
 
     def make_user_choose_folder(self, setting, file_to_verify, title, error):
         if not os.path.exists(os.path.join(self[setting], file_to_verify)):
@@ -169,13 +178,13 @@ class SettingsHandler():
                 self[setting] = selected_directory
             else:
                 util.show_warning_box("Error", f"{error}<br>Uma Launcher will now close.")
-                sys.exit()
+                self.threader.stop()
     
     def save_settings(self):
         with open(util.get_relative(self.settings_file), "w", encoding="utf-8") as f:
             json.dump(self.loaded_settings.to_dict(), f, ensure_ascii=False, indent=4)
     
-    def load_settings(self):
+    def load_settings(self, first_load=False):
         raw_settings = ""
         with open(util.get_relative(self.settings_file), 'r', encoding='utf-8') as f:
             try:
@@ -187,15 +196,10 @@ class SettingsHandler():
                 return
         self.loaded_settings.import_dict(raw_settings, keep_undefined=True)
 
-        # Check if the game install path is correct.
-        for folder_tuple in [
-            ('s_game_install_path', "umamusume.exe", "Please choose the game's installation folder.\n(Where umamusume.exe is located.)", "Selected folder does not include umamusume.exe.\nPlease try again.")
-        ]:
-            self.make_user_choose_folder(*folder_tuple)
+        if first_load:
+            version.auto_update(self)
 
-
-        # TODO: IMPLEMENT UPGRADING OF SETTINGS
-
+        version.upgrade(self, raw_settings)
 
         if self['s_debug_mode']:
             util.is_debug = True
@@ -205,7 +209,16 @@ class SettingsHandler():
             logger.debug("Debug mode disabled. Logging less.")
         util.log_set_info()
 
+        # Check if the game install path is correct.
+        for folder_tuple in [
+            ('s_game_install_path', "umamusume.exe", "Please choose the game's installation folder.\n(Where umamusume.exe is located.)", "Selected folder does not include umamusume.exe.\nPlease try again.")
+        ]:
+            self.make_user_choose_folder(*folder_tuple)
+
         self.save_settings()
+
+    def __contains__(self, key):
+        return hasattr(self.loaded_settings, key)
     
     def __getitem__(self, key):
         value = getattr(self.loaded_settings, key).value
@@ -278,7 +291,7 @@ class SettingsHandler():
             if self.threader.carrotjuicer.helper_table:
                 self.threader.carrotjuicer.helper_table.update_presets(*self.get_helper_table_data())
             self.save_settings()
-    
+
     def notify_server(self):
         util.do_get_request(f"https://umapyoi.net/api/v1/umalauncher/startup/{self['s_unique_id']}")
 
@@ -289,6 +302,7 @@ class SettingsHandler():
         new_preset_list = []
 
         gui.show_widget(gui.UmaPreferences,
+            umasettings=self,
             general_var=general_var,
             preset_dict=preset_dict,
             selected_preset=selected_preset,

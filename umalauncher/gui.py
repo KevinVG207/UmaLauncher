@@ -7,16 +7,19 @@ import util
 import threading
 import requests
 import settings_elements as se
+import version
 
 ICONS = qtw.QMessageBox.Icon
 
 THREADER = None
 
 APPLICATION = None
+CURRENTLY_RUNNING = False
 
 
 def show_widget(widget, *args, **kwargs):
     global APPLICATION
+    global CURRENTLY_RUNNING
 
     if threading.main_thread() != threading.current_thread():
         if not THREADER:
@@ -28,9 +31,15 @@ def show_widget(widget, *args, **kwargs):
     if not APPLICATION:
         logger.debug("Creating new QT app instance")
         APPLICATION = UmaApp()
+    
+    if CURRENTLY_RUNNING:
+        widget(APPLICATION, *args, **kwargs).exec_()
+        return
 
+    CURRENTLY_RUNNING = True
     APPLICATION.run(widget(APPLICATION, *args, **kwargs))
     APPLICATION.close_widget()
+    CURRENTLY_RUNNING = False
 
 
 def stop_application():
@@ -793,7 +802,7 @@ class UmaGeneralSettingsDialog(UmaSettingsDialog):
 
 
 class UmaPreferences(UmaMainWidget):
-    def init_ui(self, general_var, preset_dict, selected_preset, new_preset_list, default_preset, new_preset_class, row_types_enum, *args, **kwargs):
+    def init_ui(self, umasettings, general_var, preset_dict, selected_preset, new_preset_list, default_preset, new_preset_class, row_types_enum, *args, **kwargs):
         self.previous_settings = copy.deepcopy(general_var[0])
         self.previous_presets = copy.deepcopy(preset_dict)
         self.previous_selected_preset = copy.deepcopy(selected_preset)
@@ -827,6 +836,11 @@ class UmaPreferences(UmaMainWidget):
         self.tab_presets = self.presets_widget
         self.tab_presets.setObjectName("tab_presets")
         self.tabWidget.addTab(self.tab_presets, "Helper Presets")
+
+        self.tab_about = AboutDialog(self, umasettings)
+        self.tab_about.setObjectName("tab_about")
+        self.tabWidget.addTab(self.tab_about, "About")
+
         self.tabWidget.setCurrentIndex(0)
 
         # JANKY HACK M8
@@ -1050,3 +1064,109 @@ class UmaErrorPopup(qtw.QMessageBox):
             resp.raise_for_status()
         except Exception:
             util.show_error_box("Error", "Failed to upload error report.")
+
+class AboutDialog(UmaMainDialog):
+    def init_ui(self, settings, *args, **kwargs):
+        self.settings = settings
+
+        super().init_ui(*args, **kwargs)
+
+        self.resize(481, 401)
+        self.setFixedSize(self.size())
+        self.verticalLayoutWidget = qtw.QWidget(self)
+        self.verticalLayoutWidget.setObjectName(u"verticalLayoutWidget")
+        self.verticalLayoutWidget.setGeometry(qtc.QRect(0, 0, 481, 401))
+        self.verticalLayout = qtw.QVBoxLayout(self.verticalLayoutWidget)
+        self.verticalLayout.setObjectName(u"verticalLayout")
+        self.verticalLayout.setContentsMargins(0, 0, 0, 0)
+        self.lbl_header = qtw.QLabel(self.verticalLayoutWidget)
+        self.lbl_header.setObjectName(u"lbl_header")
+        sizePolicy = qtw.QSizePolicy(qtw.QSizePolicy.Preferred, qtw.QSizePolicy.Maximum)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.lbl_header.sizePolicy().hasHeightForWidth())
+        self.lbl_header.setSizePolicy(sizePolicy)
+        self.lbl_header.setLayoutDirection(qtc.Qt.LeftToRight)
+        self.lbl_header.setText(u"<html><head/><body><p><br><span style=\" font-size:12pt; font-weight:600;\">Uma Launcher</span></p></body></html>")
+        self.lbl_header.setAlignment(qtc.Qt.AlignCenter)
+
+        self.verticalLayout.addWidget(self.lbl_header)
+
+        self.lbl_version = qtw.QLabel(self.verticalLayoutWidget)
+        self.lbl_version.setObjectName(u"lbl_version")
+        sizePolicy.setHeightForWidth(self.lbl_version.sizePolicy().hasHeightForWidth())
+        self.lbl_version.setSizePolicy(sizePolicy)
+        self.lbl_version.setLayoutDirection(qtc.Qt.LeftToRight)
+        self.lbl_version.setText(f"Version {version.VERSION}")
+        self.lbl_version.setAlignment(qtc.Qt.AlignCenter)
+
+        self.verticalLayout.addWidget(self.lbl_version)
+
+        self.lbl_about = qtw.QLabel(self.verticalLayoutWidget)
+        self.lbl_about.setObjectName(u"lbl_about")
+        sizePolicy.setHeightForWidth(self.lbl_about.sizePolicy().hasHeightForWidth())
+        self.lbl_about.setSizePolicy(sizePolicy)
+        self.lbl_about.setLayoutDirection(qtc.Qt.LeftToRight)
+        self.lbl_about.setText(u"<html><head/><body><p>Created by KevinVG207<br/><a href=\"https://github.com/KevinVG207/UmaLauncher\"><span style=\" text-decoration: underline; color:#0000ff;\">Github</span></a> - <a href=\"https://umapyoi.net/uma-launcher\"><span style=\" text-decoration: underline; color:#0000ff;\">Website</span></a> - <a href=\"https://twitter.com/kevinvg207\"><span style=\" text-decoration: underline; color:#0000ff;\">Twitter</span></a></p></body></html>")
+        self.lbl_about.setAlignment(qtc.Qt.AlignCenter)
+
+        self.verticalLayout.addWidget(self.lbl_about)
+
+        self.horizontalLayout = qtw.QHBoxLayout()
+        self.horizontalLayout.setObjectName(u"horizontalLayout")
+        self.btn_update = qtw.QPushButton(self.verticalLayoutWidget)
+        self.btn_update.setObjectName(u"btn_update")
+        sizePolicy1 = qtw.QSizePolicy(qtw.QSizePolicy.Maximum, qtw.QSizePolicy.Fixed)
+        sizePolicy1.setHorizontalStretch(0)
+        sizePolicy1.setVerticalStretch(0)
+        sizePolicy1.setHeightForWidth(self.btn_update.sizePolicy().hasHeightForWidth())
+        self.btn_update.setSizePolicy(sizePolicy1)
+        self.btn_update.setText(u" Check for updates ")
+        self.btn_update.setDefault(True)
+        self.btn_update.clicked.connect(self.update_check)
+
+        self.horizontalLayout.addWidget(self.btn_update)
+
+        self.verticalLayout.addLayout(self.horizontalLayout)
+
+        self.lbl_unique_header = qtw.QLabel(self.verticalLayoutWidget)
+        self.lbl_unique_header.setObjectName(u"lbl_unique_header")
+        self.lbl_unique_header.setText(u"Unique ID:")
+        self.lbl_unique_header.setAlignment(qtc.Qt.AlignCenter)
+
+        self.verticalLayout.addWidget(self.lbl_unique_header)
+
+        self.lbl_unique = qtw.QLabel(self.verticalLayoutWidget)
+        self.lbl_unique.setObjectName(u"lbl_unique")
+        self.lbl_unique.setText(self.settings['s_unique_id'])
+        self.lbl_unique.setAlignment(qtc.Qt.AlignCenter)
+
+        self.verticalLayout.addWidget(self.lbl_unique)
+
+        self.horizontalLayout_2 = qtw.QHBoxLayout()
+        self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
+        self.btn_refresh_id = qtw.QPushButton(self.verticalLayoutWidget)
+        self.btn_refresh_id.setObjectName(u"btn_refresh_id")
+        sizePolicy1.setHeightForWidth(self.btn_refresh_id.sizePolicy().hasHeightForWidth())
+        self.btn_refresh_id.setSizePolicy(sizePolicy1)
+        self.btn_refresh_id.setText(u" Refresh unique ID ")
+        self.btn_refresh_id.clicked.connect(self.on_refresh_id)
+
+        self.horizontalLayout_2.addWidget(self.btn_refresh_id)
+
+        self.verticalLayout.addLayout(self.horizontalLayout_2)
+
+        self.verticalSpacer = qtw.QSpacerItem(20, 40, qtw.QSizePolicy.Minimum, qtw.QSizePolicy.Expanding)
+
+        self.verticalLayout.addItem(self.verticalSpacer)
+    
+    def update_check(self):
+        self.btn_update.setEnabled(False)
+        result = version.auto_update(self.settings, force=True)
+        if result:
+            util.show_info_box("No updates found", "You are running the latest version of Uma Launcher.")
+        self.btn_update.setEnabled(True)
+    
+    def on_refresh_id(self):
+        self.settings.regenerate_unique_id()
+        self.lbl_unique.setText(self.settings['s_unique_id'])
