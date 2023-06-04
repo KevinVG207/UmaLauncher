@@ -13,7 +13,7 @@ class UmaTray():
         menu_items = []
         menu_items.append(pystray.MenuItem("Lock Game Window", lambda: self.flip_setting("s_lock_game_window"), checked=lambda _: self.check_setting("s_lock_game_window")))
         menu_items.append(pystray.Menu.SEPARATOR)
-        menu_items.append(pystray.MenuItem("Customize Training Helper Table", lambda: self.show_helper_table_dialog()))
+        menu_items.append(pystray.MenuItem("Preferences", lambda: self.show_preferences()))
         menu_items.append(pystray.MenuItem("Maximize + center game", self.threader.windowmover.try_maximize))
         menu_items.append(pystray.MenuItem("Take screenshot", self.threader.screenstate.screenshot_to_clipboard))
         menu_items.append(pystray.MenuItem("Export Training CSV", lambda: self.show_training_csv_dialog()))
@@ -47,6 +47,9 @@ class UmaTray():
 
     def check_setting(self, setting_name):
         return self.threader.settings[setting_name]
+
+    def show_preferences(self):
+        self.threader.show_preferences = True
 
     def show_helper_table_dialog(self):
         self.threader.show_helper_table_dialog = True

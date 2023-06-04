@@ -6,6 +6,7 @@ import PyQt5.QtGui as qtg
 import util
 import threading
 import requests
+import settings_elements as se
 
 ICONS = qtw.QMessageBox.Icon
 
@@ -515,14 +516,9 @@ class UmaNewPresetDialog(UmaMainDialog):
         self.close()
 
 class UmaPresetSettingsDialog(UmaMainDialog):
-    settings_parent_object = None
-    setting_types_enum = None
-    setting_elements = None
-
-    def init_ui(self, settings_parent_object, setting_types_enum, window_title="Change options", *args, **kwargs):
+    def init_ui(self, settings_var, window_title="Change options", *args, **kwargs):
         self.setting_elements = {}
-        self.settings_parent_object = settings_parent_object
-        self.setting_types_enum = setting_types_enum
+        self.settings_var = settings_var
 
         self.resize(481, 401)
         # Disable resizing
@@ -573,10 +569,14 @@ class UmaPresetSettingsDialog(UmaMainDialog):
             self.verticalLayout.itemAt(i).widget().setParent(None)
 
         # Adding group boxes to the scroll area
-        settings_keys = self.settings_parent_object.settings.get_settings_keys()
+        settings_keys = self.settings_var[0].get_settings_keys()
         last_setting = settings_keys[-1]
         for setting_key in settings_keys:
-            setting = getattr(self.settings_parent_object.settings, setting_key)
+            setting = getattr(self.settings_var[0], setting_key)
+
+            if setting.priority < 0:
+                continue
+
             group_box, value_func = self.add_group_box(setting)
 
             if not group_box:
@@ -590,14 +590,14 @@ class UmaPresetSettingsDialog(UmaMainDialog):
                 self.verticalLayout.addWidget(group_box)
     
     def restore_defaults(self):
-        self.settings_parent_object.settings = type(self.settings_parent_object.settings)()
+        self.settings_var[0] = type(self.settings_var[0])()
         self.settings_elements = {}
         self.load_settings()
     
     def save_and_close(self):
         for setting_key, value_func in self.setting_elements.items():
             logger.debug(f"Setting {setting_key} to {value_func()}")
-            getattr(self.settings_parent_object.settings, setting_key).value = value_func()
+            getattr(self.settings_var[0], setting_key).value = value_func()
 
         self.close()
 
@@ -618,22 +618,28 @@ class UmaPresetSettingsDialog(UmaMainDialog):
         lbl_setting_description.setObjectName(u"lbl_setting_description")
         lbl_setting_description.setText(setting.description)
         lbl_setting_description.setWordWrap(True)
+        lbl_setting_description.setAlignment(qtc.Qt.AlignTop)
 
         horizontalLayout.addWidget(lbl_setting_description)
 
         input_widgets = []
-        if setting.type == self.setting_types_enum.BOOL:
+        if setting.type == se.SettingType.BOOL:
             input_widgets, value_func = self.add_checkbox(setting, grp_setting)
-        elif setting.type == self.setting_types_enum.INT:
+        elif setting.type == se.SettingType.INT:
             input_widgets, value_func = self.add_spinbox(setting, grp_setting)
-        elif setting.type == self.setting_types_enum.LIST:
+        elif setting.type == se.SettingType.LIST:
             input_widgets, value_func = self.add_combobox(setting, grp_setting)
-        elif setting.type == self.setting_types_enum.COLOR:
+        elif setting.type == se.SettingType.COLOR:
             input_widgets, value_func = self.add_colorpicker(setting, grp_setting)
+        elif setting.type == se.SettingType.RADIOBUTTONS:
+            input_widgets, value_func = self.add_radiobuttons(setting, grp_setting)
         
         if not input_widgets:
+            logger.debug(f"{setting.type} not implemented for {setting.name}")
+            # Delete the group box if there are no input widgets.
+            grp_setting.setParent(None)
             return None, None
-        
+
         for input_widget in input_widgets:
             horizontalLayout.addWidget(input_widget)
 
@@ -682,6 +688,29 @@ class UmaPresetSettingsDialog(UmaMainDialog):
 
         cmb_setting_combobox.setCurrentIndex(setting.value)
         return [cmb_setting_combobox], lambda: cmb_setting_combobox.currentIndex()
+    
+    def add_radiobuttons(self, setting, parent):
+        grp_box = qtw.QGroupBox(parent)
+        grp_box.setObjectName(f"grp_box_{setting.name}")
+        grp_box.setSizePolicy(qtw.QSizePolicy(qtw.QSizePolicy.Maximum, qtw.QSizePolicy.Maximum))
+        grp_box.setStyleSheet("QGroupBox { border: 0; }")
+
+        vert_layout = qtw.QVBoxLayout(grp_box)
+        vert_layout.setObjectName(f"vert_layout_{setting.name}")
+        vert_layout.setContentsMargins(0, 0, 0, 0)
+        vert_layout.setSpacing(0)
+        vert_layout.setAlignment(qtc.Qt.AlignTop)
+
+        radio_buttons = []
+        for choice, enabled in setting.value.items():
+            rdb_setting_radiobutton = qtw.QRadioButton(grp_box)
+            rdb_setting_radiobutton.setObjectName(f"rdb_setting_{setting.name}_{choice}")
+            rdb_setting_radiobutton.setText(choice)
+            rdb_setting_radiobutton.setChecked(enabled)
+            vert_layout.addWidget(rdb_setting_radiobutton)
+            radio_buttons.append(rdb_setting_radiobutton)
+
+        return [grp_box], lambda: {rdb.text(): rdb.isChecked() for rdb in radio_buttons}
 
     def add_colorpicker(self, setting, parent):
         lbl_picked_color = qtw.QLabel(parent)
@@ -746,7 +775,52 @@ class UmaPresetSettingsDialog(UmaMainDialog):
             return out_color
 
         return [lbl_picked_color, lne_color_hex, btn_pick_color], lambda: get_color()
+    
 
+
+class UmaPreferences(UmaMainWidget):
+    def init_ui(self, general_var, preset_dict, selected_preset, new_preset_list, default_preset, new_preset_class, row_types_enum, *args, **kwargs):
+        self.setWindowTitle("Preferences")
+        self.tabWidget = qtw.QTabWidget(self)
+        self.tabWidget.setObjectName("tabWidget")
+        self.tabWidget.setSizePolicy(qtw.QSizePolicy.Preferred, qtw.QSizePolicy.Preferred)
+        self.tabWidget.currentChanged.connect(self.tab_changed)
+        
+
+        self.general_widget = UmaPresetSettingsDialog(self, general_var, window_title="General")
+        # self.general_widget.setFixedSize(self.general_widget.size())
+        # self.general_widget.setSizePolicy(qtw.QSizePolicy.Fixed, qtw.QSizePolicy.Fixed)
+
+        self.tab_general = self.general_widget
+        self.tab_general.setObjectName("tab_general")
+        self.tabWidget.addTab(self.tab_general, "General")
+
+        self.presets_widget = UmaPresetMenu(self,
+            selected_preset=selected_preset,
+            default_preset=default_preset,
+            new_preset_class=new_preset_class,
+            preset_list=list(preset_dict.values()),
+            row_types_enum=row_types_enum,
+            output_list=new_preset_list
+        )
+        self.tab_presets = self.presets_widget
+        self.tab_presets.setObjectName("tab_presets")
+        self.tabWidget.addTab(self.tab_presets, "Presets")
+        self.tabWidget.setCurrentIndex(0)
+
+        # JANKY HACK M8
+        self.setFixedSize(self.tabWidget.widget(0).size() + qtc.QSize(0, self.tabWidget.tabBar().height() - 9))
+
+    def tab_changed(self, index):
+        current_widget = self.tabWidget.widget(index)
+        if current_widget is not None:
+            size = current_widget.size()
+            # Add the height of the tab bar
+            size.setHeight(size.height() + self.tabWidget.tabBar().height())
+
+            self.tabWidget.resize(size)
+            self.resize(size)
+            self.setFixedSize(size)
 
 
 class UmaSimpleDialog(UmaMainDialog):

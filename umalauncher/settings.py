@@ -91,7 +91,8 @@ class DefaultSettings(se.Settings):
             "Game install path",
             "Path to the game's installation folder.",
             "%userprofile%/Umamusume",
-            se.SettingType.FOLDERDIALOG
+            se.SettingType.FOLDERDIALOG,
+            priority=-1
         )
         self.s_game_position_portrait = se.Setting(
             "Game position (portrait)",
@@ -151,15 +152,8 @@ class SettingsHandler():
         # Load settings on import
         if not os.path.exists(util.get_relative(self.settings_file)):
             self.save_settings()
-        else:
-            self.load_settings()
 
-        # Check if the game install path is correct.
-        for folder_tuple in [
-            ('s_game_install_path', "umamusume.exe", "Please choose the game's installation folder.\n(Where umamusume.exe is located.)", "Selected folder does not include umamusume.exe.\nPlease try again.")
-        ]:
-            self.make_user_choose_folder(*folder_tuple)
-
+        self.load_settings()
         logger.info(self.loaded_settings)
 
     def make_user_choose_folder(self, setting, file_to_verify, title, error):
@@ -192,7 +186,16 @@ class SettingsHandler():
                 self.loaded_settings = DefaultSettings()
                 return
         self.loaded_settings.import_dict(raw_settings, keep_undefined=True)
+
+        # Check if the game install path is correct.
+        for folder_tuple in [
+            ('s_game_install_path', "umamusume.exe", "Please choose the game's installation folder.\n(Where umamusume.exe is located.)", "Selected folder does not include umamusume.exe.\nPlease try again.")
+        ]:
+            self.make_user_choose_folder(*folder_tuple)
+
+
         # TODO: IMPLEMENT UPGRADING OF SETTINGS
+
 
         if self['s_debug_mode']:
             util.is_debug = True
@@ -218,11 +221,11 @@ class SettingsHandler():
 
     def save_game_position(self, pos, portrait):
         if util.is_minimized(self.threader.screenstate.game_handle):
-            logger.warning(f"Game minimized, cannot save {constants.ORIENTATION_DICT[portrait]}: {pos}")
+            # logger.warning(f"Game minimized, cannot save {constants.ORIENTATION_DICT[portrait]}: {pos}")
             return
 
         if (pos[0] == -32000 and pos[1] == -32000):
-            logger.warning(f"Game minimized, cannot save {constants.ORIENTATION_DICT[portrait]}: {pos}")
+            # logger.warning(f"Game minimized, cannot save {constants.ORIENTATION_DICT[portrait]}: {pos}")
             return
 
         orientation_key = constants.ORIENTATION_DICT[portrait]
@@ -275,3 +278,34 @@ class SettingsHandler():
     
     def notify_server(self):
         util.do_get_request(f"https://umapyoi.net/api/v1/umalauncher/startup/{self['s_unique_id']}")
+
+    def display_preferences(self):
+        general_var = [self.loaded_settings]
+        
+        preset_dict, selected_preset = self.get_helper_table_data()
+        new_preset_list = []
+
+        gui.show_widget(gui.UmaPreferences,
+            general_var=general_var,
+            preset_dict=preset_dict,
+            selected_preset=selected_preset,
+            new_preset_list=new_preset_list,
+            default_preset=htd.DefaultPreset(htd.RowTypes),
+            new_preset_class=hte.Preset,
+            row_types_enum=htd.RowTypes
+        )
+
+        # Update settings
+        logger.debug("Saving new settings.")
+        self.loaded_settings = general_var[0]
+
+        if new_preset_list:
+            logger.debug("Saving new helper table preset list.")
+            selected_preset = new_preset_list.pop(0)
+            self["s_training_helper_table_preset"] = selected_preset.name
+            self["s_training_helper_table_preset_list"] = [preset.to_dict() for preset in new_preset_list]
+            if self.threader.carrotjuicer.helper_table:
+                self.threader.carrotjuicer.helper_table.update_presets(*self.get_helper_table_data())
+
+        self.save_settings()
+        self.load_settings()

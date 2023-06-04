@@ -81,9 +81,11 @@ class Row():
     def display_settings_dialog(self, parent):
         """Displays the settings dialog for this row.
         """
-        self.dialog = gui.UmaPresetSettingsDialog(parent, self, se.SettingType, window_title="Change row options")
+        settings_var = [self.settings]
+        self.dialog = gui.UmaPresetSettingsDialog(parent, settings_var, window_title="Change row options")
         self.dialog.exec()
         self.dialog = None
+        self.settings = settings_var[0]
     
     def to_tr(self, command_info):
         td = ''.join(cell.to_td() for cell in self.get_cells(command_info))
@@ -154,9 +156,11 @@ class Preset():
         return self.name == other.name
     
     def display_settings_dialog(self, parent):
-        self.dialog = gui.UmaPresetSettingsDialog(parent, self, se.SettingType, window_title="Toggle elements")
+        settings_var = [self.settings]
+        self.dialog = gui.UmaPresetSettingsDialog(parent, settings_var, window_title="Toggle elements")
         self.dialog.exec()
         self.dialog = None
+        self.settings = settings_var[0]
     
     def generate_overlay(self, main_info, command_info):
         html_elements = []

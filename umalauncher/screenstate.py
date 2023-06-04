@@ -169,7 +169,7 @@ class ScreenStateHandler():
 
     def get_screenshot(self):
         if util.is_minimized(self.game_handle):
-            logger.warning("Game is minimized, cannot get screenshot.")
+            # logger.warning("Game is minimized, cannot get screenshot.")
             return None
         try:
             x, y, x1, y1 = win32gui.GetClientRect(self.game_handle)

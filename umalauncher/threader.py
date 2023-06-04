@@ -33,6 +33,7 @@ class Threader():
     screenstate = None
     threads = []
     should_stop = False
+    show_preferences = False
     show_helper_table_dialog = False
     show_training_csv_dialog = False
     widget_queue = []
@@ -65,6 +66,10 @@ class Threader():
 
         while not self.should_stop:
             time.sleep(0.2)
+
+            if self.show_preferences:
+                self.settings.display_preferences()
+                self.show_preferences = False
 
             if self.show_helper_table_dialog:
                 self.settings.update_helper_table()
