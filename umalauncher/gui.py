@@ -489,12 +489,12 @@ class UmaNewPresetDialog(UmaMainDialog):
     @qtc.pyqtSlot()
     def on_ok(self):
         if self.lne_preset_name.text() == "":
-            UmaInfoPopup("Error", "Preset name cannot be empty.", ICONS.Critical).exec_()
+            UmaInfoPopup(self, "Error", "Preset name cannot be empty.", ICONS.Critical).exec_()
             return
 
         names_list = [preset.name for preset in self._parent.preset_list + [self._parent.default_preset]]
         if self.lne_preset_name.text() in names_list:
-            UmaInfoPopup("Error", "Preset with this name already exists.", ICONS.Critical).exec_()
+            UmaInfoPopup(self, "Error", "Preset with this name already exists.", ICONS.Critical).exec_()
             return
         
         # Check if the user wants to copy a preset.
