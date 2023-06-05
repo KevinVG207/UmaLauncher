@@ -44,7 +44,7 @@ def show_widget(widget, *args, **kwargs):
 
     CURRENTLY_RUNNING = True
     APPLICATION.run(widget(APPLICATION, *args, **kwargs))
-    APPLICATION.close_widget()
+
     CURRENTLY_RUNNING = False
 
 
@@ -53,6 +53,7 @@ def stop_application():
 
     if APPLICATION:
         logger.debug("Closing QT app instance")
+        APPLICATION.close_widget()
         APPLICATION.close()
         APPLICATION = None
 
