@@ -46,6 +46,9 @@ class Threader():
         # Set directory to find assets
         self.settings = settings.SettingsHandler(self)
 
+        if self.should_stop:
+            return
+
         # Ping the server to track usage
         self.settings.notify_server()
 

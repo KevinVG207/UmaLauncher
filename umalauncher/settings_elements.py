@@ -4,7 +4,7 @@ class SettingType(enum.Enum):
     UNDEFINED = "undefined"
     BOOL = "bool"
     INT = "int"
-    LISTSELECT = "listselect"
+    COMBOBOX = "combobox"
     LIST = "list"
     COLOR = "color"
     STRING = "string"

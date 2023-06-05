@@ -197,7 +197,9 @@ class SettingsHandler():
         self.loaded_settings.import_dict(raw_settings, keep_undefined=True)
 
         if first_load:
-            version.auto_update(self)
+            success = version.auto_update(self)
+            if not success:
+                self.threader.stop()
 
         version.upgrade(self, raw_settings)
 

@@ -640,7 +640,7 @@ class UmaSettingsDialog(UmaMainDialog):
             input_widgets, value_func = self.add_checkbox(setting, grp_setting)
         elif setting.type == se.SettingType.INT:
             input_widgets, value_func = self.add_spinbox(setting, grp_setting)
-        elif setting.type == se.SettingType.LIST:
+        elif setting.type == se.SettingType.COMBOBOX:
             input_widgets, value_func = self.add_combobox(setting, grp_setting)
         elif setting.type == se.SettingType.COLOR:
             input_widgets, value_func = self.add_colorpicker(setting, grp_setting)
