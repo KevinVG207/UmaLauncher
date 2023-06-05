@@ -33,7 +33,7 @@ def upgrade(umasettings, raw_settings):
         logger.warning("Umasettings are for a newer version.")
 
     # PERFORM UPGRADE FROM PRE-1.5.0
-    if settings_version < (1,5,0):
+    if "_version" in raw_settings:
         logger.info("Attempting to upgrade settings from pre-1.5.0...")
 
         # Create a backup of the old settings file, just in case
