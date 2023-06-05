@@ -781,17 +781,17 @@ def training_csv_dialog(training_paths=None):
         except util.pywinerror as e:
             if e.winerror == 12291:
                 # Ran out of buffer space
-                util.show_error_box("Error", "Too many files selected. / File names too long.")
+                util.show_warning_box("Error", "Too many files selected. / File names too long.")
                 return
             # os.chdir(cwd_before)
-            util.show_error_box("Error", "No file(s) selected.")
+            util.show_warning_box("Error", "No file(s) selected.")
             return
 
     # Check if all files end with .gz
     # If not, show error message
     for training_path in training_paths:
         if not training_path.endswith(".gz"):
-            util.show_error_box("Error", "All chosen files must be .gz (gzip) files.")
+            util.show_warning_box("Error", "All chosen files must be .gz (gzip) files.")
             return
 
     try:
@@ -807,7 +807,7 @@ def training_csv_dialog(training_paths=None):
 
     except util.pywinerror:
         # os.chdir(cwd_before)
-        util.show_error_box("Error", "No output file given.")
+        util.show_warning_box("Error", "No output file given.")
         return
     
     # os.chdir(cwd_before)
