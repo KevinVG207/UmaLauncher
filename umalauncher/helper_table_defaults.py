@@ -2,6 +2,7 @@ from enum import Enum
 import copy
 import helper_table_elements as hte
 import util
+import settings_elements as se
 
 def compensate_overcap(game_state, command):
     # Compensate for overcapped stats by doubling any gained stats that bring the current stats over 1200.
@@ -30,42 +31,42 @@ class CurrentStatsRow(hte.Row):
         return cells
 
 
-class GainedStatsSettings(hte.Settings):
+class GainedStatsSettings(se.Settings):
     def __init__(self):
-        self.s_highlight_max = hte.Setting(
+        self.s_highlight_max = se.Setting(
             "Highlight max",
             "Highlights the facility with the most gained stats.",
             True,
-            hte.SettingType.BOOL,
+            se.SettingType.BOOL,
             priority=8
         )
-        self.s_enable_skillpts = hte.Setting(
+        self.s_enable_skillpts = se.Setting(
             "Include skill points",
             "Include skill points in the total.",
             False,
-            hte.SettingType.BOOL,
+            se.SettingType.BOOL,
             priority=10
         )
-        self.s_displayed_value = hte.Setting(
+        self.s_displayed_value = se.Setting(
             "Displayed value(s)",
             "Which value(s) to display.",
             0,
-            hte.SettingType.LIST,
+            se.SettingType.LISTSELECT,
             choices=["Raw gained stats", "Overcap-compensated gained stats", "Both"],
             priority=9
         )
-        self.s_highlight_max_overcapped = hte.Setting(
+        self.s_highlight_max_overcapped = se.Setting(
             "Highlight max (compensated)",
             "(Only when 'highlight max' is enabled and both stats types are displayed.)\nHighlights the facility with the most gained stats, using the compensated values.",
             True,
-            hte.SettingType.BOOL,
+            se.SettingType.BOOL,
             priority=7
         )
-        self.s_highlight_color = hte.Setting(
+        self.s_highlight_color = se.Setting(
             "Highlight color",
             "The color to use for highlighting.",
             "#90EE90",
-            hte.SettingType.COLOR,
+            se.SettingType.COLOR,
             priority=6
         )
 
@@ -140,19 +141,19 @@ class GainedStatsRow(hte.Row):
 
         return cells
 
-class GainedStatsDistributionSettings(hte.Settings):
+class GainedStatsDistributionSettings(se.Settings):
     def __init__(self):
-        self.s_include_skillpts = hte.Setting(
+        self.s_include_skillpts = se.Setting(
             "Include skill points",
             "Include skill points in the row.",
             False,
-            hte.SettingType.BOOL
+            se.SettingType.BOOL
         )
-        self.s_displayed_value = hte.Setting(
+        self.s_displayed_value = se.Setting(
             "Displayed value(s)",
             "Which value(s) to display.",
             0,
-            hte.SettingType.LIST,
+            se.SettingType.LISTSELECT,
             choices=["Raw gained stats", "Overcap-compensated gained stats", "Both"]
         )
 
@@ -201,26 +202,26 @@ class GainedStatsDistributionRow(hte.Row):
         return cells
 
 
-class GainedEnergySettings(hte.Settings):
+class GainedEnergySettings(se.Settings):
     def __init__(self):
-        self.s_enable_colors = hte.Setting(
+        self.s_enable_colors = se.Setting(
             "Enable colors",
             "Enables coloring of the energy gained or lost.",
             False,
-            hte.SettingType.BOOL,
+            se.SettingType.BOOL,
             priority=10
         )
-        self.s_gain_color = hte.Setting(
+        self.s_gain_color = se.Setting(
             "Energy gain color",
             "The color to use for energy gained.",
             "#90EE90",
-            hte.SettingType.COLOR
+            se.SettingType.COLOR
         )
-        self.s_loss_color = hte.Setting(
+        self.s_loss_color = se.Setting(
             "Energy loss color",
             "The color to use for energy lost.",
             "#FFA500",
-            hte.SettingType.COLOR
+            se.SettingType.COLOR
         )
 
 class GainedEnergyRow(hte.Row):
@@ -250,19 +251,19 @@ class GainedEnergyRow(hte.Row):
         return cells
 
 
-class TotalBondSettings(hte.Settings):
+class TotalBondSettings(se.Settings):
     def __init__(self):
-        self.s_highlight_max = hte.Setting(
+        self.s_highlight_max = se.Setting(
             "Highlight max",
             "Highlights the facility with the most total bond.",
             True,
-            hte.SettingType.BOOL
+            se.SettingType.BOOL
         )
-        self.s_highlight_max_color = hte.Setting(
+        self.s_highlight_max_color = se.Setting(
             "Highlight max color",
             "The color to use for highlighting the facility with the most total bond.",
             "#90EE90",
-            hte.SettingType.COLOR
+            se.SettingType.COLOR
         )
 
 class TotalBondRow(hte.Row):
@@ -289,19 +290,19 @@ class TotalBondRow(hte.Row):
         return cells
 
 
-class UsefulBondSettings(hte.Settings):
+class UsefulBondSettings(se.Settings):
     def __init__(self):
-        self.s_highlight_max = hte.Setting(
+        self.s_highlight_max = se.Setting(
             "Highlight max",
             "Highlights the facility with the most useful bond.",
             True,
-            hte.SettingType.BOOL
+            se.SettingType.BOOL
         )
-        self.s_highlight_max_color = hte.Setting(
+        self.s_highlight_max_color = se.Setting(
             "Highlight max color",
             "The color to use for highlighting the facility with the most useful bond.",
             "#90EE90",
-            hte.SettingType.COLOR
+            se.SettingType.COLOR
         )
 
 
@@ -330,19 +331,19 @@ class UsefulBondRow(hte.Row):
         return cells
 
 
-class GainedSkillptSettings(hte.Settings):
+class GainedSkillptSettings(se.Settings):
     def __init__(self):
-        self.s_highlight_max = hte.Setting(
+        self.s_highlight_max = se.Setting(
             "Highlight max",
             "Highlights the facility with the most gained skill points.",
             True,
-            hte.SettingType.BOOL
+            se.SettingType.BOOL
         )
-        self.s_highlight_max_color = hte.Setting(
+        self.s_highlight_max_color = se.Setting(
             "Highlight max color",
             "The color to use for highlighting the facility with the most gained skill points.",
             "#90EE90",
-            hte.SettingType.COLOR
+            se.SettingType.COLOR
         )
 
 class GainedSkillptRow(hte.Row):
@@ -369,43 +370,43 @@ class GainedSkillptRow(hte.Row):
         return cells
 
 
-class FailPercentageSettings(hte.Settings):
+class FailPercentageSettings(se.Settings):
     def __init__(self):
-        self.s_enable_colors = hte.Setting(
+        self.s_enable_colors = se.Setting(
             "Enable colors",
             "Enables coloring of the fail percentage.",
             True,
-            hte.SettingType.BOOL,
+            se.SettingType.BOOL,
             priority=10
         )
-        self.s_warning_color = hte.Setting(
+        self.s_warning_color = se.Setting(
             "Warning color",
             "The color to use for the fail percentage when it is above the warning threshold.",
             "#FFA500",
-            hte.SettingType.COLOR,
+            se.SettingType.COLOR,
             priority=9
         )
-        self.s_warning_threshold = hte.Setting(
+        self.s_warning_threshold = se.Setting(
             "Warning threshold",
             "The number from which the fail percentage uses the warning color.",
             1,
-            hte.SettingType.INT,
+            se.SettingType.INT,
             priority=8,
             min_value=0,
             max_value=100
         )
-        self.s_alert_color = hte.Setting(
+        self.s_alert_color = se.Setting(
             "Alert color",
             "The color to use for the fail percentage when it is above the alert threshold.",
             "#FF0000",
-            hte.SettingType.COLOR,
+            se.SettingType.COLOR,
             priority=7
         )
-        self.s_alert_threshold = hte.Setting(
+        self.s_alert_threshold = se.Setting(
             "Alert threshold",
             "The number from which the fail percentage uses the alert color.",
             30,
-            hte.SettingType.INT,
+            se.SettingType.INT,
             priority=6,
             min_value=0,
             max_value=100
@@ -431,9 +432,9 @@ class FailPercentageRow(hte.Row):
                 continue
 
             if fail_percentage >= self.settings.s_alert_threshold.value:
-                cells.append(hte.Cell(fail_string, color=self.settings.s_alert_color.value))
+                cells.append(hte.Cell(fail_string, color=self.settings.s_alert_color.value, bold=True))
             elif fail_percentage >= self.settings.s_warning_threshold.value:
-                cells.append(hte.Cell(fail_string, color=self.settings.s_warning_color.value))
+                cells.append(hte.Cell(fail_string, color=self.settings.s_warning_color.value, bold=True))
             else:
                 cells.append(hte.Cell(fail_string))
                 
@@ -454,13 +455,13 @@ class LevelRow(hte.Row):
 
         return cells
 
-class GrandMastersFragmentsSettings(hte.Settings):
+class GrandMastersFragmentsSettings(se.Settings):
     def __init__(self):
-        self.s_double_color = hte.Setting(
+        self.s_double_color = se.Setting(
             "Double fragment color",
             "The color to use to indicate a double fragment.",
             "#90EE90",
-            hte.SettingType.COLOR
+            se.SettingType.COLOR
         )
 
 class GrandMastersFragmentsRow(hte.Row):
@@ -489,7 +490,6 @@ class GrandMastersFragmentsRow(hte.Row):
             
             cell_text += "</div>"
 
-            # TODO: Check if the coloring works as intended
             cells.append(hte.Cell(cell_text, bold=True, color=self.settings.s_double_color.value))
 
         return cells
@@ -501,19 +501,19 @@ class GrandMastersFragmentsRow(hte.Row):
         return super().to_tr(command_info)
 
 
-class GrandLiveTotalTokensSettings(hte.Settings):
+class GrandLiveTotalTokensSettings(se.Settings):
     def __init__(self):
-        self.s_highlight_max = hte.Setting(
+        self.s_highlight_max = se.Setting(
             "Highlight max",
             "Highlights the facility with the most Grand Live tokens.",
             True,
-            hte.SettingType.BOOL
+            se.SettingType.BOOL
         )
-        self.s_highlight_max_color = hte.Setting(
+        self.s_highlight_max_color = se.Setting(
             "Highlight max color",
             "The color to use to highlight the facility with the most Grand Live tokens.",
             "#90EE90",
-            hte.SettingType.COLOR
+            se.SettingType.COLOR
         )
 
 class GrandLiveTotalTokensRow(hte.Row):
@@ -593,19 +593,19 @@ class RainbowCountRow(hte.Row):
         return cells
 
 
-class PartnerCountSettings(hte.Settings):
+class PartnerCountSettings(se.Settings):
     def __init__(self):
-        self.s_highlight_max = hte.Setting(
+        self.s_highlight_max = se.Setting(
             "Highlight max",
             "Highlights the facility with the most training partners.",
             True,
-            hte.SettingType.BOOL
+            se.SettingType.BOOL
         )
-        self.s_highlight_max_color = hte.Setting(
+        self.s_highlight_max_color = se.Setting(
             "Highlight max color",
             "The color to use to highlight the facility with the most training partners.",
             "#90EE90",
-            hte.SettingType.COLOR
+            se.SettingType.COLOR
         )
 
 
@@ -632,19 +632,19 @@ class PartnerCountRow(hte.Row):
         return cells
 
 
-class UsefulPartnerCountSettings(hte.Settings):
+class UsefulPartnerCountSettings(se.Settings):
     def __init__(self):
-        self.s_highlight_max = hte.Setting(
+        self.s_highlight_max = se.Setting(
             "Highlight max",
             "Highlights the facility with the most useful training partners.",
             True,
-            hte.SettingType.BOOL
+            se.SettingType.BOOL
         )
-        self.s_highlight_max_color = hte.Setting(
+        self.s_highlight_max_color = se.Setting(
             "Highlight max color",
             "The color to use to highlight the facility with the most useful training partners.",
             "#90EE90",
-            hte.SettingType.COLOR
+            se.SettingType.COLOR
         )
 
 class UsefulPartnerCountRow(hte.Row):

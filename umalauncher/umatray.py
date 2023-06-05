@@ -2,7 +2,6 @@ import pystray
 import util
 from loguru import logger
 from PIL import Image
-import training_tracker
 
 class UmaTray():
     menu_items = None
@@ -11,30 +10,10 @@ class UmaTray():
 
     def __init__(self, threader):
         self.threader = threader
-        menu_items = [
-            pystray.MenuItem(
-                menu_item,
-                self.threader.settings.set_tray_setting,
-                checked=lambda item: self.threader.settings.get_tray_setting(item.text)
-            ) for menu_item in self.threader.settings.default_settings["tray_items"]
-        ]
-        menu_items.append(
-            pystray.MenuItem(
-                "Set Browser Type",
-                pystray.Menu(
-                    lambda: (
-                        pystray.MenuItem(
-                            browser,
-                            self.threader.settings.set_browser,
-                            checked=self.threader.settings.get_browser,
-                            radio=True)
-                        for browser in self.threader.settings.get_browsers()
-                    )
-                )
-            )
-        )
+        menu_items = []
+        menu_items.append(pystray.MenuItem("Lock Game Window", lambda: self.flip_setting("s_lock_game_window"), checked=lambda _: self.check_setting("s_lock_game_window")))
         menu_items.append(pystray.Menu.SEPARATOR)
-        menu_items.append(pystray.MenuItem("Customize Training Helper Table", lambda: self.show_helper_table_dialog()))
+        menu_items.append(pystray.MenuItem("Preferences", lambda: self.show_preferences()))
         menu_items.append(pystray.MenuItem("Maximize + center game", self.threader.windowmover.try_maximize))
         menu_items.append(pystray.MenuItem("Take screenshot", self.threader.screenstate.screenshot_to_clipboard))
         menu_items.append(pystray.MenuItem("Export Training CSV", lambda: self.show_training_csv_dialog()))
@@ -52,13 +31,29 @@ class UmaTray():
 
     def run(self):
         self.icon_thread.run()
+    
+    def run_with_catch(self):
+        try:
+            self.run()
+        except Exception:
+            util.show_error_box("Critical Error", "Uma Launcher has encountered a critical error and will now close.")
+            self.threader.stop()
 
     def stop(self):
         self.icon_thread.stop()
 
+    def flip_setting(self, setting_name):
+        self.threader.settings[setting_name] = not self.threader.settings[setting_name]
+
+    def check_setting(self, setting_name):
+        return self.threader.settings[setting_name]
+
+    def show_preferences(self):
+        self.threader.show_preferences = True
+
     def show_helper_table_dialog(self):
         self.threader.show_helper_table_dialog = True
-    
+
     def show_training_csv_dialog(self):
         self.threader.show_training_csv_dialog = True
 

@@ -121,6 +121,7 @@ def do_get_request(url, error_title=None, error_message=None, ignore_timeout=Fal
         return None
 
 
+
 window_handle = None
 
 
@@ -134,10 +135,20 @@ def _show_alert_box(error, message, icon):
     gui.show_widget(gui.UmaInfoPopup, error, message, icon)
 
 
-def show_error_box(error, message):
-    logger.error(f"{error}")
-    logger.error(f"{message}")
-    _show_alert_box(error, message, gui.ICONS.Critical)
+def show_error_box(error, message, custom_traceback=None):
+    logger.error(error)
+    logger.error(message)
+    traceback_str = traceback.format_exc() if custom_traceback is None else custom_traceback
+    logger.error(traceback_str)
+
+    gui.show_widget(
+        gui.UmaErrorPopup,
+        error,
+        message,
+        traceback_str,
+        gui.THREADER.settings["s_unique_id"] if gui.THREADER is not None and gui.THREADER.settings is not None else None,
+        gui.ICONS.Critical
+    )
 
 
 def show_warning_box(error, message):
@@ -267,7 +278,10 @@ def is_minimized(handle):
         if tup[1] == win32con.SW_SHOWMINIMIZED:
             return True
         return False
-    except pywinerror:
+    except pywinerror as e:
+        logger.warning("Failed to get window placement.")
+        logger.warning(e)
+        logger.warning(traceback.format_exc())
         # Default to it being minimized as to not save the game window.
         return True
 

@@ -123,7 +123,7 @@ class WindowMover():
         self.threader = threader
         self.screenstate = threader.screenstate
         self.window = None
-        self.prev_auto_resize = self.threader.settings.get_tray_setting("Lock game window")
+        self.prev_auto_resize = self.threader.settings["s_lock_game_window"]
     
     def try_maximize(self):
         if self.window:
@@ -134,6 +134,13 @@ class WindowMover():
 
     def stop(self):
         self.should_stop = True
+    
+    def run_with_catch(self):
+        try:
+            self.run()
+        except Exception:
+            util.show_error_box("Critical Error", "Uma Launcher has encountered a critical error and will now close.")
+            self.threader.stop()
 
     def run(self):
         while not self.should_stop and not self.screenstate.game_handle:
@@ -151,7 +158,7 @@ class WindowMover():
             # Keep maximize option in the tray.
             # Toggle to auto-resize
 
-            auto_resize = self.threader.settings.get_tray_setting("Lock game window")
+            auto_resize = self.threader.settings["s_lock_game_window"]
 
             if auto_resize:
 

@@ -2,16 +2,14 @@ import urllib.request
 import subprocess
 import time
 import os
-import sys
+import shutil
 import threading
 from urllib.parse import urlparse
-import requests
 from loguru import logger
-import dmm
 import util
 import gui
 
-VERSION = "1.4.8"
+VERSION = "1.5.0"
 
 def parse_version(version_string: str):
     """Convert version string to tuple."""
@@ -24,54 +22,71 @@ def vstr(version_tuple: tuple):
     return ".".join([str(num) for num in version_tuple])
 
 
-def upgrade(umasettings):
+def upgrade(umasettings, raw_settings):
     """Upgrades old versions."""
     script_version = parse_version(VERSION)
-    skip_version = parse_version(umasettings.get("_skip_update", None))
-    settings_version = parse_version(umasettings.get("_version", None))
+    settings_version = parse_version(umasettings["s_version"])
     logger.info(f"Script version: {vstr(script_version)}, Settings version: {vstr(settings_version)}")
-
-    # Auto-update
-    if not auto_update(umasettings, script_version, skip_version):
-        sys.exit()
 
     # Update settings file
     if script_version < settings_version:
         logger.warning("Umasettings are for a newer version.")
-    #     return umasettings
 
-    if settings_version <= (0,9,0):
-        # Remove DMM patch
-        logger.info("Need to upgrade settings past 0.9.0 - Attempting to unpatch DMM.")
-        # Unpatch DMM if needed.
-        if "dmm_path" in umasettings:
-            dmm.unpatch_dmm(umasettings['dmm_path'])
-            del umasettings['dmm_path']
-        if 'Patch DMM' in umasettings['tray_items']:
-            del umasettings['tray_items']['Patch DMM']
-        logger.info("Completed upgrade.")
+    # PERFORM UPGRADE FROM PRE-1.5.0
+    if settings_version < (1,5,0):
+        logger.info("Attempting to upgrade settings from pre-1.5.0...")
 
-    if settings_version <= (1,1,4):
-        logger.info("Need to upgrade settings past 1.1.4 - Upgrading.")
-        if "Automatic training event helper" in umasettings["tray_items"]:
-            del umasettings["tray_items"]["Automatic training event helper"]
-        logger.info("Completed upgrade.")
+        # Create a backup of the old settings file, just in case
+        if not os.path.exists("umasettings.json.bak"):
+            shutil.copy("umasettings.json", "umasettings.json.bak")
+
+        pre_1_5_0_update_dict = {
+            "_unique_id": "s_unique_id",
+            "save_packet": "s_save_packets",
+            "beta_optin": "s_beta_optin",
+            "debug_mode": "s_debug_mode",
+            "autoclose_dmm": "s_autoclose_dmm",
+            "browser_position": "s_browser_position",
+            "selected_browser": "s_selected_browser",
+            "game_install_path": "s_game_install_path",
+            "training_helper_table_preset": "s_training_helper_table_preset",
+            "training_helper_table_preset_list": "s_training_helper_table_preset_list",
+        }
+
+        pre_1_5_0_update_dict_2 = {
+            ("tray_items", "Lock game window"): "s_lock_game_window",
+            ("tray_items", "Discord rich presence"): "s_discord_rich_presence",
+            ("tray_items", "Enable CarrotJuicer"): "s_enable_carrotjuicer",
+            ("tray_items", "Track trainings"): "s_track_trainings",
+            ("game_position", "portrait"): "s_game_position_portrait",
+            ("game_position", "landscape"): "s_game_position_landscape",
+        }
+
+        for key, value in pre_1_5_0_update_dict.items():
+            if key in raw_settings:
+                umasettings[value] = raw_settings[key]
+        
+        for key, value in pre_1_5_0_update_dict_2.items():
+            if key[0] in raw_settings and key[1] in raw_settings[key[0]]:
+                umasettings[value] = raw_settings[key[0]][key[1]]
 
     # If upgraded at all
     if script_version > settings_version:
-        if '_skip_update' in umasettings:
-            del umasettings['_skip_update']
-        umasettings = {'_skip_update': None, **umasettings}
+        umasettings['s_skip_update'] = None
 
     # Upgrade settings version no.
-    if '_version' in umasettings:
-        del umasettings['_version']
-    umasettings = {'_version': vstr(script_version), **umasettings}
-    return umasettings
+    umasettings["s_version"] = vstr(script_version)
 
+def force_update(umasettings):
+    result = auto_update(umasettings, force=True)
+    if result:
+        util.show_info_box("No updates found", "You are already using the latest version.")
 
-def auto_update(umasettings, script_version, skip_version):
+def auto_update(umasettings, force=False):
     logger.info("Checking for updates...")
+
+    script_version = parse_version(VERSION)
+    skip_version = parse_version(umasettings["s_skip_update"])
 
     # Don't update if we're running from script.
     if util.is_script:
@@ -88,7 +103,7 @@ def auto_update(umasettings, script_version, skip_version):
         return True
     response_json = response.json()
 
-    allow_prerelease = umasettings.get("beta_optin", False)
+    allow_prerelease = umasettings["s_beta_optin"]
     latest_release = None
     for release in response_json:
         if release.get('draft', False):
@@ -112,7 +127,7 @@ def auto_update(umasettings, script_version, skip_version):
 
     # Newer version found
     # Return if skipped
-    if release_version <= skip_version:
+    if not force and release_version <= skip_version:
         return True
 
     logger.info("Newer version found. Asking user to update.")
@@ -128,8 +143,8 @@ def auto_update(umasettings, script_version, skip_version):
         return True
 
     # Skip
-    if choice == 2:
-        umasettings['_skip_update'] = vstr(release_version)
+    elif choice == 2:
+        umasettings['s_skip_update'] = vstr(release_version)
         return True
 
     # Yes
@@ -144,7 +159,7 @@ def auto_update(umasettings, script_version, skip_version):
     logger.debug("Update window closed: Update failed.")
     if os.path.exists(util.get_relative("update.tmp")):
         os.remove(util.get_relative("update.tmp"))
-    util.show_error_box("Update failed.", "Could not update. Please check your internet connection.<br>Uma Launcher will now close.")
+    util.show_warning_box("Update failed.", "Could not update. Please check your internet connection.<br>Uma Launcher will now close.")
     return False
 
 
