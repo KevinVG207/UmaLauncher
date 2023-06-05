@@ -51,7 +51,7 @@ class GainedStatsSettings(se.Settings):
             "Displayed value(s)",
             "Which value(s) to display.",
             0,
-            se.SettingType.LISTSELECT,
+            se.SettingType.COMBOBOX,
             choices=["Raw gained stats", "Overcap-compensated gained stats", "Both"],
             priority=9
         )
@@ -153,7 +153,7 @@ class GainedStatsDistributionSettings(se.Settings):
             "Displayed value(s)",
             "Which value(s) to display.",
             0,
-            se.SettingType.LISTSELECT,
+            se.SettingType.COMBOBOX,
             choices=["Raw gained stats", "Overcap-compensated gained stats", "Both"]
         )
 
