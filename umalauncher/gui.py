@@ -1115,6 +1115,7 @@ class AboutDialog(UmaMainDialog):
         self.lbl_about.setSizePolicy(sizePolicy)
         self.lbl_about.setLayoutDirection(qtc.Qt.LeftToRight)
         self.lbl_about.setText(u"<html><head/><body><p>Created by KevinVG207<br/><a href=\"https://github.com/KevinVG207/UmaLauncher\"><span style=\" text-decoration: underline; color:#0000ff;\">Github</span></a> - <a href=\"https://umapyoi.net/uma-launcher\"><span style=\" text-decoration: underline; color:#0000ff;\">Website</span></a> - <a href=\"https://twitter.com/kevinvg207\"><span style=\" text-decoration: underline; color:#0000ff;\">Twitter</span></a></p></body></html>")
+        self.lbl_about.setOpenExternalLinks(True)
         self.lbl_about.setAlignment(qtc.Qt.AlignCenter)
 
         self.verticalLayout.addWidget(self.lbl_about)
