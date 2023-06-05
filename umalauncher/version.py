@@ -2,6 +2,7 @@ import urllib.request
 import subprocess
 import time
 import os
+import shutil
 import threading
 from urllib.parse import urlparse
 from loguru import logger
@@ -34,6 +35,10 @@ def upgrade(umasettings, raw_settings):
     # PERFORM UPGRADE FROM PRE-1.5.0
     if settings_version < (1,5,0):
         logger.info("Attempting to upgrade settings from pre-1.5.0...")
+
+        # Create a backup of the old settings file, just in case
+        if not os.path.exists("umasettings.json.bak"):
+            shutil.copy("umasettings.json", "umasettings.json.bak")
 
         pre_1_5_0_update_dict = {
             "_unique_id": "s_unique_id",

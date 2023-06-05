@@ -149,7 +149,7 @@ class DefaultSettings(se.Settings):
 
 
 class SettingsHandler():
-    settings_file = "umasettings2.json"
+    settings_file = "umasettings.json"
     loaded_settings = DefaultSettings()
 
     def __init__(self, threader):
