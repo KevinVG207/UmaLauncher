@@ -149,12 +149,12 @@ class CarrotJuicer():
         driver = None
 
         browser_list = []
-        if self.threader.settings.loaded_settings['selected_browser']['Auto']:
+        if self.threader.settings['s_selected_browser']['Auto']:
             browser_list = self._browser_list.values()
         else:
             browser_list = [
                 self._browser_list[browser]
-                for browser, selected in self.threader.settings.loaded_settings['selected_browser'].items()
+                for browser, selected in self.threader.settings['s_selected_browser'].items()
                 if selected
             ]
 
@@ -336,7 +336,7 @@ class CarrotJuicer():
                 logger.warning(f"Browser minimized, cannot save position: {self.last_browser_rect}")
                 self.last_browser_rect = None
                 return
-            self.threader.settings.set("browser_position", [self.last_browser_rect['x'], self.last_browser_rect['y'], self.last_browser_rect['width'], self.last_browser_rect['height']])
+            self.threader.settings["s_browser_position"] = [self.last_browser_rect['x'], self.last_browser_rect['y'], self.last_browser_rect['width'], self.last_browser_rect['height']]
             self.last_browser_rect = None
 
     def end_training(self):
