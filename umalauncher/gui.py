@@ -6,16 +6,20 @@ import PyQt5.QtGui as qtg
 import util
 import threading
 import requests
+import settings_elements as se
+import version
 
 ICONS = qtw.QMessageBox.Icon
 
 THREADER = None
 
 APPLICATION = None
+CURRENTLY_RUNNING = False
 
 
 def show_widget(widget, *args, **kwargs):
     global APPLICATION
+    global CURRENTLY_RUNNING
 
     if threading.main_thread() != threading.current_thread():
         if not THREADER:
@@ -27,9 +31,15 @@ def show_widget(widget, *args, **kwargs):
     if not APPLICATION:
         logger.debug("Creating new QT app instance")
         APPLICATION = UmaApp()
+    
+    if CURRENTLY_RUNNING:
+        widget(APPLICATION, *args, **kwargs).exec_()
+        return
 
+    CURRENTLY_RUNNING = True
     APPLICATION.run(widget(APPLICATION, *args, **kwargs))
     APPLICATION.close_widget()
+    CURRENTLY_RUNNING = False
 
 
 def stop_application():
@@ -136,7 +146,7 @@ class UmaMainDialog(qtw.QDialog):
         pass
 
 
-class UmaPresetMenu(UmaMainWidget):
+class UmaPresetMenu(UmaMainDialog):
     default_preset = None
     selected_preset = None
     preset_list = None
@@ -233,10 +243,12 @@ class UmaPresetMenu(UmaMainWidget):
         self.btn_delete_from_preset.setObjectName(u"btn_delete_from_preset")
         self.btn_delete_from_preset.setGeometry(qtc.QRect(10, 280, 151, 23))
         self.btn_delete_from_preset.setText(u"Delete from current preset")
+        self.btn_delete_from_preset.setEnabled(False)
         self.btn_row_options = qtw.QPushButton(self.grp_current_preset)
         self.btn_row_options.setObjectName(u"btn_row_options")
         self.btn_row_options.setGeometry(qtc.QRect(170, 280, 151, 23))
         self.btn_row_options.setText(u"Row options")
+        self.btn_row_options.setEnabled(False)
 
         self.btn_copy_to_preset.clicked.connect(self.on_copy_to_preset)
         self.btn_delete_from_preset.clicked.connect(self.on_delete_from_preset)
@@ -247,12 +259,12 @@ class UmaPresetMenu(UmaMainWidget):
         self.btn_close.setGeometry(qtc.QRect(610, 440, 71, 23))
         self.btn_close.setText(u"Cancel")
         self.btn_close.setDefault(True)
-        self.btn_close.clicked.connect(self.on_close)
+        self.btn_close.clicked.connect(self._parent.cancel)
         self.btn_apply = qtw.QPushButton(self)
         self.btn_apply.setObjectName(u"btn_apply")
         self.btn_apply.setGeometry(qtc.QRect(510, 440, 91, 23))
-        self.btn_apply.setText("Apply && close")
-        self.btn_apply.clicked.connect(self.on_apply)
+        self.btn_apply.setText("Save && close")
+        self.btn_apply.clicked.connect(self._parent.save_and_close)
         self.grp_help = qtw.QGroupBox(self)
         self.grp_help.setObjectName(u"grp_help")
         self.grp_help.setGeometry(qtc.QRect(10, 370, 671, 61))
@@ -275,11 +287,10 @@ class UmaPresetMenu(UmaMainWidget):
         self.close()
     
     @qtc.pyqtSlot()
-    def on_apply(self):
+    def save_settings(self):
         self.output_list.append(self.selected_preset)
         for preset in self.preset_list:
             self.output_list.append(preset)
-        self.close()
 
     @qtc.pyqtSlot()
     def on_toggle_elements(self):
@@ -488,12 +499,12 @@ class UmaNewPresetDialog(UmaMainDialog):
     @qtc.pyqtSlot()
     def on_ok(self):
         if self.lne_preset_name.text() == "":
-            UmaInfoPopup("Error", "Preset name cannot be empty.", ICONS.Critical).exec_()
+            UmaInfoPopup(self, "Error", "Preset name cannot be empty.", ICONS.Critical).exec_()
             return
 
         names_list = [preset.name for preset in self._parent.preset_list + [self._parent.default_preset]]
         if self.lne_preset_name.text() in names_list:
-            UmaInfoPopup("Error", "Preset with this name already exists.", ICONS.Critical).exec_()
+            UmaInfoPopup(self, "Error", "Preset with this name already exists.", ICONS.Critical).exec_()
             return
         
         # Check if the user wants to copy a preset.
@@ -514,15 +525,10 @@ class UmaNewPresetDialog(UmaMainDialog):
         self._parent.selected_preset = new_preset
         self.close()
 
-class UmaPresetSettingsDialog(UmaMainDialog):
-    settings_parent_object = None
-    setting_types_enum = None
-    setting_elements = None
-
-    def init_ui(self, settings_parent_object, setting_types_enum, window_title="Change options", *args, **kwargs):
+class UmaSettingsDialog(UmaMainDialog):
+    def init_ui(self, settings_var, window_title="Change options", *args, **kwargs):
         self.setting_elements = {}
-        self.settings_parent_object = settings_parent_object
-        self.setting_types_enum = setting_types_enum
+        self.settings_var = settings_var
 
         self.resize(481, 401)
         # Disable resizing
@@ -549,6 +555,13 @@ class UmaPresetSettingsDialog(UmaMainDialog):
         self.load_settings()
 
         self.scrollArea.setWidget(self.scrollAreaWidgetContents)
+
+        self.btn_restore = qtw.QPushButton(self)
+        self.btn_restore.setObjectName(u"btn_restore")
+        self.btn_restore.setGeometry(qtc.QRect(10, 370, 101, 23))
+        self.btn_restore.setText(u"Restore defaults")
+        self.btn_restore.clicked.connect(self.restore_defaults)
+
         self.btn_cancel = qtw.QPushButton(self)
         self.btn_cancel.setObjectName(u"btn_cancel")
         self.btn_cancel.setGeometry(qtc.QRect(400, 370, 71, 23))
@@ -558,14 +571,6 @@ class UmaPresetSettingsDialog(UmaMainDialog):
         self.btn_save_close.setObjectName(u"btn_save_close")
         self.btn_save_close.setGeometry(qtc.QRect(300, 370, 91, 23))
         self.btn_save_close.setText(u"Save && close")
-        self.btn_restore = qtw.QPushButton(self)
-        self.btn_restore.setObjectName(u"btn_restore")
-        self.btn_restore.setGeometry(qtc.QRect(10, 370, 101, 23))
-        self.btn_restore.setText(u"Restore defaults")
-
-        self.btn_cancel.clicked.connect(self.close)
-        self.btn_save_close.clicked.connect(self.save_and_close)
-        self.btn_restore.clicked.connect(self.restore_defaults)
 
     def load_settings(self):
         # Empty the verticalLayout.
@@ -573,10 +578,14 @@ class UmaPresetSettingsDialog(UmaMainDialog):
             self.verticalLayout.itemAt(i).widget().setParent(None)
 
         # Adding group boxes to the scroll area
-        settings_keys = self.settings_parent_object.settings.get_settings_keys()
+        settings_keys = self.settings_var[0].get_settings_keys()
         last_setting = settings_keys[-1]
         for setting_key in settings_keys:
-            setting = getattr(self.settings_parent_object.settings, setting_key)
+            setting = getattr(self.settings_var[0], setting_key)
+
+            if setting.priority < 0:
+                continue
+
             group_box, value_func = self.add_group_box(setting)
 
             if not group_box:
@@ -590,17 +599,14 @@ class UmaPresetSettingsDialog(UmaMainDialog):
                 self.verticalLayout.addWidget(group_box)
     
     def restore_defaults(self):
-        self.settings_parent_object.settings = type(self.settings_parent_object.settings)()
+        self.settings_var[0] = type(self.settings_var[0])()
         self.settings_elements = {}
         self.load_settings()
     
-    def save_and_close(self):
+    def save_settings(self):
         for setting_key, value_func in self.setting_elements.items():
             logger.debug(f"Setting {setting_key} to {value_func()}")
-            getattr(self.settings_parent_object.settings, setting_key).value = value_func()
-
-        self.close()
-
+            getattr(self.settings_var[0], setting_key).value = value_func()
 
     def add_group_box(self, setting):
         grp_setting = qtw.QGroupBox(self.scrollAreaWidgetContents)
@@ -618,22 +624,28 @@ class UmaPresetSettingsDialog(UmaMainDialog):
         lbl_setting_description.setObjectName(u"lbl_setting_description")
         lbl_setting_description.setText(setting.description)
         lbl_setting_description.setWordWrap(True)
+        lbl_setting_description.setAlignment(qtc.Qt.AlignTop)
 
         horizontalLayout.addWidget(lbl_setting_description)
 
         input_widgets = []
-        if setting.type == self.setting_types_enum.BOOL:
+        if setting.type == se.SettingType.BOOL:
             input_widgets, value_func = self.add_checkbox(setting, grp_setting)
-        elif setting.type == self.setting_types_enum.INT:
+        elif setting.type == se.SettingType.INT:
             input_widgets, value_func = self.add_spinbox(setting, grp_setting)
-        elif setting.type == self.setting_types_enum.LIST:
+        elif setting.type == se.SettingType.LIST:
             input_widgets, value_func = self.add_combobox(setting, grp_setting)
-        elif setting.type == self.setting_types_enum.COLOR:
+        elif setting.type == se.SettingType.COLOR:
             input_widgets, value_func = self.add_colorpicker(setting, grp_setting)
+        elif setting.type == se.SettingType.RADIOBUTTONS:
+            input_widgets, value_func = self.add_radiobuttons(setting, grp_setting)
         
         if not input_widgets:
+            logger.debug(f"{setting.type} not implemented for {setting.name}")
+            # Delete the group box if there are no input widgets.
+            grp_setting.setParent(None)
             return None, None
-        
+
         for input_widget in input_widgets:
             horizontalLayout.addWidget(input_widget)
 
@@ -682,6 +694,29 @@ class UmaPresetSettingsDialog(UmaMainDialog):
 
         cmb_setting_combobox.setCurrentIndex(setting.value)
         return [cmb_setting_combobox], lambda: cmb_setting_combobox.currentIndex()
+    
+    def add_radiobuttons(self, setting, parent):
+        grp_box = qtw.QGroupBox(parent)
+        grp_box.setObjectName(f"grp_box_{setting.name}")
+        grp_box.setSizePolicy(qtw.QSizePolicy(qtw.QSizePolicy.Maximum, qtw.QSizePolicy.Maximum))
+        grp_box.setStyleSheet("QGroupBox { border: 0; }")
+
+        vert_layout = qtw.QVBoxLayout(grp_box)
+        vert_layout.setObjectName(f"vert_layout_{setting.name}")
+        vert_layout.setContentsMargins(0, 0, 0, 0)
+        vert_layout.setSpacing(0)
+        vert_layout.setAlignment(qtc.Qt.AlignTop)
+
+        radio_buttons = []
+        for choice, enabled in setting.value.items():
+            rdb_setting_radiobutton = qtw.QRadioButton(grp_box)
+            rdb_setting_radiobutton.setObjectName(f"rdb_setting_{setting.name}_{choice}")
+            rdb_setting_radiobutton.setText(choice)
+            rdb_setting_radiobutton.setChecked(enabled)
+            vert_layout.addWidget(rdb_setting_radiobutton)
+            radio_buttons.append(rdb_setting_radiobutton)
+
+        return [grp_box], lambda: {rdb.text(): rdb.isChecked() for rdb in radio_buttons}
 
     def add_colorpicker(self, setting, parent):
         lbl_picked_color = qtw.QLabel(parent)
@@ -747,6 +782,98 @@ class UmaPresetSettingsDialog(UmaMainDialog):
 
         return [lbl_picked_color, lne_color_hex, btn_pick_color], lambda: get_color()
 
+
+class UmaPresetSettingsDialog(UmaSettingsDialog):
+    def init_ui(self, *args, **kwargs):
+        super().init_ui(*args, **kwargs)
+        self.btn_cancel.clicked.connect(self.close)
+        self.btn_save_close.clicked.connect(self.save_and_close)
+    
+    def save_and_close(self):
+        self.save_settings()
+        self.close()
+
+
+class UmaGeneralSettingsDialog(UmaSettingsDialog):
+    def init_ui(self, *args, **kwargs):
+        super().init_ui(*args, **kwargs)
+        self.btn_cancel.clicked.connect(self._parent.cancel)
+        self.btn_save_close.clicked.connect(self._parent.save_and_close)
+
+
+class UmaPreferences(UmaMainWidget):
+    def init_ui(self, umasettings, general_var, preset_dict, selected_preset, new_preset_list, default_preset, new_preset_class, row_types_enum, *args, **kwargs):
+        self.previous_settings = copy.deepcopy(general_var[0])
+        self.previous_presets = copy.deepcopy(preset_dict)
+        self.previous_selected_preset = copy.deepcopy(selected_preset)
+
+        self.general_var = general_var
+
+        self.has_saved = False
+
+        self.setWindowTitle("Preferences")
+        self.tabWidget = qtw.QTabWidget(self)
+        self.tabWidget.setObjectName("tabWidget")
+        self.tabWidget.setSizePolicy(qtw.QSizePolicy.Preferred, qtw.QSizePolicy.Preferred)
+        self.tabWidget.currentChanged.connect(self.tab_changed)
+
+        self.general_widget = UmaGeneralSettingsDialog(self, general_var)
+        # self.general_widget.setFixedSize(self.general_widget.size())
+        # self.general_widget.setSizePolicy(qtw.QSizePolicy.Fixed, qtw.QSizePolicy.Fixed)
+
+        self.tab_general = self.general_widget
+        self.tab_general.setObjectName("tab_general")
+        self.tabWidget.addTab(self.tab_general, "General")
+
+        self.presets_widget = UmaPresetMenu(self,
+            selected_preset=selected_preset,
+            default_preset=default_preset,
+            new_preset_class=new_preset_class,
+            preset_list=list(preset_dict.values()),
+            row_types_enum=row_types_enum,
+            output_list=new_preset_list
+        )
+        self.tab_presets = self.presets_widget
+        self.tab_presets.setObjectName("tab_presets")
+        self.tabWidget.addTab(self.tab_presets, "Helper Presets")
+
+        self.tab_about = AboutDialog(self, umasettings)
+        self.tab_about.setObjectName("tab_about")
+        self.tabWidget.addTab(self.tab_about, "About")
+
+        self.tabWidget.setCurrentIndex(0)
+
+        # JANKY HACK M8
+        self.setFixedSize(self.tabWidget.widget(0).size() + qtc.QSize(0, self.tabWidget.tabBar().height() - 9))
+
+    def closeEvent(self, event):
+        if not self.has_saved:
+            self.cancel()
+
+    def cancel(self):
+        self.general_var[0] = self.previous_settings
+        self.close()
+
+    def tab_changed(self, index):
+        current_widget = self.tabWidget.widget(index)
+        if current_widget is not None:
+            size = current_widget.size()
+            # Add the height of the tab bar
+            size.setHeight(size.height() + self.tabWidget.tabBar().height())
+
+            self.tabWidget.resize(size)
+            self.resize(size)
+            self.setFixedSize(size)
+    
+    def save_and_close(self):
+        # Save general settings
+        self.general_widget.save_settings()
+
+        # Save presets
+        self.presets_widget.save_settings()
+
+        self.has_saved = True
+        self.close()
 
 
 class UmaSimpleDialog(UmaMainDialog):
@@ -917,8 +1044,8 @@ class UmaErrorPopup(qtw.QMessageBox):
         self.setText(f"<b>{message}</b><br>{traceback_str}<br><b>You may send this error report to the developer to help fix this issue.</b>")
         upload_button = qtw.QPushButton("Send error report")
         upload_button.clicked.connect(lambda: self.upload_error_report(traceback_str, user_id))
-        self.addButton(upload_button, qtw.QMessageBox.ButtonRole.AcceptRole)
-        self.addButton(qtw.QPushButton("Close"), qtw.QMessageBox.ButtonRole.ActionRole)
+        self.addButton(upload_button, qtw.QMessageBox.ButtonRole.ActionRole)
+        self.addButton(qtw.QPushButton("Close"), qtw.QMessageBox.ButtonRole.RejectRole)
 
         msgbox_label = self.findChild(qtw.QLabel, "qt_msgbox_label")
         msgbox_label.setSizePolicy(qtw.QSizePolicy.Expanding, qtw.QSizePolicy.Expanding)
@@ -937,3 +1064,109 @@ class UmaErrorPopup(qtw.QMessageBox):
             resp.raise_for_status()
         except Exception:
             util.show_error_box("Error", "Failed to upload error report.")
+
+class AboutDialog(UmaMainDialog):
+    def init_ui(self, settings, *args, **kwargs):
+        self.settings = settings
+
+        super().init_ui(*args, **kwargs)
+
+        self.resize(481, 401)
+        self.setFixedSize(self.size())
+        self.verticalLayoutWidget = qtw.QWidget(self)
+        self.verticalLayoutWidget.setObjectName(u"verticalLayoutWidget")
+        self.verticalLayoutWidget.setGeometry(qtc.QRect(0, 0, 481, 401))
+        self.verticalLayout = qtw.QVBoxLayout(self.verticalLayoutWidget)
+        self.verticalLayout.setObjectName(u"verticalLayout")
+        self.verticalLayout.setContentsMargins(0, 0, 0, 0)
+        self.lbl_header = qtw.QLabel(self.verticalLayoutWidget)
+        self.lbl_header.setObjectName(u"lbl_header")
+        sizePolicy = qtw.QSizePolicy(qtw.QSizePolicy.Preferred, qtw.QSizePolicy.Maximum)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.lbl_header.sizePolicy().hasHeightForWidth())
+        self.lbl_header.setSizePolicy(sizePolicy)
+        self.lbl_header.setLayoutDirection(qtc.Qt.LeftToRight)
+        self.lbl_header.setText(u"<html><head/><body><p><br><span style=\" font-size:12pt; font-weight:600;\">Uma Launcher</span></p></body></html>")
+        self.lbl_header.setAlignment(qtc.Qt.AlignCenter)
+
+        self.verticalLayout.addWidget(self.lbl_header)
+
+        self.lbl_version = qtw.QLabel(self.verticalLayoutWidget)
+        self.lbl_version.setObjectName(u"lbl_version")
+        sizePolicy.setHeightForWidth(self.lbl_version.sizePolicy().hasHeightForWidth())
+        self.lbl_version.setSizePolicy(sizePolicy)
+        self.lbl_version.setLayoutDirection(qtc.Qt.LeftToRight)
+        self.lbl_version.setText(f"Version {version.VERSION}")
+        self.lbl_version.setAlignment(qtc.Qt.AlignCenter)
+
+        self.verticalLayout.addWidget(self.lbl_version)
+
+        self.lbl_about = qtw.QLabel(self.verticalLayoutWidget)
+        self.lbl_about.setObjectName(u"lbl_about")
+        sizePolicy.setHeightForWidth(self.lbl_about.sizePolicy().hasHeightForWidth())
+        self.lbl_about.setSizePolicy(sizePolicy)
+        self.lbl_about.setLayoutDirection(qtc.Qt.LeftToRight)
+        self.lbl_about.setText(u"<html><head/><body><p>Created by KevinVG207<br/><a href=\"https://github.com/KevinVG207/UmaLauncher\"><span style=\" text-decoration: underline; color:#0000ff;\">Github</span></a> - <a href=\"https://umapyoi.net/uma-launcher\"><span style=\" text-decoration: underline; color:#0000ff;\">Website</span></a> - <a href=\"https://twitter.com/kevinvg207\"><span style=\" text-decoration: underline; color:#0000ff;\">Twitter</span></a></p></body></html>")
+        self.lbl_about.setAlignment(qtc.Qt.AlignCenter)
+
+        self.verticalLayout.addWidget(self.lbl_about)
+
+        self.horizontalLayout = qtw.QHBoxLayout()
+        self.horizontalLayout.setObjectName(u"horizontalLayout")
+        self.btn_update = qtw.QPushButton(self.verticalLayoutWidget)
+        self.btn_update.setObjectName(u"btn_update")
+        sizePolicy1 = qtw.QSizePolicy(qtw.QSizePolicy.Maximum, qtw.QSizePolicy.Fixed)
+        sizePolicy1.setHorizontalStretch(0)
+        sizePolicy1.setVerticalStretch(0)
+        sizePolicy1.setHeightForWidth(self.btn_update.sizePolicy().hasHeightForWidth())
+        self.btn_update.setSizePolicy(sizePolicy1)
+        self.btn_update.setText(u" Check for updates ")
+        self.btn_update.setDefault(True)
+        self.btn_update.clicked.connect(self.update_check)
+
+        self.horizontalLayout.addWidget(self.btn_update)
+
+        self.verticalLayout.addLayout(self.horizontalLayout)
+
+        self.lbl_unique_header = qtw.QLabel(self.verticalLayoutWidget)
+        self.lbl_unique_header.setObjectName(u"lbl_unique_header")
+        self.lbl_unique_header.setText(u"Unique ID:")
+        self.lbl_unique_header.setAlignment(qtc.Qt.AlignCenter)
+
+        self.verticalLayout.addWidget(self.lbl_unique_header)
+
+        self.lbl_unique = qtw.QLabel(self.verticalLayoutWidget)
+        self.lbl_unique.setObjectName(u"lbl_unique")
+        self.lbl_unique.setText(self.settings['s_unique_id'])
+        self.lbl_unique.setAlignment(qtc.Qt.AlignCenter)
+
+        self.verticalLayout.addWidget(self.lbl_unique)
+
+        self.horizontalLayout_2 = qtw.QHBoxLayout()
+        self.horizontalLayout_2.setObjectName(u"horizontalLayout_2")
+        self.btn_refresh_id = qtw.QPushButton(self.verticalLayoutWidget)
+        self.btn_refresh_id.setObjectName(u"btn_refresh_id")
+        sizePolicy1.setHeightForWidth(self.btn_refresh_id.sizePolicy().hasHeightForWidth())
+        self.btn_refresh_id.setSizePolicy(sizePolicy1)
+        self.btn_refresh_id.setText(u" Refresh unique ID ")
+        self.btn_refresh_id.clicked.connect(self.on_refresh_id)
+
+        self.horizontalLayout_2.addWidget(self.btn_refresh_id)
+
+        self.verticalLayout.addLayout(self.horizontalLayout_2)
+
+        self.verticalSpacer = qtw.QSpacerItem(20, 40, qtw.QSizePolicy.Minimum, qtw.QSizePolicy.Expanding)
+
+        self.verticalLayout.addItem(self.verticalSpacer)
+    
+    def update_check(self):
+        self.btn_update.setEnabled(False)
+        result = version.auto_update(self.settings, force=True)
+        if result:
+            util.show_info_box("No updates found", "You are running the latest version of Uma Launcher.")
+        self.btn_update.setEnabled(True)
+    
+    def on_refresh_id(self):
+        self.settings.regenerate_unique_id()
+        self.lbl_unique.setText(self.settings['s_unique_id'])

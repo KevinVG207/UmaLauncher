@@ -169,7 +169,7 @@ class ScreenStateHandler():
 
     def get_screenshot(self):
         if util.is_minimized(self.game_handle):
-            logger.warning("Game is minimized, cannot get screenshot.")
+            # logger.warning("Game is minimized, cannot get screenshot.")
             return None
         try:
             x, y, x1, y1 = win32gui.GetClientRect(self.game_handle)
@@ -239,7 +239,7 @@ class ScreenStateHandler():
                 self.threader.stop()
 
             # Close DMM
-            if not self.dmm_closed and self.threader.settings.get("autoclose_dmm"):
+            if not self.dmm_closed and self.threader.settings["s_autoclose_dmm"]:
                 # Attempt to close DMM, even if it doesn't exist
                 new_dmm_handle = dmm.get_dmm_handle()
                 if new_dmm_handle:
@@ -267,7 +267,7 @@ class ScreenStateHandler():
             self.update()
             cur_update = time.time()
 
-            if self.threader.settings.get_tray_setting("Discord rich presence"):
+            if self.threader.settings["s_discord_rich_presence"]:
                 if not self.rpc:
                     try:
                         self.event_loop = asyncio.new_event_loop()

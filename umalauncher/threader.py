@@ -24,6 +24,8 @@ import windowmover
 import training_tracker
 import gui
 
+THREAD_OBJECTS = []
+
 class Threader():
     unpack_dir = None
     settings = None
@@ -33,6 +35,7 @@ class Threader():
     screenstate = None
     threads = []
     should_stop = False
+    show_preferences = False
     show_helper_table_dialog = False
     show_training_csv_dialog = False
     widget_queue = []
@@ -41,21 +44,25 @@ class Threader():
         gui.THREADER = self
 
         # Set directory to find assets
-        self.settings = settings.Settings(self)
+        self.settings = settings.SettingsHandler(self)
 
         # Ping the server to track usage
         self.settings.notify_server()
 
         self.screenstate = screenstate.ScreenStateHandler(self)
+        THREAD_OBJECTS.append(self.screenstate)
         self.threads.append(threading.Thread(target=self.screenstate.run_with_catch, name="ScreenStateHandler"))
 
         self.carrotjuicer = carrotjuicer.CarrotJuicer(self)
+        THREAD_OBJECTS.append(self.carrotjuicer)
         self.threads.append(threading.Thread(target=self.carrotjuicer.run_with_catch, name="CarrotJuicer"))
 
         self.windowmover = windowmover.WindowMover(self)
+        THREAD_OBJECTS.append(self.windowmover)
         self.threads.append(threading.Thread(target=self.windowmover.run_with_catch, name="WindowMover"))
 
         self.tray = umatray.UmaTray(self)
+        THREAD_OBJECTS.append(self.tray)
         self.threads.append(threading.Thread(target=self.tray.run_with_catch, name="UmaTray"))
 
         for thread in self.threads:
@@ -65,6 +72,10 @@ class Threader():
 
         while not self.should_stop:
             time.sleep(0.2)
+
+            if self.show_preferences:
+                self.settings.display_preferences()
+                self.show_preferences = False
 
             if self.show_helper_table_dialog:
                 self.settings.update_helper_table()
@@ -78,23 +89,20 @@ class Threader():
                 widget_tuple = self.widget_queue.pop(0)
                 gui.show_widget(widget_tuple[0], *widget_tuple[1], **widget_tuple[2])
 
-        logger.info("=== Launcher closed ===")
-
     def stop_signal(self, *_):
         self.stop()
 
     def stop(self):
         logger.info("=== Closing launcher ===")
         self.should_stop = True
-        if self.tray:
-            self.tray.stop()
-        if self.carrotjuicer:
-            self.carrotjuicer.stop()
-        if self.screenstate:
-            self.screenstate.stop()
-        if self.windowmover:
-            self.windowmover.stop()
         gui.stop_application()
+
+def kill_threads():
+    for thread_object in THREAD_OBJECTS:
+        logger.info(f"Stopping thread {thread_object.__class__.__name__}")
+        if thread_object:
+            thread_object.stop()
+
 
 @logger.catch
 def main():
@@ -103,6 +111,11 @@ def main():
         Threader()
     except Exception:
         util.show_error_box("Critical Error", "Uma Launcher has encountered a critical error and will now close.")
+    
+    # Kill all threads that may be running
+    kill_threads()
+
+    logger.info("=== Launcher closed ===")
 
 if __name__ == "__main__":
     main()

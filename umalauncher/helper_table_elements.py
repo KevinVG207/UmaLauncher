@@ -3,6 +3,7 @@ from loguru import logger
 import gui
 import util
 import constants
+import settings_elements as se
 
 TABLE_HEADERS = [
     "Facility",
@@ -19,46 +20,6 @@ class Colors(enum.Enum):
     ALERT = "red"
     WARNING = "orange"
     GOOD = "lightgreen"
-
-class SettingType(enum.Enum):
-    BOOL = "bool"
-    INT = "int"
-    LIST = "list"
-    COLOR = "color"
-
-class Settings():
-    def get_settings_keys(self):
-        return sorted([attr for attr in dir(self) if attr.startswith("s_")], key=lambda x: getattr(self, x).priority, reverse=True)
-
-    def to_dict(self):
-        settings = self.get_settings_keys()
-        return {setting: getattr(self, setting).value for setting in settings} if settings else {}
-
-    def import_dict(self, settings_dict):
-        for key, value in settings_dict.items():
-            if hasattr(self, key):
-                getattr(self, key).value = value
-
-
-class Setting():
-    name: str = None
-    description: str = None
-    priority: int = 0
-    value: ... = None
-    type: SettingType = None
-    min_value: int = None
-    max_value: int = None
-    choices: list = None
-
-    def __init__(self, name, description, value, type, priority=0, min_value=0, max_value=100, choices=None):
-        self.name = name
-        self.description = description
-        self.value = value
-        self.type = type
-        self.priority = priority
-        self.min_value = min_value
-        self.max_value = max_value
-        self.choices = choices if choices else []
 
 
 class Cell():
@@ -120,9 +81,11 @@ class Row():
     def display_settings_dialog(self, parent):
         """Displays the settings dialog for this row.
         """
-        self.dialog = gui.UmaPresetSettingsDialog(parent, self, SettingType, window_title="Change row options")
+        settings_var = [self.settings]
+        self.dialog = gui.UmaPresetSettingsDialog(parent, settings_var, window_title="Change row options")
         self.dialog.exec()
         self.dialog = None
+        self.settings = settings_var[0]
     
     def to_tr(self, command_info):
         td = ''.join(cell.to_td() for cell in self.get_cells(command_info))
@@ -140,25 +103,25 @@ class Row():
         }
 
 
-class PresetSettings(Settings):
+class PresetSettings(se.Settings):
     def __init__(self):
-        self.s_energy_enabled = Setting(
+        self.s_energy_enabled = se.Setting(
             "Show energy",
             "Displays energy in the event helper.",
             True,
-            SettingType.BOOL
+            se.SettingType.BOOL
         )
-        self.s_schedule_enabled = Setting(
+        self.s_schedule_enabled = se.Setting(
             "Show schedule countdown",
             "Displays the amount of turns until your next scheduled race. (If there is one.)",
             True,
-            SettingType.BOOL
+            se.SettingType.BOOL
         )
-        self.s_scenario_specific_enabled = Setting(
+        self.s_scenario_specific_enabled = se.Setting(
             "Show scenario specific elements",
             "Show scenario specific elements in the event helper. \n(Grand Live tokens/Grand Masters fragments)",
             True,
-            SettingType.BOOL
+            se.SettingType.BOOL
         )
 
 
@@ -193,9 +156,11 @@ class Preset():
         return self.name == other.name
     
     def display_settings_dialog(self, parent):
-        self.dialog = gui.UmaPresetSettingsDialog(parent, self, SettingType, window_title="Toggle elements")
+        settings_var = [self.settings]
+        self.dialog = gui.UmaPresetSettingsDialog(parent, settings_var, window_title="Toggle elements")
         self.dialog.exec()
         self.dialog = None
+        self.settings = settings_var[0]
     
     def generate_overlay(self, main_info, command_info):
         html_elements = []

@@ -123,7 +123,7 @@ class WindowMover():
         self.threader = threader
         self.screenstate = threader.screenstate
         self.window = None
-        self.prev_auto_resize = self.threader.settings.get_tray_setting("Lock game window")
+        self.prev_auto_resize = self.threader.settings["s_lock_game_window"]
     
     def try_maximize(self):
         if self.window:
@@ -158,7 +158,7 @@ class WindowMover():
             # Keep maximize option in the tray.
             # Toggle to auto-resize
 
-            auto_resize = self.threader.settings.get_tray_setting("Lock game window")
+            auto_resize = self.threader.settings["s_lock_game_window"]
 
             if auto_resize:
 

@@ -1,7 +1,5 @@
 import os
 import json
-import copy
-import sys
 import uuid
 from win32com.shell import shell
 import traceback
@@ -10,63 +8,166 @@ import util
 import constants
 import version
 import gui
+import settings_elements as se
 import helper_table_defaults as htd
 import helper_table_elements as hte
 
-class Settings():
 
+class DefaultSettings(se.Settings):
+    def __init__(self):
+        self.s_version = se.Setting(
+            "Version",
+            "(Private) Version of the settings file.",
+            version.VERSION,
+            se.SettingType.STRING,
+            priority=-1
+        )
+        self.s_skip_update = se.Setting(
+            "Skip update",
+            "(Private) Version to skip updating to.",
+            None,
+            se.SettingType.STRING,
+            priority=-1
+        )
+        self.s_unique_id = se.Setting(
+            "Unique ID",
+            "(Private) Unique ID for this installation.",
+            str(uuid.uuid4()),
+            se.SettingType.STRING,
+            priority=-1
+        )
+        self.s_save_packets = se.Setting(
+            "Save packets.",
+            "Save incoming/outgoing packets to json. (For debugging purposes)",
+            False,
+            se.SettingType.BOOL,
+            priority=-1
+        )
+        self.s_beta_optin = se.Setting(
+            "Beta opt-in",
+            "Opt-in to the beta version. (Pre-release versions)",
+            False,
+            se.SettingType.BOOL,
+            priority=1
+        )
+        self.s_debug_mode = se.Setting(
+            "Debug mode",
+            "Enable debug mode. (Enables additional logging)",
+            False,
+            se.SettingType.BOOL,
+            priority=0
+        )
+        self.s_autoclose_dmm = se.Setting(
+            "Autoclose DMM Game Player",
+            "Automatically close DMM Game Player when the game is launched.",
+            True,
+            se.SettingType.BOOL,
+            priority=96
+        )
+        self.s_lock_game_window = se.Setting(
+            "Lock game window",
+            "Lock the game window to prevent accidental resizing.",
+            True,
+            se.SettingType.BOOL,
+            priority=-1
+        )
+        self.s_discord_rich_presence = se.Setting(
+            "Discord rich presence",
+            "Display your current status in Discord.",
+            True,
+            se.SettingType.BOOL,
+            priority=100
+        )
+        self.s_enable_carrotjuicer = se.Setting(
+            "Enable CarrotJuicer",
+            "Enable CarrotJuicer functionality.",
+            True,
+            se.SettingType.BOOL,
+            priority=99
+        )
+        self.s_track_trainings = se.Setting(
+            "Track trainings",
+            "Track training events in /training_logs as gzip files.",
+            True,
+            se.SettingType.BOOL,
+            priority=97
+        )
+        self.s_game_install_path = se.Setting(
+            "Game install path",
+            "Path to the game's installation folder.",
+            "%userprofile%/Umamusume",
+            se.SettingType.FOLDERDIALOG,
+            priority=-1
+        )
+        self.s_game_position_portrait = se.Setting(
+            "Game position (portrait)",
+            "Position of the game window in portrait mode.",
+            None,
+            se.SettingType.LIST,
+            priority=-1
+        )
+        self.s_game_position_landscape = se.Setting(
+            "Game position (landscape)",
+            "Position of the game window in landscape mode.",
+            None,
+            se.SettingType.LIST,
+            priority=-1
+        )
+        self.s_browser_position = se.Setting(
+            "Browser position",
+            "Position of the browser window.",
+            None,
+            se.SettingType.LIST,
+            priority=-1
+        )
+        self.s_selected_browser = se.Setting(
+            "Selected browser",
+            "Browser to use for the Automatic Training Event Helper.",
+            {
+                "Auto": True,
+                "Chrome": False,
+                "Firefox": False,
+                "Edge": False
+            },
+            se.SettingType.RADIOBUTTONS,
+            priority=98
+        )
+        self.s_training_helper_table_preset = se.Setting(
+            "Training helper table preset",
+            "Preset to use for the Automatic Training Event Helper.",
+            "Default",
+            se.SettingType.STRING,
+            priority=-1
+        )
+        self.s_training_helper_table_preset_list = se.Setting(
+            "Training helper table preset list",
+            "List of presets for the Automatic Training Event Helper.",
+            [],
+            se.SettingType.LIST,
+            priority=-1
+        )
+
+
+class SettingsHandler():
     settings_file = "umasettings.json"
-    default_settings = {
-        "_version": version.VERSION,
-        "_skip_update": None,
-        "_unique_id": str(uuid.uuid4()),
-        "beta_optin": False,
-        "debug_mode": False,
-        "autoclose_dmm": True,
-        "tray_items": {
-            "Lock game window": True,
-            "Discord rich presence": True,
-            "Enable CarrotJuicer": True,
-            "Track trainings": True
-        },
-        "game_install_path": "%userprofile%/Umamusume",
-        "game_position": {
-            "portrait": None,
-            "landscape": None
-        },
-        "browser_position": None,
-        "selected_browser": {
-            "Auto": True,
-            "Chrome": False,
-            "Firefox": False,
-            "Edge": False
-        },
-        "training_helper_table_preset": "Default",
-        "training_helper_table_preset_list": [],
-    }
-
-    loaded_settings = {}
+    loaded_settings = DefaultSettings()
 
     def __init__(self, threader):
         self.threader = threader
-        # Load settings on import.
+
+        # Load settings on import
         if not os.path.exists(util.get_relative(self.settings_file)):
-            logger.warning("Settings file not found. Starting with default settings.")
-            self.loaded_settings = self.default_settings
             self.save_settings()
-        else:
-            self.load_settings()
 
-        # Check if the game install path is correct.
-        for folder_tuple in [
-            ('game_install_path', "umamusume.exe", "Please choose the game's installation folder.\n(Where umamusume.exe is located.)", "Selected folder does not include umamusume.exe.\nPlease try again.")
-        ]:
-            self.make_user_choose_folder(*folder_tuple)
-
+        self.load_settings(first_load=True)
         logger.info(self.loaded_settings)
+    
+    def regenerate_unique_id(self):
+        self['s_unique_id'] = str(uuid.uuid4())
 
     def make_user_choose_folder(self, setting, file_to_verify, title, error):
-        if not os.path.exists(os.path.join(self.get(setting), file_to_verify)):
+        if not os.path.exists(os.path.join(self[setting], file_to_verify)):
+            logger.debug(self[setting])
             pidl, _, _ = shell.SHBrowseForFolder(None, None, title)
             try:
                 selected_directory = shell.SHGetPathFromIDListW(pidl)
@@ -74,142 +175,87 @@ class Settings():
                 selected_directory = None
 
             if selected_directory and os.path.exists(os.path.join(selected_directory, file_to_verify)):
-                self.set(setting, selected_directory)
+                self[setting] = selected_directory
             else:
-                util.show_error_box("Error", f"{error} Uma Launcher will now close.")
-                sys.exit()
-
+                util.show_warning_box("Error", f"{error}<br>Uma Launcher will now close.")
+                self.threader.stop()
+    
     def save_settings(self):
-        with open(util.get_relative(self.settings_file), 'w', encoding='utf-8') as f:
-            json.dump(self.loaded_settings, f, ensure_ascii=False, indent=2)
-
-
-    def load_settings(self):
-        logger.info("Loading settings file.")
+        with open(util.get_relative(self.settings_file), "w", encoding="utf-8") as f:
+            json.dump(self.loaded_settings.to_dict(), f, ensure_ascii=False, indent=4)
+    
+    def load_settings(self, first_load=False):
+        raw_settings = ""
         with open(util.get_relative(self.settings_file), 'r', encoding='utf-8') as f:
             try:
-                self.loaded_settings = json.load(f)
-
-                if self.loaded_settings.get("debug_mode"):
-                    util.is_debug = True
-                    util.log_set_trace()
-                    logger.debug("Debug mode enabled. Logging more.")
-
-                # Upgrade old versions
-                self.loaded_settings = version.upgrade(self.loaded_settings)
-
-                # Ensure that the default settings keys actually exist.
-                for default_setting, setting_value in self.default_settings.items():
-                    if isinstance(setting_value, dict):
-                        if default_setting not in self.loaded_settings:
-                            logger.warning(f"Adding missing setting: {default_setting}")
-                            self.loaded_settings[default_setting] = setting_value
-                        else:
-                            for default_subsetting in self.default_settings[default_setting]:
-                                if default_subsetting not in self.loaded_settings[default_setting]:
-                                    logger.warning(f"Adding missing subsetting: {default_setting}[{default_subsetting}]")
-                                    self.loaded_settings[default_setting][default_subsetting] = self.default_settings[default_setting][default_subsetting]
-                    elif default_setting not in self.loaded_settings:
-                        logger.warning(f"Adding missing setting: {default_setting}")
-                        self.loaded_settings[default_setting] = self.default_settings[default_setting]
-                tmp_loaded_settings = copy.deepcopy(self.loaded_settings)
-                for setting in self.loaded_settings:
-                    if isinstance(self.loaded_settings[setting], dict):
-                        for sub_setting in self.loaded_settings[setting]:
-                            if sub_setting not in self.default_settings[setting]:
-                                logger.warning(f"Unknown setting found: {setting}[{sub_setting}]")
-                                # del tmp_loaded_settings[setting][sub_setting]
-
-                    elif setting not in self.default_settings:
-                        logger.warning(f"Unknown setting found: {setting}")
-                        # del tmp_loaded_settings[setting]
-
-                self.loaded_settings = tmp_loaded_settings
-                self.save_settings()
-
+                raw_settings = json.load(f)
             except (json.JSONDecodeError, TypeError) as _:
                 logger.error(traceback.format_exc())
-                logger.error("Failed to load settings file. Loading default settings instead.")
-                self.loaded_settings = self.default_settings
+                util.show_warning_box("Error", "Failed to load settings file. Loading default settings instead.")
+                self.loaded_settings = DefaultSettings()
+                return
+        self.loaded_settings.import_dict(raw_settings, keep_undefined=True)
 
+        if first_load:
+            version.auto_update(self)
 
-    def get_tray_setting(self, key: str) -> bool:
-        if key in self.loaded_settings["tray_items"]:
-            return self.loaded_settings["tray_items"][key]
+        version.upgrade(self, raw_settings)
+
+        if self['s_debug_mode']:
+            util.is_debug = True
+            logger.debug("Debug mode enabled. Logging more.")
         else:
-            logger.error(f"Unknown key wanted from tray items: {key}")
-            return None
+            util.is_debug = False
+            logger.debug("Debug mode disabled. Logging less.")
+        util.log_set_info()
 
+        # Check if the game install path is correct.
+        for folder_tuple in [
+            ('s_game_install_path', "umamusume.exe", "Please choose the game's installation folder.\n(Where umamusume.exe is located.)", "Selected folder does not include umamusume.exe.\nPlease try again.")
+        ]:
+            self.make_user_choose_folder(*folder_tuple)
 
-    def set_tray_setting(self, _, item):
-        key = item.text
-        value = not item.checked
-        if key in self.loaded_settings["tray_items"]:
-            logger.info(f"Saving tray setting. Key: {key}\tValue: {value}")
-            self.loaded_settings["tray_items"][key] = value
+        self.save_settings()
 
-            # Restart CarrotJuicer time if re-enabled.
-            if key == "Enable CarrotJuicer":
-                self.threader.carrotjuicer.restart_time()
-
-            self.save_settings()
-        else:
-            logger.error(f"Unknown key passed to tray items. Key: {key}\tValue: {value}")
-
-
-    def get(self, key: str):
-        if key in self.loaded_settings:
-            value = self.loaded_settings[key]
-            if isinstance(value, str):
-                return os.path.expandvars(value)
-            return value
-        else:
-            logger.error(f"Unknown key wanted from settings: {key}")
-            return None
-
-
-    def set(self, key: str, value):
-        if key in self.loaded_settings:
-            logger.info(f"Saving setting. Key: {key}\tValue: {value}")
-            self.loaded_settings[key] = value
-            self.save_settings()
-        else:
-            logger.error(f"Unknown key passed to settings. Key: {key}\tValue: {value}")
+    def __contains__(self, key):
+        return hasattr(self.loaded_settings, key)
+    
+    def __getitem__(self, key):
+        value = getattr(self.loaded_settings, key).value
+        if isinstance(value, str):
+            value = os.path.expandvars(value)
+        return value
+    
+    def __setitem__(self, key, value):
+        logger.info(f"Setting {key} to {value}")
+        getattr(self.loaded_settings, key).value = value
+        self.save_settings()
+    
+    def __repr__(self):
+        return repr(self.loaded_settings)
+    
 
     def save_game_position(self, pos, portrait):
         if util.is_minimized(self.threader.screenstate.game_handle):
-            logger.warning(f"Game minimized, cannot save {constants.ORIENTATION_DICT[portrait]} position: {pos}")
+            # logger.warning(f"Game minimized, cannot save {constants.ORIENTATION_DICT[portrait]}: {pos}")
             return
 
         if (pos[0] == -32000 and pos[1] == -32000):
-            logger.warning(f"Game minimized, cannot save {constants.ORIENTATION_DICT[portrait]} position: {pos}")
+            # logger.warning(f"Game minimized, cannot save {constants.ORIENTATION_DICT[portrait]}: {pos}")
             return
 
         orientation_key = constants.ORIENTATION_DICT[portrait]
-        self.loaded_settings['game_position'][orientation_key] = pos
-        logger.info(f"Saving {orientation_key} position: {pos}")
+        self[orientation_key] = pos
+        logger.info(f"Saving {orientation_key}: {pos}")
         self.save_settings()
 
     def load_game_position(self, portrait):
         orientation_key = constants.ORIENTATION_DICT[portrait]
-        return self.loaded_settings['game_position'][orientation_key]
-
-    def get_browsers(self):
-        return self.loaded_settings['selected_browser'].keys()
-
-    def get_browser(self, item):
-        return self.loaded_settings['selected_browser'].get(item.text, False)
-
-    def set_browser(self, icon, item):
-        for key in self.loaded_settings['selected_browser']:
-            self.loaded_settings['selected_browser'][key] = key == item.text
-        logger.info(f"Saving browser selection: {item.text}")
-        self.save_settings()
-
+        return self[orientation_key]
 
     def get_preset_list(self):
         preset_list = []
-        for preset in self.get("training_helper_table_preset_list"):
+        for preset in self["s_training_helper_table_preset_list"]:
             preset_object = hte.Preset(htd.RowTypes)
             preset_object.import_dict(preset)
             preset_list.append(preset_object)
@@ -218,7 +264,7 @@ class Settings():
 
     def get_helper_table_data(self):
         preset_dict = {preset.name: preset for preset in self.get_preset_list()}
-        selected_preset_name = self.get("training_helper_table_preset")
+        selected_preset_name = self["s_training_helper_table_preset"]
         if selected_preset_name in preset_dict:
             selected_preset = preset_dict[selected_preset_name]
         else:
@@ -240,11 +286,42 @@ class Settings():
         if new_preset_list:
             logger.debug("Saving new helper table preset list.")
             selected_preset = new_preset_list.pop(0)
-            self.loaded_settings["training_helper_table_preset"] = selected_preset.name
-            self.loaded_settings["training_helper_table_preset_list"] = [preset.to_dict() for preset in new_preset_list]
+            self["s_training_helper_table_preset"] = selected_preset.name
+            self["s_training_helper_table_preset_list"] = [preset.to_dict() for preset in new_preset_list]
             if self.threader.carrotjuicer.helper_table:
                 self.threader.carrotjuicer.helper_table.update_presets(*self.get_helper_table_data())
             self.save_settings()
-    
+
     def notify_server(self):
-        util.do_get_request(f"https://umapyoi.net/api/v1/umalauncher/startup/{self.loaded_settings['_unique_id']}")
+        util.do_get_request(f"https://umapyoi.net/api/v1/umalauncher/startup/{self['s_unique_id']}")
+
+    def display_preferences(self):
+        general_var = [self.loaded_settings]
+        
+        preset_dict, selected_preset = self.get_helper_table_data()
+        new_preset_list = []
+
+        gui.show_widget(gui.UmaPreferences,
+            umasettings=self,
+            general_var=general_var,
+            preset_dict=preset_dict,
+            selected_preset=selected_preset,
+            new_preset_list=new_preset_list,
+            default_preset=htd.DefaultPreset(htd.RowTypes),
+            new_preset_class=hte.Preset,
+            row_types_enum=htd.RowTypes
+        )
+
+        # Update settings
+        self.loaded_settings = general_var[0]
+
+        if new_preset_list:
+            logger.debug("Saving new helper table preset list.")
+            selected_preset = new_preset_list.pop(0)
+            self["s_training_helper_table_preset"] = selected_preset.name
+            self["s_training_helper_table_preset_list"] = [preset.to_dict() for preset in new_preset_list]
+            if self.threader.carrotjuicer.helper_table:
+                self.threader.carrotjuicer.helper_table.update_presets(*self.get_helper_table_data())
+
+        self.save_settings()
+        self.load_settings()

@@ -136,14 +136,17 @@ def _show_alert_box(error, message, icon):
 
 
 def show_error_box(error, message, custom_traceback=None):
-    logger.error(f"{error}")
-    logger.error(f"{message}")
+    logger.error(error)
+    logger.error(message)
+    traceback_str = traceback.format_exc() if custom_traceback is None else custom_traceback
+    logger.error(traceback_str)
+
     gui.show_widget(
         gui.UmaErrorPopup,
         error,
         message,
-        traceback.format_exc() if custom_traceback is None else custom_traceback,
-        gui.THREADER.settings.get("_unique_id"),
+        traceback_str,
+        gui.THREADER.settings["s_unique_id"] if gui.THREADER is not None and gui.THREADER.settings is not None else None,
         gui.ICONS.Critical
     )
 
