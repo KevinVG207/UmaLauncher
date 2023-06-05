@@ -33,7 +33,13 @@ def show_widget(widget, *args, **kwargs):
         APPLICATION = UmaApp()
     
     if CURRENTLY_RUNNING:
-        widget(APPLICATION, *args, **kwargs).exec_()
+        new_widget = widget(APPLICATION, *args, **kwargs)
+        if hasattr(new_widget, "exec_"):
+            new_widget.exec_()
+        
+        # Wait for widget to close
+        while new_widget.isVisible():
+            qtw.QApplication.processEvents()
         return
 
     CURRENTLY_RUNNING = True
