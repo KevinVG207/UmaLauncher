@@ -221,6 +221,7 @@ class UmaPresetMenu(UmaMainDialog):
         self.btn_copy_to_preset = qtw.QPushButton(self.grp_available_rows)
         self.btn_copy_to_preset.setObjectName(u"btn_copy_to_preset")
         self.btn_copy_to_preset.setGeometry(qtc.QRect(10, 280, 311, 23))
+        self.btn_copy_to_preset.setEnabled(False)
         sizePolicy1 = qtw.QSizePolicy(qtw.QSizePolicy.Maximum, qtw.QSizePolicy.Fixed)
         sizePolicy1.setHorizontalStretch(0)
         sizePolicy1.setVerticalStretch(0)
@@ -337,6 +338,7 @@ class UmaPresetMenu(UmaMainDialog):
 
     @qtc.pyqtSlot()
     def on_available_row_select(self):
+        self.btn_copy_to_preset.setEnabled(True)
         self.show_row_description(self.lst_available.currentItem())
 
     @qtc.pyqtSlot()
@@ -359,6 +361,7 @@ class UmaPresetMenu(UmaMainDialog):
         current_item = self.lst_current.currentItem()
         self.show_row_description(current_item)
         if current_item:
+            self.btn_delete_from_preset.setEnabled(True)
             row_object = current_item.data(qtc.Qt.UserRole + 1)
             if row_object.settings:
                 self.btn_row_options.setEnabled(True)
@@ -410,9 +413,6 @@ class UmaPresetMenu(UmaMainDialog):
 
     def enable_current_preset(self):
         self.lst_current.setEnabled(True)
-        self.btn_delete_from_preset.setEnabled(True)
-        self.btn_copy_to_preset.setEnabled(True)
-        self.btn_row_options.setEnabled(True)
         self.but_del_preset.setEnabled(True)
         self.but_toggle_elements.setEnabled(True)
 
