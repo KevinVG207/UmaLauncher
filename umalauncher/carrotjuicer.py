@@ -4,6 +4,7 @@ import glob
 import traceback
 import math
 import json
+import random
 from subprocess import CREATE_NO_WINDOW
 import msgpack
 from loguru import logger
@@ -681,6 +682,19 @@ class CarrotJuicer():
 
 
     def run(self):
+        import horsium
+        browser_window = horsium.BrowserWindow("https://example.com", self.threader)
+        browser_window2 = horsium.BrowserWindow("https://www.google.com", self.threader)
+
+        # time.sleep(10)
+
+        # browser_window.close()
+
+        # time.sleep(5)
+
+        # browser_window2.quit()
+        # browser_window.quit()
+
         msg_path = self.threader.settings["s_game_install_path"]
 
         if not msg_path:
@@ -692,7 +706,11 @@ class CarrotJuicer():
 
         try:
             while not self.should_stop:
-                time.sleep(0.25)
+                # time.sleep(0.25)
+                time.sleep(2)
+
+                browser_window.set_window_rect([random.randint(0, 100), random.randint(0, 100), 800, 600])
+                browser_window2.set_window_rect([random.randint(0, 100), random.randint(0, 100), 800, 600])
 
                 self.check_browser()
 
