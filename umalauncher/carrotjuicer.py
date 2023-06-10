@@ -20,10 +20,11 @@ import constants
 import mdb
 import helper_table
 import training_tracker
+import horsium
 
 class CarrotJuicer():
     start_time = None
-    browser = None
+    browser: horsium.BrowserWindow = None
     previous_element = None
     threader = None
     screen_state_handler = None
@@ -39,16 +40,8 @@ class CarrotJuicer():
     previous_race_program_id = None
     last_data = None
 
-    _browser_list = None
-
     def __init__(self, threader):
         self.threader = threader
-
-        self._browser_list = {
-            'Chrome': self.chrome_setup,
-            'Firefox': self.firefox_setup,
-            'Edge': self.edge_setup,
-        }
 
         self.screen_state_handler = threader.screenstate
         self.restart_time()
@@ -106,71 +99,7 @@ class CarrotJuicer():
         with open(util.get_relative(out_name), 'w', encoding='utf-8') as f:
             f.write(json.dumps(packet, indent=4, ensure_ascii=False))
 
-    # def to_python_dict_file(self, packet, out_name="packet.py"):
-    #     with open(out_name, 'w', encoding='utf-8') as f:
-    #         f.write("packet = " + str(packet))
 
-    def firefox_setup(self, helper_url):
-        firefox_service = FirefoxService()
-        firefox_service.creation_flags = CREATE_NO_WINDOW
-        profile = webdriver.FirefoxProfile(util.get_asset("ff_profile"))
-        options = webdriver.FirefoxOptions()
-        browser = webdriver.Firefox(service=firefox_service, firefox_profile=profile, options=options)
-        browser.get(helper_url)
-        return browser
-
-    def chromium_setup(self, service, options_class, driver_class, profile, helper_url):
-        service.creation_flags = CREATE_NO_WINDOW
-        options = options_class()
-        options.add_argument("--user-data-dir=" + str(util.get_asset(profile)))
-        options.add_argument("--app=" + helper_url)
-        options.add_argument("--remote-debugging-port=9222")
-        browser = driver_class(service=service, options=options)
-        return browser
-
-    def chrome_setup(self, helper_url):
-        return self.chromium_setup(
-            service=ChromeService(),
-            options_class=webdriver.ChromeOptions,
-            driver_class=webdriver.Chrome,
-            profile="chr_profile",
-            helper_url=helper_url
-        )
-
-    def edge_setup(self, helper_url):
-        return self.chromium_setup(
-            service=EdgeService(),
-            options_class=webdriver.EdgeOptions,
-            driver_class=webdriver.Edge,
-            profile="edg_profile",
-            helper_url=helper_url
-        )
-
-    def init_browser(self):
-        driver = None
-
-        browser_list = []
-        if self.threader.settings['s_selected_browser']['Auto']:
-            browser_list = self._browser_list.values()
-        else:
-            browser_list = [
-                self._browser_list[browser]
-                for browser, selected in self.threader.settings['s_selected_browser'].items()
-                if selected
-            ]
-
-        for browser_setup in browser_list:
-            try:
-                logger.info("Attempting " + str(browser_setup.__name__))
-                driver = browser_setup(self.helper_url)
-                break
-            except Exception:
-                logger.error("Failed to start browser")
-                logger.error(traceback.format_exc())
-        if not driver:
-            util.show_warning_box("Uma Launcher: Unable to start browser.", "Selected webbrowser cannot be started. Use the tray icon to select a browser that is installed on your system.")
-        return driver
-    
     def setup_helper_page(self):
         self.browser.execute_script("""
         if (window.UL_OVERLAY) {
@@ -286,39 +215,32 @@ class CarrotJuicer():
         return
 
     def open_helper(self):
-        self.previous_element = None
-
         if self.browser:
-            self.close_browser()
+            self.browser.close()
 
-        self.browser = self.init_browser()
-
-        saved_pos = self.threader.settings["s_browser_position"]
-        if not saved_pos:
-            self.reset_browser_position()
-        else:
-            logger.debug(saved_pos)
-            self.browser.set_window_rect(*saved_pos)
+        start_pos = self.threader.settings["s_browser_position"]
+        if not start_pos:
+            start_pos = self.get_browser_reset_position()
+        
+        self.browser = horsium.BrowserWindow(self.helper_url, self.threader, rect=start_pos)
 
         # TODO: Find a way to know if the page is actually finished loading
 
         self.setup_helper_page()
 
 
-    def reset_browser_position(self):
-        self.check_browser()
-        if self.browser:
-            game_rect, _ = self.threader.windowmover.window.get_rect()
-            workspace_rect = self.threader.windowmover.window.get_workspace_rect()
-            left_side = abs(workspace_rect[0] - game_rect[0])
-            right_side = abs(game_rect[2] - workspace_rect[2])
-            if left_side > right_side:
-                left_x = workspace_rect[0] - 5
-                width = left_side
-            else:
-                left_x = game_rect[2] + 5
-                width = right_side
-            self.browser.set_window_rect(left_x, workspace_rect[1], width, workspace_rect[3] - workspace_rect[1] + 6)
+    def get_browser_reset_position(self):
+        game_rect, _ = self.threader.windowmover.window.get_rect()
+        workspace_rect = self.threader.windowmover.window.get_workspace_rect()
+        left_side = abs(workspace_rect[0] - game_rect[0])
+        right_side = abs(game_rect[2] - workspace_rect[2])
+        if left_side > right_side:
+            left_x = workspace_rect[0] - 5
+            width = left_side
+        else:
+            left_x = game_rect[2] + 5
+            width = right_side
+        return [left_x, workspace_rect[1], width, workspace_rect[3] - workspace_rect[1] + 6]
 
 
     def close_browser(self):
@@ -327,7 +249,6 @@ class CarrotJuicer():
             self.save_last_browser_rect()
             self.browser.close()
             self.browser = None
-            self.previous_element = None
         return
 
 
@@ -481,7 +402,7 @@ class CarrotJuicer():
                     else:
                         self.screen_state_handler.carrotjuicer_state = screenstate_utils.make_training_state(data, self.threader.screenstate)
 
-                if not self.browser or not self.browser.current_url.startswith("https://gametora.com/umamusume/training-event-helper"):
+                if not self.browser or not self.browser.current_url().startswith("https://gametora.com/umamusume/training-event-helper"):
                     logger.info("GT tab not open, opening tab")
                     self.helper_url = util.create_gametora_helper_url(outfit_id, scenario_id, supports)
                     logger.debug(f"Helper URL: {self.helper_url}")
@@ -525,7 +446,7 @@ class CarrotJuicer():
                         event_title = self.get_after_race_event_title(event_data['event_id'])
 
                     # Activate and scroll to the outcome.
-                    self.previous_element = self.browser.execute_script(
+                    previous_element = self.browser.execute_script(
                         """a = document.querySelectorAll("[class^='compatibility_viewer_item_']");
                         var ele = null;
                         for (var i = 0; i < a.length; i++) {
@@ -541,7 +462,7 @@ class CarrotJuicer():
                         """,
                         event_title
                     )
-                    if not self.previous_element:
+                    if not previous_element:
                         logger.debug(f"Could not find event on GT page: {event_title} {event_data['story_id']}")
                     self.browser.execute_script("""
                         if (arguments[0]) {
@@ -550,7 +471,7 @@ class CarrotJuicer():
                             window.scrollBy({top: arguments[0].getBoundingClientRect().bottom - window.innerHeight + 32, left: 0, behavior: 'smooth'});
                         }
                         """,
-                        self.previous_element
+                        previous_element
                     )
 
             if 'reserved_race_array' in data and 'chara_info' not in data and self.last_helper_data:
@@ -567,19 +488,6 @@ class CarrotJuicer():
             logger.error(exception_string)
             util.show_error_box("Uma Launcher: Error in response msgpack.", f"This should not happen. You may contact the developer about this issue.")
             # self.close_browser()
-
-    def check_browser(self):
-        if self.browser:
-            try:
-                if self.browser.current_url.startswith("https://gametora.com/umamusume/training-event-helper"):
-                    if not self.browser.execute_script("return window.UL_OVERLAY;"):
-                        self.browser.get(self.helper_url)
-                        self.setup_helper_page()
-            except WebDriverException:
-                self.browser.quit()
-                self.browser = None
-                self.previous_element = None
-        return
 
     def start_concert(self, music_id):
         logger.debug("Starting concert")
@@ -629,8 +537,6 @@ class CarrotJuicer():
 
 
     def process_message(self, message: str):
-        self.check_browser()
-
         try:
             message_time = int(str(os.path.basename(message))[:-9])
         except ValueError:
@@ -662,7 +568,6 @@ class CarrotJuicer():
         helper_table = self.helper_table.create_helper_elements(data, self.last_helper_data)
         self.last_helper_data = data
         if helper_table:
-            self.check_browser()
             if not self.browser:
                 self.open_helper()
             self.browser.execute_script("""
@@ -682,19 +587,6 @@ class CarrotJuicer():
 
 
     def run(self):
-        import horsium
-        browser_window = horsium.BrowserWindow("https://example.com", self.threader)
-        browser_window2 = horsium.BrowserWindow("https://www.google.com", self.threader)
-
-        # time.sleep(10)
-
-        # browser_window.close()
-
-        # time.sleep(5)
-
-        # browser_window2.quit()
-        # browser_window.quit()
-
         msg_path = self.threader.settings["s_game_install_path"]
 
         if not msg_path:
@@ -709,19 +601,13 @@ class CarrotJuicer():
                 # time.sleep(0.25)
                 time.sleep(2)
 
-                browser_window.set_window_rect([random.randint(0, 100), random.randint(0, 100), 800, 600])
-                browser_window2.set_window_rect([random.randint(0, 100), random.randint(0, 100), 800, 600])
-
-                self.check_browser()
-
                 if not self.threader.settings["s_enable_carrotjuicer"]:
                     continue
 
-                if self.reset_browser:
-                    self.reset_browser = False
-                    self.reset_browser_position()
-
                 if self.browser:
+                    if self.reset_browser:
+                        self.reset_browser = False
+                        self.browser.set_window_rect(self.get_browser_reset_position())
                     self.last_browser_rect = self.browser.get_window_rect()
                 elif self.last_browser_rect:
                     self.save_last_browser_rect()

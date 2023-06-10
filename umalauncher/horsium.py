@@ -84,7 +84,9 @@ def init_browser(url, browser_name):
 def urls_match(url1, url2):
     url1 = url1[:-1] if url1.endswith('/') else url1
     url2 = url2[:-1] if url2.endswith('/') else url2
-    return urlparse(url1) == urlparse(url2)
+    urlparse1 = urlparse(url1)
+    urlparse2 = urlparse(url2)
+    return (urlparse1.netloc, urlparse1.path) == (urlparse2.netloc, urlparse2.path)
 
 class BrowserWindow:
     def __init__(self, url, threader, rect=None):
@@ -102,7 +104,18 @@ class BrowserWindow:
         self.ensure_tab_open()
         if rect:
             self.set_window_rect(rect)
-    
+
+    def __bool__(self):
+        if self.driver is None:
+            return False
+        try:
+            if self.active_tab_handle in self.driver.window_handles:
+                return True
+        except (NoSuchWindowException, WebDriverException):
+            pass
+        return False
+
+
     def ensure_tab_open(self):
         if self.driver:
             # Check if we have window handles
@@ -122,27 +135,27 @@ class BrowserWindow:
 
         self.driver = init_browser(self.url, self.browser_name)
         self.active_tab_handle = self.driver.window_handles[0]
-    
-    # def ensure_focus(self, func):
-    #     def wrapper():
-    #         self.ensure_tab_open()
-    #         self.driver.switch_to.window(self.active_tab_handle)
-    #         func()
-    #     return wrapper
 
     def ensure_focus(func):
         def wrapper(self, *args, **kwargs):
             self.ensure_tab_open()
             return func(self, *args, **kwargs)
         return wrapper
-    
+
     @ensure_focus
-    def execute_script(self, script):
-        self.driver.execute_script(script)
+    def execute_script(self, *args, **kwargs):
+        return self.driver.execute_script(*args, **kwargs)
 
     @ensure_focus
     def set_window_rect(self, rect):
-        self.driver.set_window_rect(*rect)
+        return self.driver.set_window_rect(*rect)
+    
+    @ensure_focus
+    def get_window_rect(self):
+        return self.driver.get_window_rect()
+    
+    def current_url(self):
+        return self.url
 
     def close(self):
         # Only close the active tab
@@ -152,7 +165,7 @@ class BrowserWindow:
                 self.driver.close()
         except (NoSuchWindowException, WebDriverException):
             pass
-    
+
     def quit(self):
         for driver in self.old_drivers:
             try:
