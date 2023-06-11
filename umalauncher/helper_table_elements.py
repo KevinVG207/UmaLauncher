@@ -177,6 +177,8 @@ class Preset():
 
         html_elements.append(self.generate_table(command_info))
 
+        html_elements.append("""<button onclick="fetch('http://127.0.0.1:3150/open-skill-window', { method: 'POST' })">Open Skills Window</button>""")
+
         return ''.join(html_elements)
     
     def generate_energy(self, main_info):

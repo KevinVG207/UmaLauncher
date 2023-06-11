@@ -39,6 +39,8 @@ class CarrotJuicer():
     last_helper_data = None
     previous_race_program_id = None
     last_data = None
+    open_skill_window = False
+    skill_browser = None
 
     def __init__(self, threader):
         self.threader = threader
@@ -243,7 +245,7 @@ class CarrotJuicer():
 
 
     def close_browser(self):
-        if self.browser:
+        if self.browser and self.browser.alive():
             self.browser.close()
             self.last_browser_rect = self.browser.get_last_window_rect()
             self.save_last_browser_rect()
@@ -577,6 +579,13 @@ class CarrotJuicer():
             )
 
 
+    def _open_skill_window(self):
+        if not self.skill_browser:
+            self.skill_browser = horsium.BrowserWindow("https://gametora.com/umamusume/skills", self.threader)
+        else:
+            self.skill_browser.ensure_tab_open()
+
+
     def run_with_catch(self):
         try:
             self.run()
@@ -603,7 +612,7 @@ class CarrotJuicer():
                 if not self.threader.settings["s_enable_carrotjuicer"]:
                     continue
 
-                if self.browser:
+                if self.browser and self.browser.alive():
                     if self.reset_browser:
                         self.browser.set_window_rect(self.get_browser_reset_position())
                     self.last_browser_rect = self.browser.get_last_window_rect()
@@ -611,6 +620,13 @@ class CarrotJuicer():
                     self.save_last_browser_rect()
                 
                 self.reset_browser = False
+
+
+                # Skill window.
+                if self.open_skill_window:
+                    self.open_skill_window = False
+                    self._open_skill_window()
+
 
                 messages = self.get_msgpack_batch(msg_path)
                 for message in messages:
@@ -620,8 +636,17 @@ class CarrotJuicer():
 
         if self.browser:
             try:
-                self.last_browser_rect = self.browser.get_window_rect()
+                new_last_browser_rect = self.browser.get_window_rect()
+                if new_last_browser_rect:
+                    self.last_browser_rect = new_last_browser_rect
                 self.browser.quit()
+                self.browser = None
+            except: pass
+
+        if self.skill_browser:
+            try:
+                self.skill_browser.quit()
+                self.skill_browser = None
             except: pass
 
         self.save_last_browser_rect()

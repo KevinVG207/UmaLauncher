@@ -106,7 +106,7 @@ class BrowserWindow:
         if rect:
             self.set_window_rect(rect)
 
-    def __bool__(self):
+    def alive(self):
         if self.driver is None:
             return False
         try:
