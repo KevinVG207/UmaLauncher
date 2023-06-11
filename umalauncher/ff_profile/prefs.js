@@ -100,7 +100,7 @@ user_pref("distribution.iniFile.exists.value", false);
 user_pref("doh-rollout.doneFirstRun", true);
 user_pref("doh-rollout.home-region", "NL");
 user_pref("dom.push.userAgentID", "f68d18d297c7422daa2b37412c349991");
-user_pref("extensions.activeThemeID", "default-theme@mozilla.org");
+user_pref("extensions.activeThemeID", "	firefox-compact-dark@mozilla.org");
 user_pref("extensions.blocklist.pingCountVersion", 0);
 user_pref("extensions.databaseSchema", 35);
 user_pref("extensions.getAddons.databaseSchema", 6);
