@@ -252,3 +252,24 @@ def get_program_id_data(program_id):
     if not rows:
         return None
     return rows_to_dict(rows, columns)[0]
+
+def get_skill_id_dict():
+    skill_id_dict = {}
+
+    with Connection() as (_, cursor):
+        cursor.execute(
+            """SELECT id, group_id, rarity, unique_skill_id_1 FROM skill_data"""
+        )
+        rows = cursor.fetchall()
+    
+    if not rows:
+        return skill_id_dict
+    
+    for row in rows:
+        true_id = row[0]
+        if row[3] != 0:
+            true_id = row[3]
+        
+        skill_id_dict[(row[1], row[2])] = true_id
+    
+    return skill_id_dict

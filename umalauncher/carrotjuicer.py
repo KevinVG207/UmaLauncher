@@ -37,10 +37,12 @@ class CarrotJuicer():
     training_tracker = None
     previous_request = None
     last_helper_data = None
+    skills_list = []
     previous_race_program_id = None
     last_data = None
     open_skill_window = False
     skill_browser = None
+    skill_id_dict = mdb.get_skill_id_dict()
 
     def __init__(self, threader):
         self.threader = threader
@@ -268,6 +270,12 @@ class CarrotJuicer():
                 if not self.training_tracker or not self.training_tracker.training_id_matches(training_id):
                     self.training_tracker = training_tracker.TrainingTracker(training_id, data['chara_info']['card_id'])
 
+                self.skills_list = []
+                for skill_tip in data['chara_info']['skill_tips_array']:
+                    self.skills_list.append(self.skill_id_dict[(skill_tip['group_id'], skill_tip['rarity'])])
+                
+                logger.debug(f"Skills list: {self.skills_list}")
+
                 # Add request to tracker
                 self.add_response_to_tracker(data)
 
@@ -458,7 +466,7 @@ class CarrotJuicer():
 
     def _open_skill_window(self):
         if not self.skill_browser:
-            self.skill_browser = horsium.BrowserWindow("https://gametora.com/umamusume/skills", self.threader, run_at_launch=setup_gametora)
+            self.skill_browser = horsium.BrowserWindow("https://gametora.com/umamusume/skills", self.threader, run_at_launch=setup_skill_window)
         else:
             self.skill_browser.ensure_tab_open()
 
@@ -504,6 +512,12 @@ class CarrotJuicer():
                     self._open_skill_window()
 
 
+                if self.skill_browser:
+                    if self.skill_browser.alive():
+                        # Update skill window.
+                        # self.update_skill_window()
+                        pass
+
                 messages = self.get_msgpack_batch(msg_path)
                 for message in messages:
                     self.process_message(message)
@@ -531,7 +545,6 @@ class CarrotJuicer():
 
     def stop(self):
         self.should_stop = True
-
 
 
 
@@ -637,6 +650,29 @@ def setup_helper_page(browser: horsium.BrowserWindow):
 
     gametora_remove_cookies_banner(browser)
 
+def setup_skill_window(browser: horsium.BrowserWindow):
+    gametora_dark_mode(browser)
+
+    # Enable settings
+    # Expand settings
+    browser.execute_script("""document.querySelector("[class^='utils_padbottom_half_']").querySelector("button").click();""")
+    while not browser.execute_script("""return document.querySelector("label[for='highlightCheckbox']");"""):
+        time.sleep(0.25)
+
+    # Enable highlight
+    highlight_checked = browser.execute_script("""return document.querySelector("label[for='highlightCheckbox']").previousSibling.checked;""")
+    if not highlight_checked:
+        browser.execute_script("""document.querySelector("label[for='highlightCheckbox']").click();""")
+
+    # Enable show id
+    show_id_checked = browser.execute_script("""return document.querySelector("label[for='showIdCheckbox']").previousSibling.checked;""")
+    if not show_id_checked:
+        browser.execute_script("""document.querySelector("label[for='showIdCheckbox']").click();""")
+
+    # Collapse settings
+    browser.execute_script("""document.querySelector("[class^='utils_padbottom_half_']").querySelector("button").click();""")
+
+    gametora_remove_cookies_banner(browser)
 
 def gametora_dark_mode(browser: horsium.BrowserWindow):
     # Enable dark mode (the only reasonable color scheme)
