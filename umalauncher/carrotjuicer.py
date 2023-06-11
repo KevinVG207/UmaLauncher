@@ -215,8 +215,7 @@ class CarrotJuicer():
         return
 
     def open_helper(self):
-        if self.browser:
-            self.browser.close()
+        self.close_browser()
 
         start_pos = self.threader.settings["s_browser_position"]
         if not start_pos:
@@ -245,9 +244,9 @@ class CarrotJuicer():
 
     def close_browser(self):
         if self.browser:
-            self.last_browser_rect = self.browser.get_window_rect()
-            self.save_last_browser_rect()
             self.browser.close()
+            self.last_browser_rect = self.browser.get_last_window_rect()
+            self.save_last_browser_rect()
             self.browser = None
         return
 
@@ -606,11 +605,12 @@ class CarrotJuicer():
 
                 if self.browser:
                     if self.reset_browser:
-                        self.reset_browser = False
                         self.browser.set_window_rect(self.get_browser_reset_position())
-                    self.last_browser_rect = self.browser.get_window_rect()
+                    self.last_browser_rect = self.browser.get_last_window_rect()
                 elif self.last_browser_rect:
                     self.save_last_browser_rect()
+                
+                self.reset_browser = False
 
                 messages = self.get_msgpack_batch(msg_path)
                 for message in messages:

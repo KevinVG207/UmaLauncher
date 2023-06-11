@@ -100,6 +100,7 @@ class BrowserWindow:
         self.driver = None
         self.old_drivers = []
         self.active_tab_handle = None
+        self.last_window_rect = None
         
         self.ensure_tab_open()
         if rect:
@@ -123,6 +124,7 @@ class BrowserWindow:
                 if self.active_tab_handle in self.driver.window_handles:
                     self.driver.switch_to.window(self.active_tab_handle)
                     if urls_match(self.driver.current_url, self.url):
+                        self.last_window_rect = self.driver.get_window_rect()
                         return
                     elif self.browser_name == "Firefox":
                         self.driver.get(self.url)
@@ -135,6 +137,7 @@ class BrowserWindow:
 
         self.driver = init_browser(self.url, self.browser_name)
         self.active_tab_handle = self.driver.window_handles[0]
+        self.last_window_rect = self.driver.get_window_rect()
 
     def ensure_focus(func):
         def wrapper(self, *args, **kwargs):
@@ -153,6 +156,9 @@ class BrowserWindow:
     @ensure_focus
     def get_window_rect(self):
         return self.driver.get_window_rect()
+
+    def get_last_window_rect(self):
+        return self.last_window_rect
     
     def current_url(self):
         return self.url
@@ -162,6 +168,7 @@ class BrowserWindow:
         try:
             if self.active_tab_handle in self.driver.window_handles:
                 self.driver.switch_to.window(self.active_tab_handle)
+                self.last_window_rect = self.driver.get_window_rect()
                 self.driver.close()
         except (NoSuchWindowException, WebDriverException):
             pass
