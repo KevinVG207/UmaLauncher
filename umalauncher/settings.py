@@ -62,7 +62,7 @@ class DefaultSettings(se.Settings):
             "Automatically close DMM Game Player when the game is launched.",
             True,
             se.SettingType.BOOL,
-            priority=96
+            priority=95
         )
         self.s_lock_game_window = se.Setting(
             "Lock game window",
@@ -90,7 +90,7 @@ class DefaultSettings(se.Settings):
             "Track training events in /training_logs as gzip files.",
             True,
             se.SettingType.BOOL,
-            priority=97
+            priority=96
         )
         self.s_game_install_path = se.Setting(
             "Game install path",
@@ -131,6 +131,13 @@ class DefaultSettings(se.Settings):
             },
             se.SettingType.RADIOBUTTONS,
             priority=98
+        )
+        self.s_gametora_dark_mode = se.Setting(
+            "GameTora dark mode",
+            "Enable dark mode for GameTora.",
+            True,
+            se.SettingType.BOOL,
+            priority=97
         )
         self.s_training_helper_table_preset = se.Setting(
             "Training helper table preset",

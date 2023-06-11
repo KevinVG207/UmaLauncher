@@ -13,7 +13,7 @@ from selenium import webdriver
 from selenium.webdriver.firefox.service import Service as FirefoxService
 from selenium.webdriver.edge.service import Service as EdgeService
 from selenium.webdriver.chrome.service import Service as ChromeService
-from selenium.common.exceptions import NoSuchWindowException
+from selenium.common.exceptions import NoSuchWindowException, JavascriptException
 import screenstate_utils
 import util
 import constants
@@ -101,121 +101,6 @@ class CarrotJuicer():
         with open(util.get_relative(out_name), 'w', encoding='utf-8') as f:
             f.write(json.dumps(packet, indent=4, ensure_ascii=False))
 
-
-    def setup_helper_page(self):
-        self.browser.execute_script("""
-        if (window.UL_OVERLAY) {
-            window.UL_OVERLAY.remove();
-        }
-        window.UL_OVERLAY = document.createElement("div");
-        window.GT_PAGE = document.getElementById("__next");
-        window.OVERLAY_HEIGHT = "15rem";
-        window.UL_OVERLAY.style.height = "max_content";
-        window.UL_OVERLAY.style.width = "100%";
-        window.UL_OVERLAY.style.padding = "0.5rem 0";
-        window.UL_OVERLAY.style.position = "fixed";
-        window.UL_OVERLAY.style.bottom = "100%";
-        window.UL_OVERLAY.style.zIndex = 100;
-        window.UL_OVERLAY.style.backgroundColor = "var(--c-bg-main)";
-        window.UL_OVERLAY.style.borderBottom = "2px solid var(--c-topnav)";
-
-        var ul_data = document.createElement("div");
-        ul_data.id = "ul-data";
-        window.UL_OVERLAY.appendChild(ul_data);
-
-        window.UL_OVERLAY.ul_data = ul_data;
-
-        ul_data.style.display = "flex";
-        ul_data.style.alignItems = "center";
-        ul_data.style.justifyContent = "center";
-        ul_data.style.flexDirection = "column";
-        ul_data.style.gap = "0.5rem";
-        ul_data.style.fontSize = "0.9rem";
-
-        var ul_dropdown = document.createElement("div");
-        ul_dropdown.id = "ul-dropdown";
-        ul_dropdown.style = "position: fixed;right: 0;top: 0;width: 3rem;height: 1.6rem;background-color: var(--c-bg-main);text-align: center;z-index: 101;line-height: 1.5rem;border-left: 2px solid var(--c-topnav);border-bottom: 2px solid var(--c-topnav);border-bottom-left-radius: 0.5rem;cursor: pointer;";
-        ul_dropdown.textContent = "⯅";
-        window.UL_OVERLAY.appendChild(ul_dropdown);
-
-        window.hide_overlay = function() {
-            window.UL_DATA.expanded = false;
-            document.getElementById("ul-dropdown").textContent = "⯆";
-            document.getElementById("ul-dropdown").style.top = "-2px";
-            window.GT_PAGE.style.paddingTop = "0";
-            window.UL_OVERLAY.style.bottom = "100%";
-        }
-
-        window.expand_overlay = function() {
-            window.UL_DATA.expanded = true;
-
-            var height = window.UL_OVERLAY.offsetHeight;
-            console.log(height)
-            window.OVERLAY_HEIGHT = height + "px";
-
-            document.getElementById("ul-dropdown").textContent = "⯅";
-            document.getElementById("ul-dropdown").style.top = "calc(" + window.OVERLAY_HEIGHT + " - 2px)";
-            window.GT_PAGE.style.paddingTop = window.OVERLAY_HEIGHT;
-            window.UL_OVERLAY.style.bottom = "calc(100% - " + window.OVERLAY_HEIGHT + ")";
-        }
-
-        ul_dropdown.addEventListener("click", function() {
-            if (window.UL_DATA.expanded) {
-                window.hide_overlay();
-            } else {
-                window.expand_overlay();
-            }
-        });
-
-        window.UL_DATA = {
-            energy: 100,
-            max_energy: 100,
-            table: "",
-            expanded: true
-        };
-
-        document.body.prepend(window.UL_OVERLAY);
-
-        window.UL_OVERLAY.querySelector("#ul-dropdown").style.transition = "top 0.5s";
-        window.UL_OVERLAY.style.transition = "bottom 0.5s";
-        window.GT_PAGE.style.transition = "padding-top 0.5s";
-
-        window.update_overlay = function() {
-            window.UL_OVERLAY.ul_data.replaceChildren();
-            window.UL_OVERLAY.ul_data.insertAdjacentHTML("afterbegin", window.UL_DATA.overlay_html)
-            //window.UL_OVERLAY.ul_data.innerHTML = window.UL_DATA.overlay_html;
-
-            if (window.UL_DATA.expanded) {
-                window.expand_overlay();
-                //setTimeout(window.expand_overlay, 100);
-            }
-        };
-        """)
-
-        # Enable dark mode (the only reasonable color scheme)
-        self.browser.execute_script("""document.querySelector("[class^='styles_header_settings_']").click()""")
-        while not self.browser.execute_script("""return document.querySelector("[class^='filters_toggle_button_']");"""):
-            time.sleep(0.25)
-        
-        dark_enabled = self.browser.execute_script("""return document.querySelector("[class^='filters_toggle_button_']").childNodes[0].querySelector("input").checked;""")
-        if not dark_enabled:
-            self.browser.execute_script("""document.querySelector("[class^='filters_toggle_button_']").childNodes[0].querySelector("input").click()""")
-        self.browser.execute_script("""document.querySelector("[class^='styles_header_settings_']").click()""")
-
-        # Enable all cards
-        self.browser.execute_script("""document.querySelector("[class^='filters_settings_button_']").click()""")
-        all_cards_enabled = self.browser.execute_script("""return document.getElementById("allAtOnceCheckbox").checked;""")
-        if not all_cards_enabled:
-            self.browser.execute_script("""document.getElementById("allAtOnceCheckbox").click()""")
-        self.browser.execute_script("""document.querySelector("[class^='filters_confirm_button_']").click()""")
-
-        while not self.browser.execute_script("""return document.getElementById("adnote");"""):
-            time.sleep(0.25)
-
-        # Hide the cookies banner
-        self.browser.execute_script("""document.getElementById("adnote").style.display = 'none';""")
-        return
-
     def open_helper(self):
         self.close_browser()
 
@@ -223,12 +108,7 @@ class CarrotJuicer():
         if not start_pos:
             start_pos = self.get_browser_reset_position()
         
-        self.browser = horsium.BrowserWindow(self.helper_url, self.threader, rect=start_pos)
-
-        # TODO: Find a way to know if the page is actually finished loading
-
-        self.setup_helper_page()
-
+        self.browser = horsium.BrowserWindow(self.helper_url, self.threader, rect=start_pos, run_at_launch=setup_helper_page)
 
     def get_browser_reset_position(self):
         game_rect, _ = self.threader.windowmover.window.get_rect()
@@ -569,19 +449,16 @@ class CarrotJuicer():
         helper_table = self.helper_table.create_helper_elements(data, self.last_helper_data)
         self.last_helper_data = data
         if helper_table:
-            if not self.browser:
-                self.open_helper()
             self.browser.execute_script("""
                 window.UL_DATA.overlay_html = arguments[0];
                 window.update_overlay();
                 """,
-                helper_table
-            )
+                helper_table)
 
 
     def _open_skill_window(self):
         if not self.skill_browser:
-            self.skill_browser = horsium.BrowserWindow("https://gametora.com/umamusume/skills", self.threader)
+            self.skill_browser = horsium.BrowserWindow("https://gametora.com/umamusume/skills", self.threader, run_at_launch=setup_gametora)
         else:
             self.skill_browser.ensure_tab_open()
 
@@ -606,8 +483,7 @@ class CarrotJuicer():
 
         try:
             while not self.should_stop:
-                # time.sleep(0.25)
-                time.sleep(2)
+                time.sleep(0.25)
 
                 if not self.threader.settings["s_enable_carrotjuicer"]:
                     continue
@@ -655,3 +531,133 @@ class CarrotJuicer():
 
     def stop(self):
         self.should_stop = True
+
+
+
+
+
+def setup_helper_page(browser: horsium.BrowserWindow):
+    browser.execute_script("""
+    if (window.UL_OVERLAY) {
+        window.UL_OVERLAY.remove();
+    }
+    window.UL_OVERLAY = document.createElement("div");
+    window.GT_PAGE = document.getElementById("__next");
+    window.OVERLAY_HEIGHT = "15rem";
+    window.UL_OVERLAY.style.height = "max_content";
+    window.UL_OVERLAY.style.width = "100%";
+    window.UL_OVERLAY.style.padding = "0.5rem 0";
+    window.UL_OVERLAY.style.position = "fixed";
+    window.UL_OVERLAY.style.bottom = "100%";
+    window.UL_OVERLAY.style.zIndex = 100;
+    window.UL_OVERLAY.style.backgroundColor = "var(--c-bg-main)";
+    window.UL_OVERLAY.style.borderBottom = "2px solid var(--c-topnav)";
+
+    var ul_data = document.createElement("div");
+    ul_data.id = "ul-data";
+    window.UL_OVERLAY.appendChild(ul_data);
+
+    window.UL_OVERLAY.ul_data = ul_data;
+
+    ul_data.style.display = "flex";
+    ul_data.style.alignItems = "center";
+    ul_data.style.justifyContent = "center";
+    ul_data.style.flexDirection = "column";
+    ul_data.style.gap = "0.5rem";
+    ul_data.style.fontSize = "0.9rem";
+
+    var ul_dropdown = document.createElement("div");
+    ul_dropdown.id = "ul-dropdown";
+    ul_dropdown.style = "position: fixed;right: 0;top: 0;width: 3rem;height: 1.6rem;background-color: var(--c-bg-main);text-align: center;z-index: 101;line-height: 1.5rem;border-left: 2px solid var(--c-topnav);border-bottom: 2px solid var(--c-topnav);border-bottom-left-radius: 0.5rem;cursor: pointer;";
+    ul_dropdown.textContent = "⯅";
+    window.UL_OVERLAY.appendChild(ul_dropdown);
+
+    window.hide_overlay = function() {
+        window.UL_DATA.expanded = false;
+        document.getElementById("ul-dropdown").textContent = "⯆";
+        document.getElementById("ul-dropdown").style.top = "-2px";
+        window.GT_PAGE.style.paddingTop = "0";
+        window.UL_OVERLAY.style.bottom = "100%";
+    }
+
+    window.expand_overlay = function() {
+        window.UL_DATA.expanded = true;
+
+        var height = window.UL_OVERLAY.offsetHeight;
+        console.log(height)
+        window.OVERLAY_HEIGHT = height + "px";
+
+        document.getElementById("ul-dropdown").textContent = "⯅";
+        document.getElementById("ul-dropdown").style.top = "calc(" + window.OVERLAY_HEIGHT + " - 2px)";
+        window.GT_PAGE.style.paddingTop = window.OVERLAY_HEIGHT;
+        window.UL_OVERLAY.style.bottom = "calc(100% - " + window.OVERLAY_HEIGHT + ")";
+    }
+
+    ul_dropdown.addEventListener("click", function() {
+        if (window.UL_DATA.expanded) {
+            window.hide_overlay();
+        } else {
+            window.expand_overlay();
+        }
+    });
+
+    window.UL_DATA = {
+        energy: 100,
+        max_energy: 100,
+        table: "",
+        expanded: true
+    };
+
+    document.body.prepend(window.UL_OVERLAY);
+
+    window.UL_OVERLAY.querySelector("#ul-dropdown").style.transition = "top 0.5s";
+    window.UL_OVERLAY.style.transition = "bottom 0.5s";
+    window.GT_PAGE.style.transition = "padding-top 0.5s";
+
+    window.update_overlay = function() {
+        window.UL_OVERLAY.ul_data.replaceChildren();
+        window.UL_OVERLAY.ul_data.insertAdjacentHTML("afterbegin", window.UL_DATA.overlay_html)
+        //window.UL_OVERLAY.ul_data.innerHTML = window.UL_DATA.overlay_html;
+
+        if (window.UL_DATA.expanded) {
+            window.expand_overlay();
+            //setTimeout(window.expand_overlay, 100);
+        }
+    };
+    """)
+
+    gametora_dark_mode(browser)
+
+    # Enable all cards
+    browser.execute_script("""document.querySelector("[class^='filters_settings_button_']").click()""")
+    all_cards_enabled = browser.execute_script("""return document.getElementById("allAtOnceCheckbox").checked;""")
+    if not all_cards_enabled:
+        browser.execute_script("""document.getElementById("allAtOnceCheckbox").click()""")
+    browser.execute_script("""document.querySelector("[class^='filters_confirm_button_']").click()""")
+
+    gametora_remove_cookies_banner(browser)
+
+
+def gametora_dark_mode(browser: horsium.BrowserWindow):
+    # Enable dark mode (the only reasonable color scheme)
+    browser.execute_script("""document.querySelector("[class^='styles_header_settings_']").click()""")
+    while not browser.execute_script("""return document.querySelector("[class^='filters_toggle_button_']");"""):
+        time.sleep(0.25)
+    
+    dark_enabled = browser.execute_script("""return document.querySelector("[class^='tooltips_tooltip_']").querySelector("[class^='filters_toggle_button_']").childNodes[0].querySelector("input").checked;""")
+    if dark_enabled != browser.threader.settings["s_gametora_dark_mode"]:
+        browser.execute_script("""document.querySelector("[class^='tooltips_tooltip_']").querySelector("[class^='filters_toggle_button_']").childNodes[0].querySelector("input").click()""")
+    browser.execute_script("""document.querySelector("[class^='styles_header_settings_']").click()""")
+
+
+def gametora_remove_cookies_banner(browser: horsium.BrowserWindow):
+    while not browser.execute_script("""return document.getElementById("adnote");"""):
+        time.sleep(0.25)
+
+    # Hide the cookies banner
+    browser.execute_script("""document.getElementById("adnote").style.display = 'none';""")
+
+
+def setup_gametora(browser: horsium.BrowserWindow):
+    gametora_dark_mode(browser)
+    gametora_remove_cookies_banner(browser)

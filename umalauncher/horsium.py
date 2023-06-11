@@ -5,6 +5,7 @@
 # Interacting with the browser will be done through this class.
 
 import traceback
+import time
 from urllib.parse import urlparse
 from subprocess import CREATE_NO_WINDOW
 from loguru import logger
@@ -14,7 +15,7 @@ from selenium.webdriver.remote.webdriver import WebDriver as RemoteWebDriver
 from selenium.webdriver.firefox.service import Service as FirefoxService
 from selenium.webdriver.edge.service import Service as EdgeService
 from selenium.webdriver.chrome.service import Service as ChromeService
-from selenium.common.exceptions import NoSuchWindowException
+from selenium.common.exceptions import NoSuchWindowException, JavascriptException
 import util
 
 def firefox_setup(helper_url):
@@ -60,27 +61,6 @@ BROWSER_LIST = {
     'Edge': edge_setup,
 }
 
-def init_browser(url, browser_name):
-    driver = None
-
-    browser_list = []
-    if browser_name == "Auto":
-        browser_list = BROWSER_LIST.values()
-    else:
-        browser_list = [BROWSER_LIST[browser_name]]
-
-    for browser_setup in browser_list:
-        try:
-            logger.info("Attempting " + str(browser_setup.__name__))
-            driver = browser_setup(url)
-            break
-        except Exception:
-            logger.error("Failed to start browser")
-            logger.error(traceback.format_exc())
-    if not driver:
-        util.show_warning_box("Uma Launcher: Unable to start browser.", "Selected webbrowser cannot be started.")
-    return driver
-
 def urls_match(url1, url2):
     url1 = url1[:-1] if url1.endswith('/') else url1
     url2 = url2[:-1] if url2.endswith('/') else url2
@@ -88,23 +68,51 @@ def urls_match(url1, url2):
     urlparse2 = urlparse(url2)
     return (urlparse1.netloc, urlparse1.path) == (urlparse2.netloc, urlparse2.path)
 
+
+
 class BrowserWindow:
-    def __init__(self, url, threader, rect=None):
+    def __init__(self, url, threader, rect=None, run_at_launch=None):
         self.url = url
         self.threader = threader
-        self.browser_name = [
-                browser
-                for browser, selected in threader.settings['s_selected_browser'].items()
-                if selected
-            ][0]
-        self.driver = None
+        self.driver: RemoteWebDriver = None
         self.old_drivers = []
         self.active_tab_handle = None
         self.last_window_rect = None
+        self.run_at_launch = run_at_launch
+        self.browser_name = "Auto"
         
         self.ensure_tab_open()
         if rect:
             self.set_window_rect(rect)
+            self.last_window_rect = self.get_window_rect()
+
+    def init_browser(self) -> RemoteWebDriver:
+        driver = None
+
+        browser_name = [
+                    browser
+                    for browser, selected in self.threader.settings['s_selected_browser'].items()
+                    if selected
+                ][0]
+        self.browser_name = browser_name
+
+        browser_list = []
+        if browser_name == "Auto":
+            browser_list = BROWSER_LIST.values()
+        else:
+            browser_list = [BROWSER_LIST[browser_name]]
+
+        for browser_setup in browser_list:
+            try:
+                logger.info("Attempting " + str(browser_setup.__name__))
+                driver = browser_setup(self.url)
+                break
+            except Exception:
+                logger.error("Failed to start browser")
+                logger.error(traceback.format_exc())
+        if not driver:
+            util.show_warning_box("Uma Launcher: Unable to start browser.", "Selected webbrowser cannot be started.")
+        return driver
 
     def alive(self):
         if self.driver is None:
@@ -123,21 +131,38 @@ class BrowserWindow:
             try:
                 if self.active_tab_handle in self.driver.window_handles:
                     self.driver.switch_to.window(self.active_tab_handle)
+
                     if urls_match(self.driver.current_url, self.url):
-                        self.last_window_rect = self.driver.get_window_rect()
-                        return
-                    elif self.browser_name == "Firefox":
-                        self.driver.get(self.url)
-                        return
-                    self.close()
-            except (NoSuchWindowException, WebDriverException):
+                        from_script = self.driver.execute_script("return window.from_script;")
+                        if from_script:
+                            self.last_window_rect = self.driver.get_window_rect()
+                            return
+                    
+                    self.driver.execute_script(f"document.still_the_old_page_haha = true;")  # Really reflects my mental state when I made this code
+                    self.driver.execute_script(f"window.location = '{self.url}';")
+                    # Wait for the page to load
+                    while self.driver.execute_script("return document.still_the_old_page_haha;"):
+                        time.sleep(0.2)
+                    while self.driver.execute_script("return document.readyState;") != "complete":
+                        time.sleep(0.2)
+                    self.run_script_at_launch()
+                    return
+            except:
                 self.driver.quit()
                 self.driver = None
             self.old_drivers.append(self.driver)
 
-        self.driver = init_browser(self.url, self.browser_name)
+        self.driver = self.init_browser()
         self.active_tab_handle = self.driver.window_handles[0]
+        self.run_script_at_launch()
         self.last_window_rect = self.driver.get_window_rect()
+
+    def run_script_at_launch(self):
+        self.driver.execute_script("""window.from_script = true;""")
+        if self.last_window_rect:
+            self.driver.set_window_rect(self.last_window_rect['x'], self.last_window_rect['y'], self.last_window_rect['width'], self.last_window_rect['height'])
+        if self.run_at_launch is not None:
+            self.run_at_launch(self)
 
     def ensure_focus(func):
         def wrapper(self, *args, **kwargs):
