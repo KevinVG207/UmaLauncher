@@ -38,6 +38,7 @@ class CarrotJuicer():
     previous_request = None
     last_helper_data = None
     skills_list = []
+    previous_skills_list = []
     previous_race_program_id = None
     last_data = None
     open_skill_window = False
@@ -339,7 +340,6 @@ class CarrotJuicer():
                         """a = document.querySelectorAll("[class^='compatibility_viewer_item_']");
                         var ele = null;
                         for (var i = 0; i < a.length; i++) {
-                        console.log(i)
                         item = a[i];
                         if (item.textContent.includes(arguments[0])) {
                             item.click();
@@ -464,11 +464,54 @@ class CarrotJuicer():
                 helper_table)
 
 
-    def _open_skill_window(self):
+    def update_skill_window(self):
         if not self.skill_browser:
             self.skill_browser = horsium.BrowserWindow("https://gametora.com/umamusume/skills", self.threader, run_at_launch=setup_skill_window)
         else:
             self.skill_browser.ensure_tab_open()
+        if self.browser and self.browser.alive():
+            self.browser.execute_script("""window.skill_window_opened();""")
+        
+        # Handle showing/hiding skills.
+        self.skill_browser.execute_script(
+            """
+            let skills_list = arguments[0];
+            let skill_elements = [];
+            let skills_table = document.querySelector("[class^='skills_skill_table_']");
+            let skill_rows = document.querySelectorAll("[class^='skills_table_desc_']");
+            let color_class = [...document.querySelector("[class*='skills_stripes_']").classList].filter(item => item.startsWith("skills_stripes_"))[0];
+
+            // Set display to none for all elements.
+            for (const item of skill_rows) {
+                item.parentNode.style.display = "none";
+            }
+
+            // Find the elements that match the skills list.
+            for (const skill_id of skills_list) {
+                let skill_string = "(" + skill_id + ")";
+                let ele = null;
+                for (const item of skill_rows) {
+                    if (item.textContent.includes(skill_string)) {
+                        skill_elements.push(item.parentNode);
+                        item.parentNode.remove();
+                        break;
+                    }
+                }
+            }
+
+            // Reappend the elements in the correct order.
+            for (let i = 0; i < skill_elements.length; i++) {
+                const item = skill_elements[i];
+                item.style.display = "grid";
+
+                if (i % 2 == 0) {
+                    item.classList.add(color_class);
+                } else {
+                    item.classList.remove(color_class);
+                }
+                skills_table.appendChild(item);
+            }
+            """, self.skills_list)
 
 
     def run_with_catch(self):
@@ -509,7 +552,9 @@ class CarrotJuicer():
                 # Skill window.
                 if self.open_skill_window:
                     self.open_skill_window = False
-                    self._open_skill_window()
+                    self.update_skill_window()
+                elif self.skill_browser and self.skill_browser.alive() and self.previous_skills_list != self.skills_list:
+                    self.update_skill_window()
 
 
                 if self.skill_browser:
@@ -637,6 +682,32 @@ def setup_helper_page(browser: horsium.BrowserWindow):
             //setTimeout(window.expand_overlay, 100);
         }
     };
+
+    // Skill window.
+    window.await_skill_window_timeout = null;
+    window.await_skill_window = function() {
+        window.await_skill_window_timeout = setTimeout(function() {
+            let btn = document.getElementById("btn-skill-window");
+            if (btn) {
+                btn.disabled = false;
+            }
+        }, 15000);
+
+        let btn = document.getElementById("btn-skill-window");
+        if (btn) {
+            btn.disabled = true;
+        }
+        fetch('http://127.0.0.1:3150/open-skill-window', { method: 'POST' });
+    }
+    window.skill_window_opened = function() {
+        if (window.await_skill_window_timeout) {
+            clearTimeout(window.await_skill_window_timeout);
+        }
+        let btn = document.getElementById("btn-skill-window");
+        if (btn) {
+            btn.disabled = false;
+        }
+    }
     """)
 
     gametora_dark_mode(browser)
@@ -651,6 +722,9 @@ def setup_helper_page(browser: horsium.BrowserWindow):
     gametora_remove_cookies_banner(browser)
 
 def setup_skill_window(browser: horsium.BrowserWindow):
+    # Hide filters
+    browser.execute_script("""document.querySelector("[class^='filters_filter_container_']").style.display = "none";""")
+
     gametora_dark_mode(browser)
 
     # Enable settings
