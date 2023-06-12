@@ -253,6 +253,7 @@ def get_program_id_data(program_id):
         return None
     return rows_to_dict(rows, columns)[0]
 
+
 def get_skill_id_dict():
     skill_id_dict = {}
 
@@ -273,3 +274,22 @@ def get_skill_id_dict():
         skill_id_dict[(row[1], row[2])] = true_id
     
     return skill_id_dict
+
+
+def get_card_inherent_skills(card_id, level=99):
+    skills = []
+
+    with Connection() as (_, cursor):
+        cursor.execute(
+            """SELECT ass.skill_id FROM card_data cd JOIN available_skill_set ass ON cd.available_skill_set_id = ass.available_skill_set_id WHERE cd.id = ? AND ass.need_rank <= ?;""",
+            (card_id, level)
+        )
+        rows = cursor.fetchall()
+    
+    if not rows:
+        return skills
+    
+    for row in rows:
+        skills.append(row[0])
+    
+    return skills

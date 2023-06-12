@@ -272,8 +272,15 @@ class CarrotJuicer():
                     self.training_tracker = training_tracker.TrainingTracker(training_id, data['chara_info']['card_id'])
 
                 self.skills_list = []
+                for skill_data in data['chara_info']['skill_array']:
+                    self.skills_list.append(skill_data['skill_id'])
+                
+                self.skills_list += mdb.get_card_inherent_skills(data['chara_info']['card_id'], data['chara_info']['talent_level'])
+
                 for skill_tip in data['chara_info']['skill_tips_array']:
                     self.skills_list.append(self.skill_id_dict[(skill_tip['group_id'], skill_tip['rarity'])])
+
+                self.skills_list.sort()
                 
                 logger.debug(f"Skills list: {self.skills_list}")
 
@@ -554,6 +561,7 @@ class CarrotJuicer():
                     self.open_skill_window = False
                     self.update_skill_window()
                 elif self.skill_browser and self.skill_browser.alive() and self.previous_skills_list != self.skills_list:
+                    self.previous_skills_list = self.skills_list
                     self.update_skill_window()
 
 

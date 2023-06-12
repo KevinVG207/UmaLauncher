@@ -154,6 +154,7 @@ class BrowserWindow:
 
         self.driver = self.init_browser()
         self.active_tab_handle = self.driver.window_handles[0]
+        self.driver.switch_to.window(self.active_tab_handle)
         self.run_script_at_launch()
         self.last_window_rect = self.driver.get_window_rect()
 
@@ -199,7 +200,7 @@ class BrowserWindow:
             pass
 
     def quit(self):
-        for driver in self.old_drivers:
+        for driver in self.old_drivers:  # TODO: Multithread this so it doesn't take forever with ChromeDriver?
             try:
                 driver.quit()
             except (NoSuchWindowException, WebDriverException):
@@ -209,3 +210,7 @@ class BrowserWindow:
             self.driver.quit()
         except (NoSuchWindowException, WebDriverException):
             pass
+
+
+
+# Chromium Webdriver is a poopyhead
