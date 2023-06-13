@@ -4,16 +4,9 @@ import glob
 import traceback
 import math
 import json
-import random
-from subprocess import CREATE_NO_WINDOW
 import msgpack
 from loguru import logger
-from selenium.common.exceptions import WebDriverException
-from selenium import webdriver
-from selenium.webdriver.firefox.service import Service as FirefoxService
-from selenium.webdriver.edge.service import Service as EdgeService
-from selenium.webdriver.chrome.service import Service as ChromeService
-from selenium.common.exceptions import NoSuchWindowException, JavascriptException
+from selenium.common.exceptions import NoSuchWindowException
 import screenstate_utils
 import util
 import constants
@@ -157,6 +150,8 @@ class CarrotJuicer():
     def end_training(self):
         if self.training_tracker:
             self.training_tracker = None
+        if self.skill_browser and self.skill_browser.alive():
+            self.skill_browser.close()
         self.close_browser()
         return
     
@@ -642,14 +637,25 @@ def setup_helper_page(browser: horsium.BrowserWindow):
 
     var ul_dropdown = document.createElement("div");
     ul_dropdown.id = "ul-dropdown";
+    ul_dropdown.classList.add("ul-overlay-button");
     ul_dropdown.style = "position: fixed;right: 0;top: 0;width: 3rem;height: 1.6rem;background-color: var(--c-bg-main);text-align: center;z-index: 101;line-height: 1.5rem;border-left: 2px solid var(--c-topnav);border-bottom: 2px solid var(--c-topnav);border-bottom-left-radius: 0.5rem;cursor: pointer;";
     ul_dropdown.textContent = "⯅";
     window.UL_OVERLAY.appendChild(ul_dropdown);
 
+    var ul_skills = document.createElement("div");
+    ul_skills.id = "ul-skills";
+    ul_skills.classList.add("ul-overlay-button");
+    ul_skills.style = "position: fixed; right: 50px; top: 0; width: 3.5rem; height: 1.6rem; background-color: var(--c-bg-main); text-align: center; z-index: 101; line-height: 1.5rem; border-left: 2px solid var(--c-topnav); border-bottom: 2px solid var(--c-topnav); border-right: 2px solid var(--c-topnav); border-bottom-left-radius: 0.5rem; border-bottom-right-radius: 0.5rem; cursor: pointer; transition: top 0.5s ease 0s;";
+    ul_skills.textContent = "Skills";
+    window.UL_OVERLAY.appendChild(ul_skills);
+
     window.hide_overlay = function() {
         window.UL_DATA.expanded = false;
         document.getElementById("ul-dropdown").textContent = "⯆";
-        document.getElementById("ul-dropdown").style.top = "-2px";
+        // document.getElementById("ul-dropdown").style.top = "-2px";
+        [...document.querySelectorAll(".ul-overlay-button")].forEach(div => {
+            div.style.top = "-2px";
+        })
         window.GT_PAGE.style.paddingTop = "0";
         window.UL_OVERLAY.style.bottom = "100%";
     }
@@ -662,7 +668,10 @@ def setup_helper_page(browser: horsium.BrowserWindow):
         window.OVERLAY_HEIGHT = height + "px";
 
         document.getElementById("ul-dropdown").textContent = "⯅";
-        document.getElementById("ul-dropdown").style.top = "calc(" + window.OVERLAY_HEIGHT + " - 2px)";
+        // document.getElementById("ul-dropdown").style.top = "calc(" + window.OVERLAY_HEIGHT + " - 2px)";
+        [...document.querySelectorAll(".ul-overlay-button")].forEach(div => {
+            div.style.top = "calc(" + window.OVERLAY_HEIGHT + " - 2px)";
+        })
         window.GT_PAGE.style.paddingTop = window.OVERLAY_HEIGHT;
         window.UL_OVERLAY.style.bottom = "calc(100% - " + window.OVERLAY_HEIGHT + ")";
     }
@@ -703,27 +712,20 @@ def setup_helper_page(browser: horsium.BrowserWindow):
     window.await_skill_window_timeout = null;
     window.await_skill_window = function() {
         window.await_skill_window_timeout = setTimeout(function() {
-            let btn = document.getElementById("btn-skill-window");
-            if (btn) {
-                btn.disabled = false;
-            }
+            ul_skills.style.filter = "";
         }, 15000);
 
-        let btn = document.getElementById("btn-skill-window");
-        if (btn) {
-            btn.disabled = true;
-        }
+        ul_skills.style.filter = "brightness(0.5)";
         fetch('http://127.0.0.1:3150/open-skill-window', { method: 'POST' });
     }
     window.skill_window_opened = function() {
         if (window.await_skill_window_timeout) {
             clearTimeout(window.await_skill_window_timeout);
         }
-        let btn = document.getElementById("btn-skill-window");
-        if (btn) {
-            btn.disabled = false;
-        }
+        ul_skills.style.filter = "";
     }
+
+    ul_skills.addEventListener("click", window.await_skill_window);
 
     
     window.send_screen_rect = function() {

@@ -177,7 +177,7 @@ class Preset():
 
         html_elements.append(self.generate_table(command_info))
 
-        html_elements.append("""<button id="btn-skill-window" onclick="window.await_skill_window();">Open Skills Window</button>""")
+        # html_elements.append("""<button id="btn-skill-window" onclick="window.await_skill_window();">Open Skills Window</button>""")
 
         return ''.join(html_elements)
     

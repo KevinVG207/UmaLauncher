@@ -259,7 +259,7 @@ def get_skill_id_dict():
 
     with Connection() as (_, cursor):
         cursor.execute(
-            """SELECT id, group_id, rarity, unique_skill_id_1 FROM skill_data"""
+            """SELECT id, group_id, rarity, unique_skill_id_1 FROM skill_data ORDER BY group_rate DESC;"""
         )
         rows = cursor.fetchall()
     
@@ -271,7 +271,9 @@ def get_skill_id_dict():
         if row[3] != 0:
             true_id = row[3]
         
-        skill_id_dict[(row[1], row[2])] = true_id
+        skill_key = (row[1], row[2])
+        if skill_key not in skill_id_dict:
+            skill_id_dict[skill_key] = true_id
     
     return skill_id_dict
 

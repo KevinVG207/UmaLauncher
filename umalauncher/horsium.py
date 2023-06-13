@@ -15,7 +15,7 @@ from selenium.webdriver.remote.webdriver import WebDriver as RemoteWebDriver
 from selenium.webdriver.firefox.service import Service as FirefoxService
 from selenium.webdriver.edge.service import Service as EdgeService
 from selenium.webdriver.chrome.service import Service as ChromeService
-from selenium.common.exceptions import NoSuchWindowException, JavascriptException
+from selenium.common.exceptions import NoSuchWindowException
 import util
 
 def firefox_setup(helper_url):
