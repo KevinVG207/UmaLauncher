@@ -120,6 +120,13 @@ class DefaultSettings(se.Settings):
             se.SettingType.LIST,
             priority=-1
         )
+        self.s_skills_position = se.Setting(
+            "Skills browser position",
+            "Position of the skills browser window.",
+            None,
+            se.SettingType.LIST,
+            priority=-1
+        )
         self.s_selected_browser = se.Setting(
             "Selected browser",
             "Browser to use for the Automatic Training Event Helper.",

@@ -77,14 +77,11 @@ class BrowserWindow:
         self.driver: RemoteWebDriver = None
         self.old_drivers = []
         self.active_tab_handle = None
-        self.last_window_rect = None
+        self.last_window_rect = {'x': rect[0], 'y': rect[1], 'width': rect[2], 'height': rect[3]} if rect else None
         self.run_at_launch = run_at_launch
         self.browser_name = "Auto"
         
         self.ensure_tab_open()
-        if rect:
-            self.set_window_rect(rect)
-            self.last_window_rect = self.get_window_rect()
 
     def init_browser(self) -> RemoteWebDriver:
         driver = None
@@ -120,7 +117,7 @@ class BrowserWindow:
         try:
             if self.active_tab_handle in self.driver.window_handles:
                 return True
-        except (NoSuchWindowException, WebDriverException):
+        except:
             pass
         return False
 

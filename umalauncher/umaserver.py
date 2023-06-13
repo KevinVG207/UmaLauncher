@@ -1,7 +1,7 @@
 from flask import Flask, request
 from werkzeug.serving import make_server
 from loguru import logger
-import requests
+import json
 import util
 
 app = Flask(__name__)
@@ -18,7 +18,30 @@ def index():
 @app.route('/open-skill-window', methods=['POST'])
 def open_skills_window():
     global threader
-    threader.carrotjuicer.open_skill_window = True
+    if threader.carrotjuicer:
+        threader.carrotjuicer.open_skill_window = True
+
+    return '', 200
+
+@app.route('/helper-window-rect', methods=['POST'])
+def helper_window_rect():
+    global threader
+    # Json is sent as text/plain in body.
+    json_data = json.loads(request.data.decode('utf-8'))
+    
+    if threader.carrotjuicer:
+        threader.carrotjuicer.last_browser_rect = json_data
+
+    return '', 200
+
+@app.route('/skills-window-rect', methods=['POST'])
+def skills_window_rect():
+    global threader
+    # Json is sent as text/plain in body.
+    json_data = json.loads(request.data.decode('utf-8'))
+    
+    if threader.carrotjuicer:
+        threader.carrotjuicer.last_skills_rect = json_data
 
     return '', 200
 

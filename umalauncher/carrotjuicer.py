@@ -44,6 +44,7 @@ class CarrotJuicer():
     open_skill_window = False
     skill_browser = None
     skill_id_dict = mdb.get_skill_id_dict()
+    last_skills_rect = None
 
     def __init__(self, threader):
         self.threader = threader
@@ -130,20 +131,28 @@ class CarrotJuicer():
     def close_browser(self):
         if self.browser and self.browser.alive():
             self.browser.close()
-            self.last_browser_rect = self.browser.get_last_window_rect()
             self.save_last_browser_rect()
             self.browser = None
         return
 
+    def save_rect(self, rect_var, setting):
+        if rect_var:
+            if (rect_var['x'] == -32000 and rect_var['y'] == -32000):
+                logger.warning(f"Browser minimized, cannot save position for {setting}: {rect_var}")
+                rect_var = None
+                return
+            rect_list = [rect_var['x'], rect_var['y'], rect_var['width'], rect_var['height']]
+            if self.threader.settings[setting] != rect_list:
+                self.threader.settings[setting] = rect_list
+            rect_var = None
 
     def save_last_browser_rect(self):
-        if self.last_browser_rect:
-            if (self.last_browser_rect['x'] == -32000 and self.last_browser_rect['y'] == -32000):
-                logger.warning(f"Browser minimized, cannot save position: {self.last_browser_rect}")
-                self.last_browser_rect = None
-                return
-            self.threader.settings["s_browser_position"] = [self.last_browser_rect['x'], self.last_browser_rect['y'], self.last_browser_rect['width'], self.last_browser_rect['height']]
-            self.last_browser_rect = None
+        self.save_rect(self.last_browser_rect, "s_browser_position")
+    
+    def save_skill_window_rect(self):
+        if self.skill_browser:
+            self.skill_browser.last_window_rect = self.last_skills_rect
+        self.save_rect(self.last_skills_rect, "s_skills_position")
 
     def end_training(self):
         if self.training_tracker:
@@ -203,7 +212,7 @@ class CarrotJuicer():
             data = data['data']
 
             # Close whatever popup is open
-            if self.browser:
+            if self.browser and self.browser.alive():
                 self.browser.execute_script(
                     """
                     document.querySelectorAll("[class^='compatibility_viewer_item_'][aria-expanded=true]").forEach(e => e.click());
@@ -473,7 +482,7 @@ class CarrotJuicer():
 
     def update_skill_window(self):
         if not self.skill_browser:
-            self.skill_browser = horsium.BrowserWindow("https://gametora.com/umamusume/skills", self.threader, run_at_launch=setup_skill_window)
+            self.skill_browser = horsium.BrowserWindow("https://gametora.com/umamusume/skills", self.threader, rect=self.threader.settings['s_skills_position'], run_at_launch=setup_skill_window)
         else:
             self.skill_browser.ensure_tab_open()
         if self.browser and self.browser.alive():
@@ -549,7 +558,6 @@ class CarrotJuicer():
                 if self.browser and self.browser.alive():
                     if self.reset_browser:
                         self.browser.set_window_rect(self.get_browser_reset_position())
-                    self.last_browser_rect = self.browser.get_last_window_rect()
                 elif self.last_browser_rect:
                     self.save_last_browser_rect()
                 
@@ -570,6 +578,8 @@ class CarrotJuicer():
                         # Update skill window.
                         # self.update_skill_window()
                         pass
+                    else:
+                        self.save_skill_window_rect()
 
                 messages = self.get_msgpack_batch(msg_path)
                 for message in messages:
@@ -579,9 +589,6 @@ class CarrotJuicer():
 
         if self.browser:
             try:
-                new_last_browser_rect = self.browser.get_window_rect()
-                if new_last_browser_rect:
-                    self.last_browser_rect = new_last_browser_rect
                 self.browser.quit()
                 self.browser = None
             except: pass
@@ -593,6 +600,7 @@ class CarrotJuicer():
             except: pass
 
         self.save_last_browser_rect()
+        self.save_skill_window_rect()
         return
 
 
@@ -716,6 +724,20 @@ def setup_helper_page(browser: horsium.BrowserWindow):
             btn.disabled = false;
         }
     }
+
+    
+    window.send_screen_rect = function() {
+        let rect = {
+            'x': window.screenX,
+            'y': window.screenY,
+            'width': window.outerWidth,
+            'height': window.outerHeight
+        };
+        fetch('http://127.0.0.1:3150/helper-window-rect', { method: 'POST', body: JSON.stringify(rect), headers: { 'Content-Type': 'text/plain' } });
+        setTimeout(window.send_screen_rect, 2000);
+    }
+    setTimeout(window.send_screen_rect, 2000);
+
     """)
 
     gametora_dark_mode(browser)
@@ -730,6 +752,23 @@ def setup_helper_page(browser: horsium.BrowserWindow):
     gametora_remove_cookies_banner(browser)
 
 def setup_skill_window(browser: horsium.BrowserWindow):
+    # Setup callback for window position
+    browser.execute_script("""
+    window.send_screen_rect = function() {
+        let rect = {
+            'x': window.screenX,
+            'y': window.screenY,
+            'width': window.outerWidth,
+            'height': window.outerHeight
+        };
+        fetch('http://127.0.0.1:3150/skills-window-rect', { method: 'POST', body: JSON.stringify(rect), headers: { 'Content-Type': 'text/plain' } });
+        setTimeout(window.send_screen_rect, 2000);
+    }
+    setTimeout(window.send_screen_rect, 2000);
+
+    """)
+
+
     # Hide filters
     browser.execute_script("""document.querySelector("[class^='filters_filter_container_']").style.display = "none";""")
 
