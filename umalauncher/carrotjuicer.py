@@ -287,7 +287,7 @@ class CarrotJuicer():
                 self.skills_list += mdb.get_card_inherent_skills(data['chara_info']['card_id'], data['chara_info']['talent_level'])
 
                 for skill_tip in data['chara_info']['skill_tips_array']:
-                    self.skills_list.append(self.skill_id_dict[(skill_tip['group_id'], skill_tip['rarity'])])
+                    self.skills_list.append(self.skill_id_dict[(skill_tip['group_id'], skill_tip['rarity'])])  # TODO: Check if level is correct. Check gold skills and purple skills.
 
                 self.skills_list.sort()
                 

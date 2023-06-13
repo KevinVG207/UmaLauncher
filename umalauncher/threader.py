@@ -9,7 +9,7 @@ if gzips:
     sys.exit()
 
 if not util.elevate():
-    util.show_error_box("Launch Error", "Uma Launcher needs administrator privileges to start.")
+    util.show_warning_box("Launch Error", "Uma Launcher needs administrator privileges to start.")
     sys.exit()
 
 import threading
