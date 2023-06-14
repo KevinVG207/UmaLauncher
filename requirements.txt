@@ -29,6 +29,7 @@ packaging==23.0
 pefile==2023.2.7
 Pillow==9.4.0
 protobuf==4.22.1
+psutil==5.9.5
 pycparser==2.21
 pyinstaller==5.8.0
 pyinstaller-hooks-contrib==2023.0
