@@ -151,6 +151,11 @@ def main():
     # Kill all threads that may be running
     kill_threads()
 
+    # Remove the pid file
+    lock_path = util.get_relative("lock.pid")
+    if os.path.exists(lock_path):
+        os.remove(lock_path)
+
     logger.info("=== Launcher closed ===")
 
 if __name__ == "__main__":
