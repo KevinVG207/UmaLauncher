@@ -22,9 +22,13 @@ if hasattr(sys, "_MEIPASS"):
 is_debug = is_script
 
 def get_relative(relative_path):
+    """Gets the absolute path of a file relative to the executable's directory.
+    """
     return os.path.join(relative_dir, relative_path)
 
 def get_asset(asset_path):
+    """Gets the absolute path of an asset relative to the unpack directory.
+    """
     return os.path.join(unpack_dir, asset_path)
 
 def elevate():
