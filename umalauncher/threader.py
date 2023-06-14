@@ -14,6 +14,8 @@ if not util.elevate():
 
 import threading
 import time
+import psutil
+import os
 import win32api
 from loguru import logger
 import settings
@@ -47,6 +49,9 @@ class Threader():
 
         # Set directory to find assets
         self.settings = settings.SettingsHandler(self)
+        
+        # Ensure only a single instance is running.
+        self.check_single_instance()
 
         if self.should_stop:
             return
@@ -105,6 +110,34 @@ class Threader():
         logger.info("=== Closing launcher ===")
         self.should_stop = True
         gui.stop_application()
+
+
+    def check_single_instance(self):
+        # Get the process id of the current process
+        current_pid = os.getpid()
+
+        # Check if a pid file exists.
+        pid_file = util.get_relative("lock.pid")
+        if os.path.exists(pid_file):
+            try:
+                with open(pid_file, "r", encoding='utf-8') as f:
+                    pid = f.read()
+                pid = int(pid)
+                if psutil.pid_exists(pid):
+                    util.show_warning_box("Launch Error", "Uma Launcher is already running.")
+                    self.should_stop = True
+                    return
+                else:
+                    os.remove(pid_file)
+            except:
+                util.show_warning_box("Launch Error", "Could not determine if a previous instance is running. Try deleting the lock.pid file and try again.")
+                self.should_stop = True
+                return
+
+        # Write the current pid to the file
+        with open(pid_file, "w", encoding='utf-8') as f:
+            f.write(str(current_pid))
+
 
 def kill_threads():
     for thread_object in THREAD_OBJECTS:
