@@ -148,6 +148,11 @@ def auto_update(umasettings, force=False):
         return True
 
     # Yes
+    # Remove the lock file.
+    lock_path = util.get_relative("lock.pid")
+    if os.path.exists(lock_path):
+        os.remove(lock_path)
+
     # Create updater thread
     update_object = Updater(latest_release['assets'])
     update_thread = threading.Thread(target=update_object.run)
