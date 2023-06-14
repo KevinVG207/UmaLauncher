@@ -9,7 +9,7 @@ if gzips:
     sys.exit()
 
 if not util.elevate():
-    util.show_error_box("Launch Error", "Uma Launcher needs administrator privileges to start.")
+    util.show_warning_box("Launch Error", "Uma Launcher needs administrator privileges to start.")
     sys.exit()
 
 import threading
@@ -25,6 +25,7 @@ import screenstate
 import windowmover
 import training_tracker
 import gui
+import umaserver
 
 THREAD_OBJECTS = []
 
@@ -35,6 +36,7 @@ class Threader():
     carrotjuicer = None
     windowmover = None
     screenstate = None
+    umaserver = None
     threads = []
     should_stop = False
     show_preferences = False
@@ -60,6 +62,10 @@ class Threader():
         self.screenstate = screenstate.ScreenStateHandler(self)
         THREAD_OBJECTS.append(self.screenstate)
         self.threads.append(threading.Thread(target=self.screenstate.run_with_catch, name="ScreenStateHandler"))
+
+        self.umaserver = umaserver.UmaServer(self)
+        THREAD_OBJECTS.append(self.umaserver)
+        self.threads.append(threading.Thread(target=self.umaserver.run_with_catch, name="UmaServer"))
 
         self.carrotjuicer = carrotjuicer.CarrotJuicer(self)
         THREAD_OBJECTS.append(self.carrotjuicer)

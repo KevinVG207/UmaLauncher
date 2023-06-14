@@ -4,14 +4,8 @@ import glob
 import traceback
 import math
 import json
-from subprocess import CREATE_NO_WINDOW
 import msgpack
 from loguru import logger
-from selenium.common.exceptions import WebDriverException
-from selenium import webdriver
-from selenium.webdriver.firefox.service import Service as FirefoxService
-from selenium.webdriver.edge.service import Service as EdgeService
-from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.common.exceptions import NoSuchWindowException
 import screenstate_utils
 import util
@@ -19,10 +13,11 @@ import constants
 import mdb
 import helper_table
 import training_tracker
+import horsium
 
 class CarrotJuicer():
     start_time = None
-    browser = None
+    browser: horsium.BrowserWindow = None
     previous_element = None
     threader = None
     screen_state_handler = None
@@ -35,19 +30,17 @@ class CarrotJuicer():
     training_tracker = None
     previous_request = None
     last_helper_data = None
+    skills_list = []
+    previous_skills_list = []
     previous_race_program_id = None
     last_data = None
-
-    _browser_list = None
+    open_skill_window = False
+    skill_browser = None
+    skill_id_dict = mdb.get_skill_id_dict()
+    last_skills_rect = None
 
     def __init__(self, threader):
         self.threader = threader
-
-        self._browser_list = {
-            'Chrome': self.chrome_setup,
-            'Firefox': self.firefox_setup,
-            'Edge': self.edge_setup,
-        }
 
         self.screen_state_handler = threader.screenstate
         self.restart_time()
@@ -105,243 +98,60 @@ class CarrotJuicer():
         with open(util.get_relative(out_name), 'w', encoding='utf-8') as f:
             f.write(json.dumps(packet, indent=4, ensure_ascii=False))
 
-    # def to_python_dict_file(self, packet, out_name="packet.py"):
-    #     with open(out_name, 'w', encoding='utf-8') as f:
-    #         f.write("packet = " + str(packet))
-
-    def firefox_setup(self, helper_url):
-        firefox_service = FirefoxService()
-        firefox_service.creation_flags = CREATE_NO_WINDOW
-        profile = webdriver.FirefoxProfile(util.get_asset("ff_profile"))
-        options = webdriver.FirefoxOptions()
-        browser = webdriver.Firefox(service=firefox_service, firefox_profile=profile, options=options)
-        browser.get(helper_url)
-        return browser
-
-    def chromium_setup(self, service, options_class, driver_class, profile, helper_url):
-        service.creation_flags = CREATE_NO_WINDOW
-        options = options_class()
-        options.add_argument("--user-data-dir=" + str(util.get_asset(profile)))
-        options.add_argument("--app=" + helper_url)
-        options.add_argument("--remote-debugging-port=9222")
-        browser = driver_class(service=service, options=options)
-        return browser
-
-    def chrome_setup(self, helper_url):
-        return self.chromium_setup(
-            service=ChromeService(),
-            options_class=webdriver.ChromeOptions,
-            driver_class=webdriver.Chrome,
-            profile="chr_profile",
-            helper_url=helper_url
-        )
-
-    def edge_setup(self, helper_url):
-        return self.chromium_setup(
-            service=EdgeService(),
-            options_class=webdriver.EdgeOptions,
-            driver_class=webdriver.Edge,
-            profile="edg_profile",
-            helper_url=helper_url
-        )
-
-    def init_browser(self):
-        driver = None
-
-        browser_list = []
-        if self.threader.settings['s_selected_browser']['Auto']:
-            browser_list = self._browser_list.values()
-        else:
-            browser_list = [
-                self._browser_list[browser]
-                for browser, selected in self.threader.settings['s_selected_browser'].items()
-                if selected
-            ]
-
-        for browser_setup in browser_list:
-            try:
-                logger.info("Attempting " + str(browser_setup.__name__))
-                driver = browser_setup(self.helper_url)
-                break
-            except Exception:
-                logger.error("Failed to start browser")
-                logger.error(traceback.format_exc())
-        if not driver:
-            util.show_warning_box("Uma Launcher: Unable to start browser.", "Selected webbrowser cannot be started. Use the tray icon to select a browser that is installed on your system.")
-        return driver
-    
-    def setup_helper_page(self):
-        self.browser.execute_script("""
-        if (window.UL_OVERLAY) {
-            window.UL_OVERLAY.remove();
-        }
-        window.UL_OVERLAY = document.createElement("div");
-        window.GT_PAGE = document.getElementById("__next");
-        window.OVERLAY_HEIGHT = "15rem";
-        window.UL_OVERLAY.style.height = "max_content";
-        window.UL_OVERLAY.style.width = "100%";
-        window.UL_OVERLAY.style.padding = "0.5rem 0";
-        window.UL_OVERLAY.style.position = "fixed";
-        window.UL_OVERLAY.style.bottom = "100%";
-        window.UL_OVERLAY.style.zIndex = 100;
-        window.UL_OVERLAY.style.backgroundColor = "var(--c-bg-main)";
-        window.UL_OVERLAY.style.borderBottom = "2px solid var(--c-topnav)";
-
-        var ul_data = document.createElement("div");
-        ul_data.id = "ul-data";
-        window.UL_OVERLAY.appendChild(ul_data);
-
-        window.UL_OVERLAY.ul_data = ul_data;
-
-        ul_data.style.display = "flex";
-        ul_data.style.alignItems = "center";
-        ul_data.style.justifyContent = "center";
-        ul_data.style.flexDirection = "column";
-        ul_data.style.gap = "0.5rem";
-        ul_data.style.fontSize = "0.9rem";
-
-        var ul_dropdown = document.createElement("div");
-        ul_dropdown.id = "ul-dropdown";
-        ul_dropdown.style = "position: fixed;right: 0;top: 0;width: 3rem;height: 1.6rem;background-color: var(--c-bg-main);text-align: center;z-index: 101;line-height: 1.5rem;border-left: 2px solid var(--c-topnav);border-bottom: 2px solid var(--c-topnav);border-bottom-left-radius: 0.5rem;cursor: pointer;";
-        ul_dropdown.textContent = "⯅";
-        window.UL_OVERLAY.appendChild(ul_dropdown);
-
-        window.hide_overlay = function() {
-            window.UL_DATA.expanded = false;
-            document.getElementById("ul-dropdown").textContent = "⯆";
-            document.getElementById("ul-dropdown").style.top = "-2px";
-            window.GT_PAGE.style.paddingTop = "0";
-            window.UL_OVERLAY.style.bottom = "100%";
-        }
-
-        window.expand_overlay = function() {
-            window.UL_DATA.expanded = true;
-
-            var height = window.UL_OVERLAY.offsetHeight;
-            console.log(height)
-            window.OVERLAY_HEIGHT = height + "px";
-
-            document.getElementById("ul-dropdown").textContent = "⯅";
-            document.getElementById("ul-dropdown").style.top = "calc(" + window.OVERLAY_HEIGHT + " - 2px)";
-            window.GT_PAGE.style.paddingTop = window.OVERLAY_HEIGHT;
-            window.UL_OVERLAY.style.bottom = "calc(100% - " + window.OVERLAY_HEIGHT + ")";
-        }
-
-        ul_dropdown.addEventListener("click", function() {
-            if (window.UL_DATA.expanded) {
-                window.hide_overlay();
-            } else {
-                window.expand_overlay();
-            }
-        });
-
-        window.UL_DATA = {
-            energy: 100,
-            max_energy: 100,
-            table: "",
-            expanded: true
-        };
-
-        document.body.prepend(window.UL_OVERLAY);
-
-        window.UL_OVERLAY.querySelector("#ul-dropdown").style.transition = "top 0.5s";
-        window.UL_OVERLAY.style.transition = "bottom 0.5s";
-        window.GT_PAGE.style.transition = "padding-top 0.5s";
-
-        window.update_overlay = function() {
-            window.UL_OVERLAY.ul_data.replaceChildren();
-            window.UL_OVERLAY.ul_data.insertAdjacentHTML("afterbegin", window.UL_DATA.overlay_html)
-            //window.UL_OVERLAY.ul_data.innerHTML = window.UL_DATA.overlay_html;
-
-            if (window.UL_DATA.expanded) {
-                window.expand_overlay();
-                //setTimeout(window.expand_overlay, 100);
-            }
-        };
-        """)
-
-        # Enable dark mode (the only reasonable color scheme)
-        self.browser.execute_script("""document.querySelector("[class^='styles_header_settings_']").click()""")
-        while not self.browser.execute_script("""return document.querySelector("[class^='filters_toggle_button_']");"""):
-            time.sleep(0.25)
-        
-        dark_enabled = self.browser.execute_script("""return document.querySelector("[class^='filters_toggle_button_']").childNodes[0].querySelector("input").checked;""")
-        if not dark_enabled:
-            self.browser.execute_script("""document.querySelector("[class^='filters_toggle_button_']").childNodes[0].querySelector("input").click()""")
-        self.browser.execute_script("""document.querySelector("[class^='styles_header_settings_']").click()""")
-
-        # Enable all cards
-        self.browser.execute_script("""document.querySelector("[class^='filters_settings_button_']").click()""")
-        all_cards_enabled = self.browser.execute_script("""return document.getElementById("allAtOnceCheckbox").checked;""")
-        if not all_cards_enabled:
-            self.browser.execute_script("""document.getElementById("allAtOnceCheckbox").click()""")
-        self.browser.execute_script("""document.querySelector("[class^='filters_confirm_button_']").click()""")
-
-        while not self.browser.execute_script("""return document.getElementById("adnote");"""):
-            time.sleep(0.25)
-
-        # Hide the cookies banner
-        self.browser.execute_script("""document.getElementById("adnote").style.display = 'none';""")
-        return
-
     def open_helper(self):
-        self.previous_element = None
+        self.close_browser()
 
-        if self.browser:
-            self.close_browser()
+        start_pos = self.threader.settings["s_browser_position"]
+        if not start_pos:
+            start_pos = self.get_browser_reset_position()
+        
+        self.browser = horsium.BrowserWindow(self.helper_url, self.threader, rect=start_pos, run_at_launch=setup_helper_page)
 
-        self.browser = self.init_browser()
-
-        saved_pos = self.threader.settings["s_browser_position"]
-        if not saved_pos:
-            self.reset_browser_position()
+    def get_browser_reset_position(self):
+        game_rect, _ = self.threader.windowmover.window.get_rect()
+        workspace_rect = self.threader.windowmover.window.get_workspace_rect()
+        left_side = abs(workspace_rect[0] - game_rect[0])
+        right_side = abs(game_rect[2] - workspace_rect[2])
+        if left_side > right_side:
+            left_x = workspace_rect[0] - 5
+            width = left_side
         else:
-            logger.debug(saved_pos)
-            self.browser.set_window_rect(*saved_pos)
-
-        # TODO: Find a way to know if the page is actually finished loading
-
-        self.setup_helper_page()
-
-
-    def reset_browser_position(self):
-        self.check_browser()
-        if self.browser:
-            game_rect, _ = self.threader.windowmover.window.get_rect()
-            workspace_rect = self.threader.windowmover.window.get_workspace_rect()
-            left_side = abs(workspace_rect[0] - game_rect[0])
-            right_side = abs(game_rect[2] - workspace_rect[2])
-            if left_side > right_side:
-                left_x = workspace_rect[0] - 5
-                width = left_side
-            else:
-                left_x = game_rect[2] + 5
-                width = right_side
-            self.browser.set_window_rect(left_x, workspace_rect[1], width, workspace_rect[3] - workspace_rect[1] + 6)
+            left_x = game_rect[2] + 5
+            width = right_side
+        return [left_x, workspace_rect[1], width, workspace_rect[3] - workspace_rect[1] + 6]
 
 
     def close_browser(self):
-        if self.browser:
-            self.last_browser_rect = self.browser.get_window_rect()
-            self.save_last_browser_rect()
+        if self.browser and self.browser.alive():
             self.browser.close()
+            self.save_last_browser_rect()
             self.browser = None
-            self.previous_element = None
         return
 
+    def save_rect(self, rect_var, setting):
+        if rect_var:
+            if (rect_var['x'] == -32000 and rect_var['y'] == -32000):
+                logger.warning(f"Browser minimized, cannot save position for {setting}: {rect_var}")
+                rect_var = None
+                return
+            rect_list = [rect_var['x'], rect_var['y'], rect_var['width'], rect_var['height']]
+            if self.threader.settings[setting] != rect_list:
+                self.threader.settings[setting] = rect_list
+            rect_var = None
 
     def save_last_browser_rect(self):
-        if self.last_browser_rect:
-            if (self.last_browser_rect['x'] == -32000 and self.last_browser_rect['y'] == -32000):
-                logger.warning(f"Browser minimized, cannot save position: {self.last_browser_rect}")
-                self.last_browser_rect = None
-                return
-            self.threader.settings["s_browser_position"] = [self.last_browser_rect['x'], self.last_browser_rect['y'], self.last_browser_rect['width'], self.last_browser_rect['height']]
-            self.last_browser_rect = None
+        self.save_rect(self.last_browser_rect, "s_browser_position")
+    
+    def save_skill_window_rect(self):
+        if self.skill_browser:
+            self.skill_browser.last_window_rect = self.last_skills_rect
+        self.save_rect(self.last_skills_rect, "s_skills_position")
 
     def end_training(self):
         if self.training_tracker:
             self.training_tracker = None
+        if self.skill_browser and self.skill_browser.alive():
+            self.skill_browser.close()
         self.close_browser()
         return
     
@@ -397,7 +207,7 @@ class CarrotJuicer():
             data = data['data']
 
             # Close whatever popup is open
-            if self.browser:
+            if self.browser and self.browser.alive():
                 self.browser.execute_script(
                     """
                     document.querySelectorAll("[class^='compatibility_viewer_item_'][aria-expanded=true]").forEach(e => e.click());
@@ -465,6 +275,29 @@ class CarrotJuicer():
                 if not self.training_tracker or not self.training_tracker.training_id_matches(training_id):
                     self.training_tracker = training_tracker.TrainingTracker(training_id, data['chara_info']['card_id'])
 
+                self.skills_list = []
+                for skill_data in data['chara_info']['skill_array']:
+                    self.skills_list.append(skill_data['skill_id'])
+                
+                self.skills_list += mdb.get_card_inherent_skills(data['chara_info']['card_id'], data['chara_info']['talent_level'])
+
+                for skill_tip in data['chara_info']['skill_tips_array']:
+                    if skill_tip['rarity'] > 1:
+                        self.skills_list.append(self.skill_id_dict[(skill_tip['group_id'], skill_tip['rarity'])])  # TODO: Check if level is correct. Check gold skills and purple skills.
+                    else:
+                        self.skills_list.append(mdb.determine_skill_id_from_group_id(skill_tip['group_id'], skill_tip['rarity'], self.skills_list))
+
+                # self.skills_list.sort()
+                self.skills_list = mdb.sort_skills_by_display_order(self.skills_list)
+
+                # Fix certain skills for GameTora
+                for i in range(len(self.skills_list)):
+                    cur_skill_id = self.skills_list[i]
+                    if 900000 <= cur_skill_id < 1000000:
+                        self.skills_list[i] = cur_skill_id - 800000
+                
+                logger.debug(f"Skills list: {self.skills_list}")
+
                 # Add request to tracker
                 self.add_response_to_tracker(data)
 
@@ -480,7 +313,7 @@ class CarrotJuicer():
                     else:
                         self.screen_state_handler.carrotjuicer_state = screenstate_utils.make_training_state(data, self.threader.screenstate)
 
-                if not self.browser or not self.browser.current_url.startswith("https://gametora.com/umamusume/training-event-helper"):
+                if not self.browser or not self.browser.current_url().startswith("https://gametora.com/umamusume/training-event-helper"):
                     logger.info("GT tab not open, opening tab")
                     self.helper_url = util.create_gametora_helper_url(outfit_id, scenario_id, supports)
                     logger.debug(f"Helper URL: {self.helper_url}")
@@ -524,11 +357,10 @@ class CarrotJuicer():
                         event_title = self.get_after_race_event_title(event_data['event_id'])
 
                     # Activate and scroll to the outcome.
-                    self.previous_element = self.browser.execute_script(
+                    previous_element = self.browser.execute_script(
                         """a = document.querySelectorAll("[class^='compatibility_viewer_item_']");
                         var ele = null;
                         for (var i = 0; i < a.length; i++) {
-                        console.log(i)
                         item = a[i];
                         if (item.textContent.includes(arguments[0])) {
                             item.click();
@@ -540,7 +372,7 @@ class CarrotJuicer():
                         """,
                         event_title
                     )
-                    if not self.previous_element:
+                    if not previous_element:
                         logger.debug(f"Could not find event on GT page: {event_title} {event_data['story_id']}")
                     self.browser.execute_script("""
                         if (arguments[0]) {
@@ -549,7 +381,7 @@ class CarrotJuicer():
                             window.scrollBy({top: arguments[0].getBoundingClientRect().bottom - window.innerHeight + 32, left: 0, behavior: 'smooth'});
                         }
                         """,
-                        self.previous_element
+                        previous_element
                     )
 
             if 'reserved_race_array' in data and 'chara_info' not in data and self.last_helper_data:
@@ -566,19 +398,6 @@ class CarrotJuicer():
             logger.error(exception_string)
             util.show_error_box("Uma Launcher: Error in response msgpack.", f"This should not happen. You may contact the developer about this issue.")
             # self.close_browser()
-
-    def check_browser(self):
-        if self.browser:
-            try:
-                if self.browser.current_url.startswith("https://gametora.com/umamusume/training-event-helper"):
-                    if not self.browser.execute_script("return window.UL_OVERLAY;"):
-                        self.browser.get(self.helper_url)
-                        self.setup_helper_page()
-            except WebDriverException:
-                self.browser.quit()
-                self.browser = None
-                self.previous_element = None
-        return
 
     def start_concert(self, music_id):
         logger.debug("Starting concert")
@@ -628,8 +447,6 @@ class CarrotJuicer():
 
 
     def process_message(self, message: str):
-        self.check_browser()
-
         try:
             message_time = int(str(os.path.basename(message))[:-9])
         except ValueError:
@@ -661,15 +478,61 @@ class CarrotJuicer():
         helper_table = self.helper_table.create_helper_elements(data, self.last_helper_data)
         self.last_helper_data = data
         if helper_table:
-            self.check_browser()
-            if not self.browser:
-                self.open_helper()
             self.browser.execute_script("""
                 window.UL_DATA.overlay_html = arguments[0];
                 window.update_overlay();
                 """,
-                helper_table
-            )
+                helper_table)
+
+
+    def update_skill_window(self):
+        if not self.skill_browser:
+            self.skill_browser = horsium.BrowserWindow("https://gametora.com/umamusume/skills", self.threader, rect=self.threader.settings['s_skills_position'], run_at_launch=setup_skill_window)
+        else:
+            self.skill_browser.ensure_tab_open()
+        if self.browser and self.browser.alive():
+            self.browser.execute_script("""window.skill_window_opened();""")
+        
+        # Handle showing/hiding skills.
+        self.skill_browser.execute_script(
+            """
+            let skills_list = arguments[0];
+            let skill_elements = [];
+            let skills_table = document.querySelector("[class^='skills_skill_table_']");
+            let skill_rows = document.querySelectorAll("[class^='skills_table_desc_']");
+            let color_class = [...document.querySelector("[class*='skills_stripes_']").classList].filter(item => item.startsWith("skills_stripes_"))[0];
+
+            // Set display to none for all elements.
+            for (const item of skill_rows) {
+                item.parentNode.style.display = "none";
+            }
+
+            // Find the elements that match the skills list.
+            for (const skill_id of skills_list) {
+                let skill_string = "(" + skill_id + ")";
+                let ele = null;
+                for (const item of skill_rows) {
+                    if (item.textContent.includes(skill_string)) {
+                        skill_elements.push(item.parentNode);
+                        item.parentNode.remove();
+                        break;
+                    }
+                }
+            }
+
+            // Reappend the elements in the correct order.
+            for (let i = 0; i < skill_elements.length; i++) {
+                const item = skill_elements[i];
+                item.style.display = "grid";
+
+                if (i % 2 == 0) {
+                    item.classList.add(color_class);
+                } else {
+                    item.classList.remove(color_class);
+                }
+                skills_table.appendChild(item);
+            }
+            """, self.skills_list)
 
 
     def run_with_catch(self):
@@ -694,19 +557,34 @@ class CarrotJuicer():
             while not self.should_stop:
                 time.sleep(0.25)
 
-                self.check_browser()
-
                 if not self.threader.settings["s_enable_carrotjuicer"]:
                     continue
 
-                if self.reset_browser:
-                    self.reset_browser = False
-                    self.reset_browser_position()
-
-                if self.browser:
-                    self.last_browser_rect = self.browser.get_window_rect()
+                if self.browser and self.browser.alive():
+                    if self.reset_browser:
+                        self.browser.set_window_rect(self.get_browser_reset_position())
                 elif self.last_browser_rect:
                     self.save_last_browser_rect()
+                
+                self.reset_browser = False
+
+
+                # Skill window.
+                if self.open_skill_window:
+                    self.open_skill_window = False
+                    self.update_skill_window()
+                elif self.skill_browser and self.skill_browser.alive() and self.previous_skills_list != self.skills_list:
+                    self.previous_skills_list = self.skills_list
+                    self.update_skill_window()
+
+
+                if self.skill_browser:
+                    if self.skill_browser.alive():
+                        # Update skill window.
+                        # self.update_skill_window()
+                        pass
+                    else:
+                        self.save_skill_window_rect()
 
                 messages = self.get_msgpack_batch(msg_path)
                 for message in messages:
@@ -716,13 +594,239 @@ class CarrotJuicer():
 
         if self.browser:
             try:
-                self.last_browser_rect = self.browser.get_window_rect()
                 self.browser.quit()
+                self.browser = None
+            except: pass
+
+        if self.skill_browser:
+            try:
+                self.skill_browser.quit()
+                self.skill_browser = None
             except: pass
 
         self.save_last_browser_rect()
+        self.save_skill_window_rect()
         return
 
 
     def stop(self):
         self.should_stop = True
+
+
+
+
+def setup_helper_page(browser: horsium.BrowserWindow):
+    browser.execute_script("""
+    if (window.UL_OVERLAY) {
+        window.UL_OVERLAY.remove();
+    }
+    window.UL_OVERLAY = document.createElement("div");
+    window.GT_PAGE = document.getElementById("__next");
+    window.OVERLAY_HEIGHT = "15rem";
+    window.UL_OVERLAY.style.height = "max_content";
+    window.UL_OVERLAY.style.width = "100%";
+    window.UL_OVERLAY.style.padding = "0.5rem 0";
+    window.UL_OVERLAY.style.position = "fixed";
+    window.UL_OVERLAY.style.bottom = "100%";
+    window.UL_OVERLAY.style.zIndex = 100;
+    window.UL_OVERLAY.style.backgroundColor = "var(--c-bg-main)";
+    window.UL_OVERLAY.style.borderBottom = "2px solid var(--c-topnav)";
+
+    var ul_data = document.createElement("div");
+    ul_data.id = "ul-data";
+    window.UL_OVERLAY.appendChild(ul_data);
+
+    window.UL_OVERLAY.ul_data = ul_data;
+
+    ul_data.style.display = "flex";
+    ul_data.style.alignItems = "center";
+    ul_data.style.justifyContent = "center";
+    ul_data.style.flexDirection = "column";
+    ul_data.style.gap = "0.5rem";
+    ul_data.style.fontSize = "0.9rem";
+
+    var ul_dropdown = document.createElement("div");
+    ul_dropdown.id = "ul-dropdown";
+    ul_dropdown.classList.add("ul-overlay-button");
+    ul_dropdown.style = "position: fixed;right: 0;top: 0;width: 3rem;height: 1.6rem;background-color: var(--c-bg-main);text-align: center;z-index: 101;line-height: 1.5rem;border-left: 2px solid var(--c-topnav);border-bottom: 2px solid var(--c-topnav);border-bottom-left-radius: 0.5rem;cursor: pointer;";
+    ul_dropdown.textContent = "⯅";
+    window.UL_OVERLAY.appendChild(ul_dropdown);
+
+    var ul_skills = document.createElement("div");
+    ul_skills.id = "ul-skills";
+    ul_skills.classList.add("ul-overlay-button");
+    ul_skills.style = "position: fixed; right: 50px; top: 0; width: 3.5rem; height: 1.6rem; background-color: var(--c-bg-main); text-align: center; z-index: 101; line-height: 1.5rem; border-left: 2px solid var(--c-topnav); border-bottom: 2px solid var(--c-topnav); border-right: 2px solid var(--c-topnav); border-bottom-left-radius: 0.5rem; border-bottom-right-radius: 0.5rem; cursor: pointer; transition: top 0.5s ease 0s;";
+    ul_skills.textContent = "Skills";
+    window.UL_OVERLAY.appendChild(ul_skills);
+
+    window.hide_overlay = function() {
+        window.UL_DATA.expanded = false;
+        document.getElementById("ul-dropdown").textContent = "⯆";
+        // document.getElementById("ul-dropdown").style.top = "-2px";
+        [...document.querySelectorAll(".ul-overlay-button")].forEach(div => {
+            div.style.top = "-2px";
+        })
+        window.GT_PAGE.style.paddingTop = "0";
+        window.UL_OVERLAY.style.bottom = "100%";
+    }
+
+    window.expand_overlay = function() {
+        window.UL_DATA.expanded = true;
+
+        var height = window.UL_OVERLAY.offsetHeight;
+        console.log(height)
+        window.OVERLAY_HEIGHT = height + "px";
+
+        document.getElementById("ul-dropdown").textContent = "⯅";
+        // document.getElementById("ul-dropdown").style.top = "calc(" + window.OVERLAY_HEIGHT + " - 2px)";
+        [...document.querySelectorAll(".ul-overlay-button")].forEach(div => {
+            div.style.top = "calc(" + window.OVERLAY_HEIGHT + " - 2px)";
+        })
+        window.GT_PAGE.style.paddingTop = window.OVERLAY_HEIGHT;
+        window.UL_OVERLAY.style.bottom = "calc(100% - " + window.OVERLAY_HEIGHT + ")";
+    }
+
+    ul_dropdown.addEventListener("click", function() {
+        if (window.UL_DATA.expanded) {
+            window.hide_overlay();
+        } else {
+            window.expand_overlay();
+        }
+    });
+
+    window.UL_DATA = {
+        energy: 100,
+        max_energy: 100,
+        table: "",
+        expanded: true
+    };
+
+    document.body.prepend(window.UL_OVERLAY);
+
+    window.UL_OVERLAY.querySelector("#ul-dropdown").style.transition = "top 0.5s";
+    window.UL_OVERLAY.style.transition = "bottom 0.5s";
+    window.GT_PAGE.style.transition = "padding-top 0.5s";
+
+    window.update_overlay = function() {
+        window.UL_OVERLAY.ul_data.replaceChildren();
+        window.UL_OVERLAY.ul_data.insertAdjacentHTML("afterbegin", window.UL_DATA.overlay_html)
+        //window.UL_OVERLAY.ul_data.innerHTML = window.UL_DATA.overlay_html;
+
+        if (window.UL_DATA.expanded) {
+            window.expand_overlay();
+            //setTimeout(window.expand_overlay, 100);
+        }
+    };
+
+    // Skill window.
+    window.await_skill_window_timeout = null;
+    window.await_skill_window = function() {
+        window.await_skill_window_timeout = setTimeout(function() {
+            ul_skills.style.filter = "";
+        }, 15000);
+
+        ul_skills.style.filter = "brightness(0.5)";
+        fetch('http://127.0.0.1:3150/open-skill-window', { method: 'POST' });
+    }
+    window.skill_window_opened = function() {
+        if (window.await_skill_window_timeout) {
+            clearTimeout(window.await_skill_window_timeout);
+        }
+        ul_skills.style.filter = "";
+    }
+
+    ul_skills.addEventListener("click", window.await_skill_window);
+
+    
+    window.send_screen_rect = function() {
+        let rect = {
+            'x': window.screenX,
+            'y': window.screenY,
+            'width': window.outerWidth,
+            'height': window.outerHeight
+        };
+        fetch('http://127.0.0.1:3150/helper-window-rect', { method: 'POST', body: JSON.stringify(rect), headers: { 'Content-Type': 'text/plain' } });
+        setTimeout(window.send_screen_rect, 2000);
+    }
+    setTimeout(window.send_screen_rect, 2000);
+
+    """)
+
+    gametora_dark_mode(browser)
+
+    # Enable all cards
+    browser.execute_script("""document.querySelector("[class^='filters_settings_button_']").click()""")
+    all_cards_enabled = browser.execute_script("""return document.getElementById("allAtOnceCheckbox").checked;""")
+    if not all_cards_enabled:
+        browser.execute_script("""document.getElementById("allAtOnceCheckbox").click()""")
+    browser.execute_script("""document.querySelector("[class^='filters_confirm_button_']").click()""")
+
+    gametora_remove_cookies_banner(browser)
+
+def setup_skill_window(browser: horsium.BrowserWindow):
+    # Setup callback for window position
+    browser.execute_script("""
+    window.send_screen_rect = function() {
+        let rect = {
+            'x': window.screenX,
+            'y': window.screenY,
+            'width': window.outerWidth,
+            'height': window.outerHeight
+        };
+        fetch('http://127.0.0.1:3150/skills-window-rect', { method: 'POST', body: JSON.stringify(rect), headers: { 'Content-Type': 'text/plain' } });
+        setTimeout(window.send_screen_rect, 2000);
+    }
+    setTimeout(window.send_screen_rect, 2000);
+
+    """)
+
+
+    # Hide filters
+    browser.execute_script("""document.querySelector("[class^='filters_filter_container_']").style.display = "none";""")
+
+    gametora_dark_mode(browser)
+
+    # Enable settings
+    # Expand settings
+    browser.execute_script("""document.querySelector("[class^='utils_padbottom_half_']").querySelector("button").click();""")
+    while not browser.execute_script("""return document.querySelector("label[for='highlightCheckbox']");"""):
+        time.sleep(0.25)
+
+    # Enable highlight
+    highlight_checked = browser.execute_script("""return document.querySelector("label[for='highlightCheckbox']").previousSibling.checked;""")
+    if not highlight_checked:
+        browser.execute_script("""document.querySelector("label[for='highlightCheckbox']").click();""")
+
+    # Enable show id
+    show_id_checked = browser.execute_script("""return document.querySelector("label[for='showIdCheckbox']").previousSibling.checked;""")
+    if not show_id_checked:
+        browser.execute_script("""document.querySelector("label[for='showIdCheckbox']").click();""")
+
+    # Collapse settings
+    browser.execute_script("""document.querySelector("[class^='utils_padbottom_half_']").querySelector("button").click();""")
+
+    gametora_remove_cookies_banner(browser)
+
+def gametora_dark_mode(browser: horsium.BrowserWindow):
+    # Enable dark mode (the only reasonable color scheme)
+    browser.execute_script("""document.querySelector("[class^='styles_header_settings_']").click()""")
+    while not browser.execute_script("""return document.querySelector("[class^='filters_toggle_button_']");"""):
+        time.sleep(0.25)
+    
+    dark_enabled = browser.execute_script("""return document.querySelector("[class^='tooltips_tooltip_']").querySelector("[class^='filters_toggle_button_']").childNodes[0].querySelector("input").checked;""")
+    if dark_enabled != browser.threader.settings["s_gametora_dark_mode"]:
+        browser.execute_script("""document.querySelector("[class^='tooltips_tooltip_']").querySelector("[class^='filters_toggle_button_']").childNodes[0].querySelector("input").click()""")
+    browser.execute_script("""document.querySelector("[class^='styles_header_settings_']").click()""")
+
+
+def gametora_remove_cookies_banner(browser: horsium.BrowserWindow):
+    while not browser.execute_script("""return document.getElementById("adnote");"""):
+        time.sleep(0.25)
+
+    # Hide the cookies banner
+    browser.execute_script("""document.getElementById("adnote").style.display = 'none';""")
+
+
+def setup_gametora(browser: horsium.BrowserWindow):
+    gametora_dark_mode(browser)
+    gametora_remove_cookies_banner(browser)

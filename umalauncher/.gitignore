@@ -26,3 +26,4 @@ event_text.txt
 support_cards.png
 sandbox.py
 *.bak
+lock.pid
