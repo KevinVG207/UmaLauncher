@@ -282,9 +282,19 @@ class CarrotJuicer():
                 self.skills_list += mdb.get_card_inherent_skills(data['chara_info']['card_id'], data['chara_info']['talent_level'])
 
                 for skill_tip in data['chara_info']['skill_tips_array']:
-                    self.skills_list.append(self.skill_id_dict[(skill_tip['group_id'], skill_tip['rarity'])])  # TODO: Check if level is correct. Check gold skills and purple skills.
+                    if skill_tip['rarity'] > 1:
+                        self.skills_list.append(self.skill_id_dict[(skill_tip['group_id'], skill_tip['rarity'])])  # TODO: Check if level is correct. Check gold skills and purple skills.
+                    else:
+                        self.skills_list.append(mdb.determine_skill_id_from_group_id(skill_tip['group_id'], skill_tip['rarity'], self.skills_list))
 
-                self.skills_list.sort()
+                # self.skills_list.sort()
+                self.skills_list = mdb.sort_skills_by_display_order(self.skills_list)
+
+                # Fix certain skills for GameTora
+                for i in range(len(self.skills_list)):
+                    cur_skill_id = self.skills_list[i]
+                    if 900000 <= cur_skill_id < 1000000:
+                        self.skills_list[i] = cur_skill_id - 800000
                 
                 logger.debug(f"Skills list: {self.skills_list}")
 
