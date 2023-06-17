@@ -593,19 +593,16 @@ class CarrotJuicer():
             pass
 
         if self.browser:
-            try:
-                self.browser.quit()
-                self.browser = None
-            except: pass
+            logger.debug("Closing browser.")
+            self.browser.quit()
 
         if self.skill_browser:
-            try:
-                self.skill_browser.quit()
-                self.skill_browser = None
-            except: pass
+            logger.debug("Closing skill browser.")
+            self.skill_browser.quit()
 
         self.save_last_browser_rect()
         self.save_skill_window_rect()
+
         return
 
 

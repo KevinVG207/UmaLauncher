@@ -219,11 +219,12 @@ class SettingsHandler():
 
         if self['s_debug_mode']:
             util.is_debug = True
+            util.log_set_trace()
             logger.debug("Debug mode enabled. Logging more.")
         else:
             util.is_debug = False
+            util.log_set_info()
             logger.debug("Debug mode disabled. Logging less.")
-        util.log_set_info()
 
         # Check if the game install path is correct.
         for folder_tuple in [

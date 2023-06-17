@@ -198,10 +198,11 @@ class BrowserWindow:
 
     def quit(self):
         for driver in self.old_drivers:  # TODO: Multithread this so it doesn't take forever with ChromeDriver?
-            try:
-                driver.quit()
-            except (NoSuchWindowException, WebDriverException):
-                pass
+            if driver:
+                try:
+                    driver.quit()
+                except (NoSuchWindowException, WebDriverException):
+                    pass
         self.close()
         try:
             self.driver.quit()

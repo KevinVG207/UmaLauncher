@@ -237,6 +237,8 @@ class ScreenStateHandler():
             # Game closed
             if not self.game_handle:
                 self.threader.stop()
+                self.stop()
+                continue
 
             # Close DMM
             if not self.dmm_closed and self.threader.settings["s_autoclose_dmm"]:

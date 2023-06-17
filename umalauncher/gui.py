@@ -86,12 +86,12 @@ class UmaApp():
     def close_widget(self):
         if self.main_widget:
             self.main_widget.close()
-            del self.main_widget
+            self.main_widget.deleteLater()
             self.main_widget = None
 
     def close(self):
         self.app.exit()
-        del self.app
+        self.app.deleteLater()
 
 
 class UmaMainWidget(qtw.QWidget):
