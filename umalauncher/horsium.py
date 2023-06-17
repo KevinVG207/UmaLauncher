@@ -6,6 +6,7 @@
 
 import traceback
 import time
+import threading
 from urllib.parse import urlparse
 from subprocess import CREATE_NO_WINDOW
 from loguru import logger
@@ -17,6 +18,8 @@ from selenium.webdriver.edge.service import Service as EdgeService
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.common.exceptions import NoSuchWindowException
 import util
+
+OLD_DRIVERS = []
 
 def firefox_setup(helper_url):
     firefox_service = FirefoxService()
@@ -75,7 +78,6 @@ class BrowserWindow:
         self.url = url
         self.threader = threader
         self.driver: RemoteWebDriver = None
-        self.old_drivers = []
         self.active_tab_handle = None
         self.last_window_rect = {'x': rect[0], 'y': rect[1], 'width': rect[2], 'height': rect[3]} if rect else None
         self.run_at_launch = run_at_launch
@@ -126,28 +128,32 @@ class BrowserWindow:
         if self.driver:
             # Check if we have window handles
             try:
-                if self.active_tab_handle in self.driver.window_handles:
-                    self.driver.switch_to.window(self.active_tab_handle)
+                window_handles = self.driver.window_handles
+                try:
+                    if self.active_tab_handle in window_handles:
+                        self.driver.switch_to.window(self.active_tab_handle)
 
-                    if urls_match(self.driver.current_url, self.url):
-                        from_script = self.driver.execute_script("return window.from_script;")
-                        if from_script:
-                            self.last_window_rect = self.driver.get_window_rect()
-                            return
-                    
-                    self.driver.execute_script(f"document.still_the_old_page_haha = true;")  # Really reflects my mental state when I made this code
-                    self.driver.execute_script(f"window.location = '{self.url}';")
-                    # Wait for the page to load
-                    while self.driver.execute_script("return document.still_the_old_page_haha;"):
-                        time.sleep(0.2)
-                    while self.driver.execute_script("return document.readyState;") != "complete":
-                        time.sleep(0.2)
-                    self.run_script_at_launch()
-                    return
-            except:
-                self.driver.quit()
-                self.driver = None
-            self.old_drivers.append(self.driver)
+                        if urls_match(self.driver.current_url, self.url):
+                            from_script = self.driver.execute_script("return window.from_script;")
+                            if from_script:
+                                self.last_window_rect = self.driver.get_window_rect()
+                                return
+                        
+                        self.driver.execute_script(f"document.still_the_old_page_haha = true;")  # Really reflects my mental state when I made this code
+                        self.driver.execute_script(f"window.location = '{self.url}';")
+                        # Wait for the page to load
+                        while self.driver.execute_script("return document.still_the_old_page_haha;"):
+                            time.sleep(0.2)
+                        while self.driver.execute_script("return document.readyState;") != "complete":
+                            time.sleep(0.2)
+                        self.run_script_at_launch()
+                        return
+                except:
+                    self.driver.quit()
+                    self.driver = None
+            except WebDriverException:
+                pass
+            OLD_DRIVERS.append(self.driver)
 
         self.driver = self.init_browser()
         self.active_tab_handle = self.driver.window_handles[0]
@@ -197,18 +203,33 @@ class BrowserWindow:
             pass
 
     def quit(self):
-        for driver in self.old_drivers:  # TODO: Multithread this so it doesn't take forever with ChromeDriver?
-            if driver:
-                try:
-                    driver.quit()
-                except (NoSuchWindowException, WebDriverException):
-                    pass
         self.close()
+        OLD_DRIVERS.append(self.driver)
+        self.driver = None
+
+
+def quit_one_driver(driver):
+    logger.debug(f"Closing driver in thread {threading.get_ident()}")
+    if driver:
         try:
-            self.driver.quit()
+            driver.quit()
         except (NoSuchWindowException, WebDriverException):
             pass
+    logger.debug(f"Finished closing driver in thread {threading.get_ident()}")
 
+def quit_all_drivers():
+    global OLD_DRIVERS
 
+    quit_threads = []
+    for driver in OLD_DRIVERS:
+        quit_threads.append(threading.Thread(target=quit_one_driver, args=(driver,)))
+
+    for thread in quit_threads:
+        thread.start()
+
+    for thread in quit_threads:
+        thread.join()
+
+    OLD_DRIVERS = []
 
 # Chromium Webdriver is a poopyhead

@@ -26,6 +26,7 @@ import windowmover
 import training_tracker
 import gui
 import umaserver
+import horsium
 
 THREAD_OBJECTS = []
 THREADS = []
@@ -163,14 +164,18 @@ def main():
         util.show_error_box("Critical Error", "Uma Launcher has encountered a critical error and will now close.")
     
     # Kill all threads that may be running
-    logger.info("Killing threads")
+    logger.debug("Killing threads")
     kill_threads()
-    logger.info("Threads killed")
+    logger.debug("Threads killed")
 
     # Stop the application
-    logger.info("Stopping application")
+    logger.debug("Stopping Qt")
     gui.stop_application()
-    logger.info("Application stopped")
+    logger.debug("Qt stopped")
+
+    logger.debug("Closing browsers")
+    horsium.quit_all_drivers()
+    logger.debug("Browsers closed")
 
     # Remove the pid file
     lock_path = util.get_relative("lock.pid")
