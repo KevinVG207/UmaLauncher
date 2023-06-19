@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 from matplotlib import ticker
 from matplotlib.backends.backend_qt5agg import FigureCanvas # pylint: disable=no-name-in-module
 from matplotlib.figure import Figure
+from pathvalidate import sanitize_filename
 import gui
 import mdb
 import util
@@ -74,25 +75,28 @@ class TrainingTracker():
         self.add_packet(response)
 
 
-    def get_training_path(self):
+    def get_training_path(self, suffix=""):
         if self.full_path:
             return self.full_path
 
         card_segment = ""
         if self.card_id:
-            card_segment = f"{self.make_string_safe(util.get_character_name_dict().get(int(str(self.card_id)[:4]), 'Unknown Chara'))} [{self.make_string_safe(util.get_outfit_name_dict().get(self.card_id, '[Unknown Outfit]')[1:-1])}] - "
+            card_segment = f"{util.get_character_name_dict().get(int(str(self.card_id)[:4]), 'Unknown Chara')} [{util.get_outfit_name_dict().get(self.card_id, '[Unknown Outfit]')[1:-1]}] - "
+        
+        filename = sanitize_filename(card_segment + self.training_id + suffix, replacement_text="_")
+
         return str(os.path.join(
             self.training_log_folder,
-            card_segment + self.training_id
+            filename
         ))
 
 
     def get_sav_path(self):
-        return self.get_training_path() + ".gz"
+        return self.get_training_path(".gz")
 
 
     def get_csv_path(self):
-        return self.get_training_path() + ".csv"
+        return self.get_training_path(".csv")
 
 
     def write_packet(self, packet: dict):
