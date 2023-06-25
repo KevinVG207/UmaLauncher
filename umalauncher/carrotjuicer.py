@@ -38,6 +38,7 @@ class CarrotJuicer():
     skill_browser = None
     skill_id_dict = mdb.get_skill_id_dict()
     last_skills_rect = None
+    skipped_msgpacks = []
 
     def __init__(self, threader):
         self.threader = threader
@@ -445,15 +446,41 @@ class CarrotJuicer():
             util.show_error_box("Uma Launcher: Error in request msgpack.", f"This should not happen. You may contact the developer about this issue.")
             # self.close_browser()
 
+    def remove_message(self, message_path):
+        if message_path in self.skipped_msgpacks:
+            return
+
+        tries = 0
+        last_exception = None
+        while tries < 5:
+            try:
+                if os.path.exists(message_path):
+                    os.remove(message_path)
+                    return
+                else:
+                    logger.warning(f"Attempted to delete non-existent msgpack file: {message_path}. Skipped.")
+                    return
+            except Exception as e:
+                last_exception = e
+                tries += 1
+                time.sleep(1)
+        
+        logger.warning(f"Failed to remove msgpack file: {message_path}.")
+        logger.warning(''.join(traceback.format_tb(last_exception.__traceback__)))
+        self.skipped_msgpacks.append(message_path)
+
 
     def process_message(self, message: str):
+        if message in self.skipped_msgpacks:
+            return
+
         try:
             message_time = int(str(os.path.basename(message))[:-9])
         except ValueError:
             return
         if message_time < self.start_time:
             # Delete old msgpack files.
-            os.remove(message)
+            self.remove_message(message)
             return
 
         # logger.info(f"New Packet: {os.path.basename(message)}")
@@ -466,7 +493,7 @@ class CarrotJuicer():
             # Request
             self.handle_request(message)
 
-        os.remove(message)
+        self.remove_message(message)
         return
 
 
