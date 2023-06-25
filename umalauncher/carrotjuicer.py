@@ -38,6 +38,7 @@ class CarrotJuicer():
     skill_browser = None
     skill_id_dict = mdb.get_skill_id_dict()
     last_skills_rect = None
+    skipped_msgpacks = []
 
     def __init__(self, threader):
         self.threader = threader
@@ -446,6 +447,9 @@ class CarrotJuicer():
             # self.close_browser()
 
     def remove_message(self, message_path):
+        if message_path in self.skipped_msgpacks:
+            return
+
         tries = 0
         last_exception = None
         while tries < 5:
@@ -461,9 +465,15 @@ class CarrotJuicer():
                 tries += 1
                 time.sleep(1)
         
-        util.show_error_box("Error in removing msgpack file.", f"Failed to remove msgpack file: {message_path}.", custom_traceback=''.join(traceback.format_tb(last_exception.__traceback__)))
+        logger.warning(f"Failed to remove msgpack file: {message_path}.")
+        logger.warning(''.join(traceback.format_tb(last_exception.__traceback__)))
+        self.skipped_msgpacks.append(message_path)
+
 
     def process_message(self, message: str):
+        if message in self.skipped_msgpacks:
+            return
+
         try:
             message_time = int(str(os.path.basename(message))[:-9])
         except ValueError:
