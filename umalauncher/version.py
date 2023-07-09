@@ -4,6 +4,7 @@ import time
 import os
 import shutil
 import threading
+import sys
 from urllib.parse import urlparse
 from loguru import logger
 import util
@@ -187,12 +188,16 @@ class Updater():
                     self.close_me = True
                     return
                 try:
+                    path_to_exe = sys.argv[0]
+                    exe_file = os.path.basename(path_to_exe)
+                    without_ext = os.path.splitext(exe_file)[0]
+
                     logger.info(f"Attempting to download from {download_url}")
-                    urllib.request.urlretrieve(download_url, "UmaLauncher.exe_")
+                    urllib.request.urlretrieve(download_url, f"{exe_file}_")
                     # Start a process that starts the new exe.
                     logger.info("Download complete, now trying to open the new launcher.")
                     open(util.get_relative("update.tmp"), "wb").close()
-                    sub = subprocess.Popen("taskkill /F /IM UmaLauncher.exe && move /y .\\UmaLauncher.exe .\\UmaLauncher.old && move /y .\\UmaLauncher.exe_ .\\UmaLauncher.exe && .\\UmaLauncher.exe", shell=True)
+                    sub = subprocess.Popen(f"taskkill /F /IM \"{exe_file}\" && move /y \".\\{exe_file}\" \".\\{without_ext}.old\" && move /y \".\\{exe_file}_\" \".\\{exe_file}\" && \".\\{exe_file}\"", shell=True)
                     while True:
                         # Check if subprocess is still running
                         if sub.poll() is not None:
