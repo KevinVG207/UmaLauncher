@@ -1,19 +1,9 @@
-import sqlite3
-import os
 from loguru import logger
 import util
 import constants
+from mdb_conn import Connection
 
-DB_PATH = os.path.expandvars("%userprofile%\\appdata\\locallow\\Cygames\\umamusume\\master\\master.mdb")
 SUPPORT_CARD_DICT = {}
-
-class Connection():
-    def __init__(self):
-        self.conn = sqlite3.connect(DB_PATH)
-    def __enter__(self):
-        return self.conn, self.conn.cursor()
-    def __exit__(self, type, value, traceback):
-        self.conn.close()
 
 def create_support_card_string(rarity, command_id, support_card_type, chara_id):
     return f"{constants.SUPPORT_CARD_RARITY_DICT[rarity]} {constants.SUPPORT_CARD_TYPE_DISPLAY_DICT[constants.SUPPORT_CARD_TYPE_DICT[(command_id, support_card_type)]]} {util.get_character_name_dict()[chara_id]}"
