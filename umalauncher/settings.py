@@ -310,7 +310,10 @@ class SettingsHandler():
             self.save_settings()
 
     def notify_server(self):
-        util.do_get_request(f"https://umapyoi.net/api/v1/umalauncher/startup/{self['s_unique_id']}")
+        version_str = version.VERSION
+        if util.is_script:
+            version_str += ".script"
+        util.do_get_request(f"https://umapyoi.net/api/v1/umalauncher/startup/{self['s_unique_id']}/{version_str}")
 
     def display_preferences(self):
         general_var = [self.loaded_settings]
