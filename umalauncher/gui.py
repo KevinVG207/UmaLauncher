@@ -86,12 +86,12 @@ class UmaApp():
     def close_widget(self):
         if self.main_widget:
             self.main_widget.close()
-            del self.main_widget
+            self.main_widget.deleteLater()
             self.main_widget = None
 
     def close(self):
         self.app.exit()
-        del self.app
+        self.app.deleteLater()
 
 
 class UmaMainWidget(qtw.QWidget):
@@ -1067,7 +1067,10 @@ class UmaErrorPopup(qtw.QMessageBox):
     def upload_error_report(self, traceback_str, user_id):
         try:
             logger.debug("Uploading error report")
-            resp = requests.post("https://umapyoi.net/api/v1/umalauncher/error", json={"traceback": traceback_str, "user_id": user_id})
+            version_str = version.VERSION
+            if util.is_script:
+                version_str += ".script"
+            resp = requests.post("https://umapyoi.net/api/v1/umalauncher/error", json={"traceback": traceback_str, "user_id": user_id, "version": version_str})
             resp.raise_for_status()
         except Exception:
             util.show_error_box("Error", "Failed to upload error report.")

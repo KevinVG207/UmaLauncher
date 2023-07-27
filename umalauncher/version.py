@@ -4,12 +4,13 @@ import time
 import os
 import shutil
 import threading
+import sys
 from urllib.parse import urlparse
 from loguru import logger
 import util
 import gui
 
-VERSION = "1.5.1"
+VERSION = "1.6.0"
 
 def parse_version(version_string: str):
     """Convert version string to tuple."""
@@ -96,7 +97,7 @@ def auto_update(umasettings, force=False):
     # Check if we're coming from an update
     if os.path.exists("update.tmp"):
         os.remove("update.tmp")
-        util.show_info_box("Update complete!", f"Uma Launcher updated successfully.<br>To see what's new, <a href=\"https://github.com/KevinVG207/UmaLauncher/releases/tag/v{vstr(script_version)}\">click here</a>.")
+        util.show_info_box("Update complete!", f"Uma Launcher updated successfully to v{vstr(script_version)}.<br>To see what's new, <a href=\"https://github.com/KevinVG207/UmaLauncher/releases/tag/v{vstr(script_version)}\">click here</a>.")
 
     response = util.do_get_request("https://api.github.com/repos/KevinVG207/UmaLauncher/releases", error_message="Could not check for updates on Github. Please check your internet connection.", ignore_timeout=True)
     if not response:
@@ -148,6 +149,11 @@ def auto_update(umasettings, force=False):
         return True
 
     # Yes
+    # Remove the lock file.
+    lock_path = util.get_relative("lock.pid")
+    if os.path.exists(lock_path):
+        os.remove(lock_path)
+
     # Create updater thread
     update_object = Updater(latest_release['assets'])
     update_thread = threading.Thread(target=update_object.run)
@@ -182,12 +188,16 @@ class Updater():
                     self.close_me = True
                     return
                 try:
+                    path_to_exe = sys.argv[0]
+                    exe_file = os.path.basename(path_to_exe)
+                    without_ext = os.path.splitext(exe_file)[0]
+
                     logger.info(f"Attempting to download from {download_url}")
-                    urllib.request.urlretrieve(download_url, "UmaLauncher.exe_")
+                    urllib.request.urlretrieve(download_url, f"{exe_file}_")
                     # Start a process that starts the new exe.
                     logger.info("Download complete, now trying to open the new launcher.")
                     open(util.get_relative("update.tmp"), "wb").close()
-                    sub = subprocess.Popen("taskkill /F /IM UmaLauncher.exe && move /y .\\UmaLauncher.exe .\\UmaLauncher.old && move /y .\\UmaLauncher.exe_ .\\UmaLauncher.exe && .\\UmaLauncher.exe", shell=True)
+                    sub = subprocess.Popen(f"taskkill /F /IM \"{exe_file}\" && move /y \".\\{exe_file}\" \".\\{without_ext}.old\" && move /y \".\\{exe_file}_\" \".\\{exe_file}\" && \".\\{exe_file}\"", shell=True)
                     while True:
                         # Check if subprocess is still running
                         if sub.poll() is not None:

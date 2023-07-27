@@ -27,8 +27,7 @@ class HelperTable():
     def update_presets(self, preset_dict, selected_preset):
         self.preset_dict = preset_dict
         self.selected_preset = selected_preset
-        if self.carrotjuicer.last_helper_data and self.carrotjuicer.browser:
-            self.carrotjuicer.check_browser()
+        if self.carrotjuicer.last_helper_data and self.carrotjuicer.browser and self.carrotjuicer.browser.alive():
             self.carrotjuicer.update_helper_table(self.carrotjuicer.last_helper_data)
 
 

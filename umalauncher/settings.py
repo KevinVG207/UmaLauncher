@@ -62,7 +62,7 @@ class DefaultSettings(se.Settings):
             "Automatically close DMM Game Player when the game is launched.",
             True,
             se.SettingType.BOOL,
-            priority=96
+            priority=95
         )
         self.s_lock_game_window = se.Setting(
             "Lock game window",
@@ -90,7 +90,7 @@ class DefaultSettings(se.Settings):
             "Track training events in /training_logs as gzip files.",
             True,
             se.SettingType.BOOL,
-            priority=97
+            priority=96
         )
         self.s_game_install_path = se.Setting(
             "Game install path",
@@ -120,6 +120,13 @@ class DefaultSettings(se.Settings):
             se.SettingType.LIST,
             priority=-1
         )
+        self.s_skills_position = se.Setting(
+            "Skills browser position",
+            "Position of the skills browser window.",
+            None,
+            se.SettingType.LIST,
+            priority=-1
+        )
         self.s_selected_browser = se.Setting(
             "Selected browser",
             "Browser to use for the Automatic Training Event Helper.",
@@ -131,6 +138,13 @@ class DefaultSettings(se.Settings):
             },
             se.SettingType.RADIOBUTTONS,
             priority=98
+        )
+        self.s_gametora_dark_mode = se.Setting(
+            "GameTora dark mode",
+            "Enable dark mode for GameTora.",
+            True,
+            se.SettingType.BOOL,
+            priority=97
         )
         self.s_training_helper_table_preset = se.Setting(
             "Training helper table preset",
@@ -205,11 +219,12 @@ class SettingsHandler():
 
         if self['s_debug_mode']:
             util.is_debug = True
+            util.log_set_trace()
             logger.debug("Debug mode enabled. Logging more.")
         else:
             util.is_debug = False
+            util.log_set_info()
             logger.debug("Debug mode disabled. Logging less.")
-        util.log_set_info()
 
         # Check if the game install path is correct.
         for folder_tuple in [
@@ -295,7 +310,10 @@ class SettingsHandler():
             self.save_settings()
 
     def notify_server(self):
-        util.do_get_request(f"https://umapyoi.net/api/v1/umalauncher/startup/{self['s_unique_id']}")
+        version_str = version.VERSION
+        if util.is_script:
+            version_str += ".script"
+        util.do_get_request(f"https://umapyoi.net/api/v1/umalauncher/startup/{self['s_unique_id']}/{version_str}")
 
     def display_preferences(self):
         general_var = [self.loaded_settings]

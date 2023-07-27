@@ -7,6 +7,7 @@ import win32event
 from win32com.shell.shell import ShellExecuteEx
 from win32com.shell import shellcon
 import win32con
+import win32process
 from PIL import Image
 from loguru import logger
 import constants
@@ -22,9 +23,13 @@ if hasattr(sys, "_MEIPASS"):
 is_debug = is_script
 
 def get_relative(relative_path):
+    """Gets the absolute path of a file relative to the executable's directory.
+    """
     return os.path.join(relative_dir, relative_path)
 
 def get_asset(asset_path):
+    """Gets the absolute path of an asset relative to the unpack directory.
+    """
     return os.path.join(unpack_dir, asset_path)
 
 def elevate():
@@ -186,10 +191,23 @@ def _get_window_startswith(hwnd: int, query: str):
             logger.debug(f"Found window {query}!")
             window_handle = hwnd
 
+def _get_window_by_executable(hwnd: int, query: str):
+    global window_handle
+    if win32gui.IsWindowVisible(hwnd):
+        # Get the process ID of the window
+        pid = win32process.GetWindowThreadProcessId(hwnd)[1]
+        # Open the process, and get the executable path
+        proc_path = win32process.GetModuleFileNameEx(win32api.OpenProcess(win32con.PROCESS_QUERY_LIMITED_INFORMATION, False, pid), 0)
+        executable = os.path.basename(proc_path)
+        if executable == query:
+            logger.debug(f"Found window {query}!")
+            window_handle = hwnd
+
 
 LAZY = _get_window_lazy
 EXACT = _get_window_exact
 STARTSWITH = _get_window_startswith
+EXEC_MATCH = _get_window_by_executable
 
 def get_window_handle(query: str, type=LAZY) -> str:
     global window_handle

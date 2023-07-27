@@ -130,5 +130,8 @@ HEROES_SCORE_TO_LEAGUE_DICT = {
     12500: "Gold 2",
     15000: "Gold 3",
     17500: "Gold 4",
-    20000: "Platinum"
+    20000: "Platinum 1",
+    23000: "Platinum 2",
+    26000: "Platinum 3",
+    30000: "Platinum 4"
 }
