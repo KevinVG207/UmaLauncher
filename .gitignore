@@ -3,3 +3,4 @@ _dump/*
 .vscode/*
 *__pycache__*
 *.log*
+sandbox.*
