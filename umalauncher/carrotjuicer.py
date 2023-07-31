@@ -342,10 +342,19 @@ class CarrotJuicer():
                     if event_data['event_contents_info']['support_card_id'] and event_data['event_contents_info']['support_card_id'] not in supports:
                         # Random support card event
                         logger.debug("Random support card detected")
+
                         self.browser.execute_script("""document.getElementById("boxSupportExtra").click();""")
                         self.browser.execute_script(
                             """
-                            document.getElementById(arguments[0].toString()).click();
+                            var cont = document.getElementById("30021").parentElement.parentElement;
+
+                            var ele = cont.getElementById(arguments[0].toString());
+
+                            if (ele) {
+                                ele.click();
+                            } else {
+                                cont.querySelector("img[src=\"/images/ui/close.png\"]").click();
+                            }
                             """,
                             event_data['event_contents_info']['support_card_id']
                         )
