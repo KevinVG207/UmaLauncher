@@ -268,6 +268,7 @@ class HelperTable():
 
                 scheduled_races.append({
                     "turn": turn,
+                    "fans": program_data['need_fan_count'],
                     "thumb_url": thumb_url
                 })
             
@@ -292,6 +293,7 @@ class HelperTable():
             "scenario_id": data['chara_info']['scenario_id'],
             "energy": data['chara_info']['vital'],
             "max_energy": data['chara_info']['max_vital'],
+            "fans": data['chara_info']['fans'],
             "scheduled_races": scheduled_races,
             "gm_fragments": gm_fragments,
             "gl_stats": gl_stats,
