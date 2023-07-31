@@ -231,6 +231,16 @@ class CarrotJuicer():
                     self.screen_state_handler.carrotjuicer_state = new_state
                 return
             
+            # Team Building
+            if 'scout_ranking_state' in data:
+                if data.get("own_team_info") and data['own_team_info'].get('team_score') and self.screen_state_handler:
+                    team_score = data['own_team_info'].get('team_score')
+                    leader_chara_id = data['own_team_info'].get('entry_chara_array',[{}])[0].get('trained_chara', {}).get('card_id')
+
+                    if team_score and leader_chara_id:
+                        logger.debug(f"Team score: {team_score}, leader chara id: {leader_chara_id}")
+                        self.screen_state_handler.carrotjuicer_state = screenstate_utils.make_scouting_state(self.screen_state_handler, team_score, leader_chara_id)
+            
             # League of Heroes
             if 'heroes_id' in data:
                 if data.get("own_team_info") and data['own_team_info']['team_name'] and data['own_team_info']['league_score'] and self.screen_state_handler:
