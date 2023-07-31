@@ -45,3 +45,15 @@ def make_league_of_heroes_state(handler, team_name, league_score) -> ss.ScreenSt
     new_state.main = f"League of Heroes - {team_name}"
     new_state.sub = get_league_of_heroes_substate(league_score)
     return new_state
+
+def make_scouting_state(handler: ss.ScreenStateHandler, team_score, outfit_id) -> ss.ScreenState:
+    new_state = ss.ScreenState(handler)
+    new_state.location = ss.Location.SCOUTING_EVENT
+    new_state.main = f"Team Building - {team_score} pt."
+    new_state.sub = f"Rank: {util.scouting_score_to_rank_string(team_score)}"
+
+    chara_id = str(outfit_id)[:-2]
+
+    new_state.set_chara(chara_id, outfit_id=int(outfit_id), small_text="Team Leader")
+
+    return new_state

@@ -22,6 +22,7 @@ class Location(Enum):
     TRAINING = 3
     EVENT = 4
     LEAGUE_OF_HEROES = 5
+    SCOUTING_EVENT = 6
 
 class ScreenState:
     location = None
