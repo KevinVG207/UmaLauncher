@@ -242,7 +242,14 @@ class Preset():
         turns_left = next_race['turn'] - cur_turn
         text = f"<p>{turns_left} turn{'' if turns_left == 1 else 's'} until</p>"
         img = f"<img width=100 height=50 src=\"{next_race['thumb_url']}\"/>"
-        return f"""<div id="schedule" style="display: flex; align-items: center; gap: 0.5rem;">{text}{img}</div>"""
+
+        fan_warning = ""
+
+        if main_info['fans'] < next_race['fans']:
+            fans_needed = next_race['fans'] - main_info['fans']
+            fan_warning = f"""<p style="color: orange; margin: 0;"><b>{fans_needed}</b> more fans needed!</p>"""
+
+        return f"""<div id="schedule" style="display: flex; flex-direction: column; justify-content: center; align-items: center;"><div id="schedule-race-container" style="display: flex; align-items: center; gap: 0.5rem;">{text}{img}</div>{fan_warning}</div>"""
 
     def to_dict(self):
         return {
