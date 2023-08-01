@@ -102,6 +102,7 @@ last_failed_request = None
 has_failed_once = False
 def do_get_request(url, error_title=None, error_message=None, ignore_timeout=False):
     global last_failed_request
+    global has_failed_once
 
     try:
         if not ignore_timeout and last_failed_request is not None:
@@ -114,8 +115,11 @@ def do_get_request(url, error_title=None, error_message=None, ignore_timeout=Fal
         response = requests.get(url)
         response.raise_for_status()
         return response
-    except requests.exceptions.RequestException:
-        if (last_failed_request is None and not has_failed_once) or ignore_timeout:
+    except:
+        logger.warning(f"Failed to connect to {url}")
+        logger.warning(traceback.format_exc())
+        if ignore_timeout or not has_failed_once:
+            has_failed_once = True
             logger.warning(traceback.format_exc())
             show_warning_box(
                 "Failed to connect to server" if error_title is None else error_title,
