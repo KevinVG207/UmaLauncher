@@ -163,6 +163,10 @@ class BrowserWindow:
             OLD_DRIVERS.append(self.driver)
 
         self.driver = self.init_browser()
+    
+        if not self.driver:
+            return
+
         self.active_tab_handle = self.driver.window_handles[0]
         self.driver.switch_to.window(self.active_tab_handle)
         self.run_script_at_launch()
