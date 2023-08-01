@@ -192,8 +192,11 @@ class CarrotJuicer():
 
         return f"{grade_text} {self.EVENT_ID_TO_POS_STRING[event_id]}"
 
-    def handle_response(self, message):
-        data = self.load_response(message)
+    def handle_response(self, message, is_json=False):
+        if is_json:
+            data = message
+        else:
+            data = self.load_response(message)
 
         if self.threader.settings["s_save_packets"]:
             logger.debug("Response:")
@@ -358,13 +361,13 @@ class CarrotJuicer():
                             """
                             var cont = document.getElementById("30021").parentElement.parentElement;
 
-                            var ele = cont.getElementById(arguments[0].toString());
+                            var ele = document.getElementById(arguments[0].toString());
 
                             if (ele) {
                                 ele.click();
-                            } else {
-                                cont.querySelector("img[src=\"/images/ui/close.png\"]").click();
+                                return;
                             }
+                            cont.querySelector('img[src="/images/ui/close.png"]').click();
                             """,
                             event_data['event_contents_info']['support_card_id']
                         )
@@ -631,6 +634,16 @@ class CarrotJuicer():
                         pass
                     else:
                         self.save_skill_window_rect()
+
+                if os.path.exists(util.get_relative("debug.in")) and util.is_debug:
+                    try:
+                        with open(util.get_relative("debug.in"), "r", encoding="utf-8") as f:
+                            data = json.load(f)
+                        self.handle_response(data, is_json=True)
+                        os.remove(util.get_relative("debug.in"))
+                    except Exception as e:
+                        logger.error(traceback.format_exc())
+                        pass
 
                 messages = self.get_msgpack_batch(msg_path)
                 for message in messages:
