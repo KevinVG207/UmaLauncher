@@ -59,8 +59,8 @@ def edge_setup(helper_url):
     )
 
 BROWSER_LIST = {
-    'Chrome': chrome_setup,
     'Firefox': firefox_setup,
+    'Chrome': chrome_setup,
     'Edge': edge_setup,
 }
 
@@ -97,14 +97,16 @@ class BrowserWindow:
 
         browser_list = []
         if browser_name == "Auto":
-            browser_list = BROWSER_LIST.values()
+            browser_list = BROWSER_LIST.items()
         else:
-            browser_list = [BROWSER_LIST[browser_name]]
+            browser_list = [(browser_name, BROWSER_LIST[browser_name])]
 
-        for browser_setup in browser_list:
+        for browser_data in browser_list:
+            browser_name, browser_setup = browser_data
             try:
                 logger.info("Attempting " + str(browser_setup.__name__))
                 driver = browser_setup(self.url)
+                self.browser_name = browser_name
                 break
             except Exception:
                 logger.error("Failed to start browser")
@@ -131,7 +133,12 @@ class BrowserWindow:
                 window_handles = self.driver.window_handles
                 try:
                     if self.active_tab_handle in window_handles:
-                        self.driver.switch_to.window(self.active_tab_handle)
+                        if self.browser_name in ['Chrome', 'Edge']:
+                            if self.driver.current_window_handle != self.active_tab_handle:
+                                raise Exception("Wrong window handle")
+
+                        if self.browser_name == 'Firefox' and self.driver.current_window_handle != self.active_tab_handle:
+                            self.driver.switch_to.window(self.active_tab_handle)
 
                         if urls_match(self.driver.current_url, self.url):
                             from_script = self.driver.execute_script("return window.from_script;")
@@ -156,6 +163,10 @@ class BrowserWindow:
             OLD_DRIVERS.append(self.driver)
 
         self.driver = self.init_browser()
+    
+        if not self.driver:
+            return
+
         self.active_tab_handle = self.driver.window_handles[0]
         self.driver.switch_to.window(self.active_tab_handle)
         self.run_script_at_launch()
