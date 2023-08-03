@@ -125,7 +125,7 @@ class Threader():
                     pid = f.read()
                 pid = int(pid)
                 if psutil.pid_exists(pid):
-                    util.show_warning_box("Launch Error", "Uma Launcher is already running.")
+                    util.show_warning_box("Launch Error", "<b>Uma Launcher is already running.</b><br>If you just closed Uma Launcher,<br>wait a few moments and try again.")
                     self.should_stop = True
                     return
                 else:
