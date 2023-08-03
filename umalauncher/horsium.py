@@ -181,8 +181,15 @@ class BrowserWindow:
 
     def ensure_focus(func):
         def wrapper(self, *args, **kwargs):
-            self.ensure_tab_open()
-            return func(self, *args, **kwargs)
+            tries = 0
+
+            while tries < 3:
+                tries += 1
+                self.ensure_tab_open()
+                if self.driver:
+                    return func(self, *args, **kwargs)
+
+            raise util.show_warning_box("Uma Launcher: Unable to reach browser.", "Webbrowser is unable to open.<br><br>If this problem persists, try restarting your computer<br>or selecting a different browser in the preferences.")
         return wrapper
 
     @ensure_focus
