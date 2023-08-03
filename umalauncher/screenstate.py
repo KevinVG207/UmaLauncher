@@ -263,7 +263,7 @@ class ScreenStateHandler():
                         self.carrotjuicer_closed = True
                         time.sleep(0.25)
 
-            self.sleep_time = 1.
+            self.sleep_time = 2.0
 
             # Game is open, DMM is closed. Do screen state stuff
 
@@ -273,19 +273,26 @@ class ScreenStateHandler():
             if self.threader.settings["s_discord_rich_presence"]:
                 if not self.rpc:
                     try:
+                        self.rpc_latest_state = None
                         self.event_loop = asyncio.new_event_loop()
                         asyncio.set_event_loop(self.event_loop)
                         self.rpc = pypresence.Presence(self.rpc_client_id)
                         self.rpc.connect()
-                    except pypresence.exceptions.DiscordNotFound:
+                    except Exception:
                         continue
 
                 # Get the latest screen state.
-                if cur_update - self.rpc_last_update > 15 and self.screen_state != self.rpc_latest_state:
-                    logger.debug(f"Updating Rich Presence state: {self.screen_state.main}, {self.screen_state.sub}")
+                if self.rpc and cur_update - self.rpc_last_update > 15:
+                    if self.rpc_latest_state != self.screen_state:
+                        logger.debug(f"Updating Rich Presence state: {self.screen_state.main}, {self.screen_state.sub}")
                     self.rpc_last_update = cur_update
                     self.rpc_latest_state = self.screen_state
-                    self.rpc.update(**self.screen_state.to_dict())
+                    try:
+                        self.rpc.update(**self.screen_state.to_dict())
+                    except Exception:
+                        # RPC not connected. Continue
+                        self.close_rpc()
+                        pass
             elif self.rpc:
                 self.close_rpc()
 
@@ -294,9 +301,14 @@ class ScreenStateHandler():
         return
 
     def close_rpc(self):
-        self.rpc.clear()
-        self.rpc.close()
+        try:
+            self.rpc.clear()
+            self.rpc.close()
+        except Exception:
+            pass
         self.rpc = None
+
+        asyncio.set_event_loop(None)
         self.event_loop.stop()
         self.event_loop.close()
         self.event_loop = None
