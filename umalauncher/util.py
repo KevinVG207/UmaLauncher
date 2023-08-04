@@ -307,7 +307,7 @@ def is_minimized(handle):
         # Default to it being minimized as to not save the game window.
         return True
 
-downloaded_chara_dict = None
+downloaded_chara_dict = {}
 def get_character_name_dict():
     global downloaded_chara_dict
 
@@ -323,7 +323,7 @@ def get_character_name_dict():
         downloaded_chara_dict = chara_dict
     return downloaded_chara_dict
 
-downloaded_outfit_dict = None
+downloaded_outfit_dict = {}
 def get_outfit_name_dict():
     global downloaded_outfit_dict
 
@@ -339,7 +339,7 @@ def get_outfit_name_dict():
         downloaded_outfit_dict = outfit_dict
     return downloaded_outfit_dict
 
-downloaded_race_name_dict = None
+downloaded_race_name_dict = {}
 def get_race_name_dict():
     global downloaded_race_name_dict
 
@@ -360,7 +360,7 @@ def create_gametora_helper_url(card_id, scenario_id, support_ids):
     support_ids = list(map(str, support_ids))
     return f"https://gametora.com/umamusume/training-event-helper?deck={np.base_repr(int(str(card_id) + str(scenario_id)), 36)}-{np.base_repr(int(support_ids[0] + support_ids[1] + support_ids[2]), 36)}-{np.base_repr(int(support_ids[3] + support_ids[4] + support_ids[5]), 36)}".lower()
 
-gm_fragment_dict = None
+gm_fragment_dict = {}
 def get_gm_fragment_dict():
     global gm_fragment_dict
 
@@ -390,7 +390,7 @@ def get_gm_fragment_dict():
     return gm_fragment_dict
 
 
-gl_token_dict = None
+gl_token_dict = {}
 def get_gl_token_dict():
     global gl_token_dict
 
@@ -421,7 +421,7 @@ def get_gl_token_dict():
 
     return gl_token_dict
 
-GROUP_SUPPORT_ID_TO_PASSION_ZONE_EFFECT_ID_DICT = None
+GROUP_SUPPORT_ID_TO_PASSION_ZONE_EFFECT_ID_DICT = {}
 def get_group_support_id_to_passion_zone_effect_id_dict():
     global GROUP_SUPPORT_ID_TO_PASSION_ZONE_EFFECT_ID_DICT
 
