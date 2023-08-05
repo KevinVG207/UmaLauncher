@@ -77,7 +77,7 @@ class TrainingTracker():
 
     def get_training_path(self, suffix=""):
         if self.full_path:
-            return self.full_path
+            return self.full_path + suffix
 
         card_segment = ""
         if self.card_id:
@@ -379,8 +379,8 @@ class TrainingAnalyzer():
             prev_resp = resp
 
         # Write to CSV
-        scenario_str = constants.SCENARIO_DICT.get(self.scenario_id, 'Unknown')
-        chara_str = f"{self.chara_names_dict.get(self.chara_id, 'Unknown')} {self.outfit_name_dict[self.card_id]}"
+        scenario_str = constants.SCENARIO_DICT.get(self.scenario_id, 'Unknown Scenario')
+        chara_str = f"{self.chara_names_dict.get(self.chara_id, 'Unknown Character')} {self.outfit_name_dict.get(self.card_id, 'Unknown Outfit')}"
         support_1_str = f"{self.support_cards[0]['support_card_id']} - {self.support_card_string_dict[self.support_cards[0]['support_card_id']]}"
         support_2_str = f"{self.support_cards[1]['support_card_id']} - {self.support_card_string_dict[self.support_cards[1]['support_card_id']]}"
         support_3_str = f"{self.support_cards[2]['support_card_id']} - {self.support_card_string_dict[self.support_cards[2]['support_card_id']]}"
