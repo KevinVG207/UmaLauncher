@@ -193,8 +193,8 @@ class DefaultSettings(se.Settings):
             priority=91
         )
         self.s_vpn_ip_override = se.Setting(
-            "VPN IP override (SoftEther only)",
-            "Override the VPN IP address to use. Leave blank to use a random IP from VPN Gate.",
+            "VPN override (OpenVPN/SoftEther)",
+            "OpenVPN: Place a path to a custom ovpn profile.<br>SoftEther: Place an IP to override (no port, port is assumed to be 443.)",
             "",
             se.SettingType.STRING,
             priority=90
