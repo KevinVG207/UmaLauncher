@@ -632,6 +632,11 @@ class UmaSettingsDialog(UmaMainDialog):
         lbl_setting_description.setText(setting.description)
         lbl_setting_description.setWordWrap(True)
         lbl_setting_description.setAlignment(qtc.Qt.AlignTop)
+        sizePolicy2 = qtw.QSizePolicy(qtw.QSizePolicy.Expanding, qtw.QSizePolicy.Preferred)
+        sizePolicy2.setHorizontalStretch(0)
+        sizePolicy2.setVerticalStretch(0)
+        sizePolicy2.setHeightForWidth(lbl_setting_description.sizePolicy().hasHeightForWidth())
+        lbl_setting_description.setSizePolicy(sizePolicy2)
 
         horizontalLayout.addWidget(lbl_setting_description)
 
@@ -640,12 +645,16 @@ class UmaSettingsDialog(UmaMainDialog):
             input_widgets, value_func = self.add_checkbox(setting, grp_setting)
         elif setting.type == se.SettingType.INT:
             input_widgets, value_func = self.add_spinbox(setting, grp_setting)
+        elif setting.type == se.SettingType.STRING:
+            input_widgets, value_func = self.add_lineedit(setting, grp_setting)
         elif setting.type == se.SettingType.COMBOBOX:
             input_widgets, value_func = self.add_combobox(setting, grp_setting)
         elif setting.type == se.SettingType.COLOR:
             input_widgets, value_func = self.add_colorpicker(setting, grp_setting)
         elif setting.type == se.SettingType.RADIOBUTTONS:
             input_widgets, value_func = self.add_radiobuttons(setting, grp_setting)
+        elif setting.type == se.SettingType.FILEDIALOG:
+            input_widgets, value_func = self.add_filedialog(setting, grp_setting)
         
         if not input_widgets:
             logger.debug(f"{setting.type} not implemented for {setting.name}")
@@ -788,6 +797,53 @@ class UmaSettingsDialog(UmaMainDialog):
             return out_color
 
         return [lbl_picked_color, lne_color_hex, btn_pick_color], lambda: get_color()
+
+
+    def add_filedialog(self, setting, parent):
+        grp_box = qtw.QGroupBox(parent)
+        grp_box.setObjectName(f"grp_box_{setting.name}")
+
+        horizontalLayout = qtw.QHBoxLayout(grp_box)
+        horizontalLayout.setObjectName(f"horizontal_layout_{setting.name}")
+
+        line_edit = qtw.QLineEdit(grp_box)
+        line_edit.setObjectName(f"lineEdit_{setting.name}")
+        line_edit.setMinimumSize(qtc.QSize(150, 0))
+        line_edit.setMaximumSize(qtc.QSize(150, 16777215))
+        line_edit.setText(setting.value)
+
+        horizontalLayout.addWidget(line_edit)
+
+        browse_button = qtw.QPushButton(grp_box)
+        browse_button.setObjectName(f"pushButton_{setting.name}")
+        sizePolicy4 = qtw.QSizePolicy(qtw.QSizePolicy.Fixed, qtw.QSizePolicy.Fixed)
+        sizePolicy4.setHorizontalStretch(0)
+        sizePolicy4.setVerticalStretch(0)
+        sizePolicy4.setHeightForWidth(browse_button.sizePolicy().hasHeightForWidth())
+        browse_button.setSizePolicy(sizePolicy4)
+        browse_button.setMinimumSize(qtc.QSize(50, 0))
+        browse_button.setMaximumSize(qtc.QSize(50, 16777215))
+        browse_button.setText(u"Browse")
+
+        horizontalLayout.addWidget(browse_button)
+
+        def browse():
+            tmp_path = qtw.QFileDialog.getOpenFileName(parent, "Select file", line_edit.text())
+            if tmp_path[0]:
+                line_edit.setText(tmp_path[0])
+
+        browse_button.clicked.connect(browse)
+
+        return [grp_box], lambda: line_edit.text()
+
+
+    def add_lineedit(self, setting, parent):
+        line_edit = qtw.QLineEdit(parent)
+        line_edit.setObjectName(f"lineEdit_{setting.name}")
+        line_edit.setMinimumSize(qtc.QSize(150, 0))
+        line_edit.setMaximumSize(qtc.QSize(150, 16777215))
+        line_edit.setText(setting.value)
+        return [line_edit], lambda: line_edit.text()
 
 
 class UmaPresetSettingsDialog(UmaSettingsDialog):

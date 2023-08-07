@@ -10,6 +10,7 @@ class SettingType(enum.Enum):
     STRING = "string"
     RADIOBUTTONS = "radiobuttons"
     FOLDERDIALOG = "folderdialog"
+    FILEDIALOG = "filedialog"
 
 
 class Settings():

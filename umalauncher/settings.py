@@ -160,6 +160,45 @@ class DefaultSettings(se.Settings):
             se.SettingType.LIST,
             priority=-1
         )
+        self.s_vpn_enabled = se.Setting(
+            "Auto-VPN enabled",
+            "Connect to VPN when Uma Launcher is started.<br>For OpenVPN and SoftEther: A random JP server<br>will be chosen from VPN Gate to connect to.<br>NordVPN will connect to Japan.",
+            False,
+            se.SettingType.BOOL,
+            priority=94
+        )
+        self.s_vpn_dmm_only = se.Setting(
+            "VPN for DMM only",
+            "Disconnect from VPN after DMM Game Player is closed.<br>If unchecked, VPN will stay connected until Uma Launcher is closed.",
+            True,
+            se.SettingType.BOOL,
+            priority=93
+        )
+        self.s_vpn_client = se.Setting(
+            "VPN client",
+            "Choose VPN client to use.<br>Restart Uma Launcher after changing this setting.",
+            {
+                "OpenVPN": True,
+                "SoftEther": False,
+                "NordVPN": False
+            },
+            se.SettingType.RADIOBUTTONS,
+            priority=92
+        )
+        self.s_vpn_client_path = se.Setting(
+            "VPN client path",
+            "Path to the VPN client executable (openvpn.exe or nordvpn.exe). Not required for SoftEther.",
+            None,
+            se.SettingType.FILEDIALOG,
+            priority=91
+        )
+        self.s_vpn_ip_override = se.Setting(
+            "VPN override (OpenVPN/SoftEther)",
+            "OpenVPN: Place a path to a custom ovpn profile.<br>SoftEther: Place an IP to override (no port, port is assumed to be 443.)",
+            "",
+            se.SettingType.STRING,
+            priority=90
+        )
 
 
 class SettingsHandler():

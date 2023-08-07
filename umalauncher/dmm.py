@@ -1,6 +1,7 @@
 import os
 import util
 from loguru import logger
+import vpn
 
 def start():
     logger.info("Launching Uma Musume via DMM.")
