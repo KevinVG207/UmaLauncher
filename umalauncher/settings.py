@@ -169,7 +169,7 @@ class DefaultSettings(se.Settings):
         )
         self.s_vpn_dmm_only = se.Setting(
             "VPN for DMM only",
-            "Disconnect from VPN after DMM Game Player is closed.<br>Otherwise, disconnect from VPN after Uma Launcher is closed.",
+            "Disconnect from VPN after DMM Game Player is closed.<br>If unchecked, VPN will stay connected until Uma Launcher is closed.",
             True,
             se.SettingType.BOOL,
             priority=93
