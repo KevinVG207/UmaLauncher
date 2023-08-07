@@ -12,6 +12,7 @@ import presence_screens as scr
 import util
 import dmm
 import mdb
+import vpn
 
 START_TIME = time.time()
 
@@ -129,6 +130,8 @@ class ScreenStateHandler():
     chara_names_dict = None
     outfit_names_dict = None
 
+    vpn = None
+
     def __init__(self, threader):
         self.threader = threader
 
@@ -136,6 +139,8 @@ class ScreenStateHandler():
         self.chara_names_dict = util.get_character_name_dict()
         self.outfit_names_dict = util.get_outfit_name_dict()
         self.screen_state = ScreenState(self)
+        
+        self.vpn = None
 
         dmm_handle = dmm.get_dmm_handle()
         if dmm_handle:
@@ -218,8 +223,17 @@ class ScreenStateHandler():
             self.threader.stop()
 
     def run(self):
+        # Enable VPN if needed
+        if self.threader.settings["s_vpn_enabled"] and not self.threader.settings["s_vpn_dmm_only"]:
+            self.vpn = vpn.create_client(self.threader)
+            self.vpn.connect()
+
         # If DMM is not seen AND Game is not seen: Start DMM
         if not self.game_seen:
+            if self.threader.settings["s_vpn_enabled"] and self.threader.settings["s_vpn_dmm_only"]:
+                self.vpn = vpn.create_client(self.threader)
+                self.vpn.connect()
+
             dmm.start()
 
         while not self.should_stop:
@@ -249,6 +263,11 @@ class ScreenStateHandler():
                     logger.info("Closing DMM.")
                     win32gui.PostMessage(new_dmm_handle, win32con.WM_CLOSE, 0, 0)
                 self.dmm_closed = True
+
+                # Disconnect VPN
+                if self.vpn and self.threader.settings["s_vpn_dmm_only"]:
+                    self.vpn.disconnect()
+                    self.vpn = None
 
             if not self.carrotjuicer_closed:
                 carrotjuicer_handle = util.get_window_handle("Umapyoi", type=util.EXACT)
@@ -298,6 +317,10 @@ class ScreenStateHandler():
 
         if self.rpc:
             self.close_rpc()
+
+        if self.vpn:
+            self.vpn.disconnect()
+            self.vpn = None
         return
 
     def close_rpc(self):
