@@ -176,7 +176,7 @@ class DefaultSettings(se.Settings):
         )
         self.s_vpn_client = se.Setting(
             "VPN client",
-            "Choose VPN client to use.",
+            "Choose VPN client to use.<br>Restart Uma Launcher after changing this setting.",
             {
                 "OpenVPN": True,
                 "SoftEther": False,

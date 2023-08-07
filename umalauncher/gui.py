@@ -834,14 +834,7 @@ class UmaSettingsDialog(UmaMainDialog):
 
         browse_button.clicked.connect(browse)
 
-        def get_path():
-            tmp_path = line_edit.text()
-            if tmp_path:
-                return tmp_path
-            else:
-                raise ValueError("No path selected")
-            
-        return [grp_box], lambda: get_path()
+        return [grp_box], lambda: line_edit.text()
 
 
     def add_lineedit(self, setting, parent):
