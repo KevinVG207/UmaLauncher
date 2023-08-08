@@ -23,55 +23,61 @@ class VPNClient:
         self.exe_path = exe_path
         self.timeout = 30
 
-    def _determine_vpngate_server(self):
-        logger.info('Determining VPN server')
+    def _determine_vpngate_server(self, must_be_vpngate=False):
+        logger.info('Requesting VPN server list from Nasu\'s API')
 
-        r = requests.get('http://www.vpngate.net/api/iphone/', stream=True)
+        r = requests.get('https://nasu-ser.me/vpn/api/game/uma')
         r.raise_for_status()
 
         servers = []
 
-        # lines = r.text.rstrip().split('\n')
+        for server in r.json():
+            if server['country'] == "JP":
+                servers.append(server)
 
-        # for line in lines[2:-1]:
-        #     line = line.rstrip().split(',')
-        #     if line[6] == 'JP':
-        #         servers.append(line)
+        if servers:
+            if must_be_vpngate:
+                try:
+                    logger.info("Fetching VPN Gate servers")
+                    r = requests.get("http://www.vpngate.net/api/iphone/")
+                    r.raise_for_status()
+                except Exception as e:
+                    logger.error(e)
+                    util.show_warning_box('VPN connection failed', 'VPN connection failed.<br>Could not fetch VPN server list from vpngate.net.')
+                    return None
 
-        # if len(servers) == 0:
-        #     logger.error('No Japanese VPN server found')
-        #     util.show_warning_box('No Japanese VPN server found', 'No Japanese VPN server found.')
-        #     return None, None
-        
-        # servers = sorted(servers, key=lambda x: int(x[2]), reverse=True)
+                vpngate_set = set()
+                split_text = r.text.split("\n")
+                print(len(split_text))
+                vpngate_servers = split_text[2:-2]
+                for server in vpngate_servers:
+                    server = server.split(",")
+                    vpngate_set.add(server[1])
+                
+                servers = [server for server in servers if server['ip'] in vpngate_set]
 
-        # logger.info(servers[0][1])
-        # return servers[0][1], servers[0][14].rstrip()
+                if not servers:
+                    logger.error('No VPN server found')
+                    util.show_warning_box('No VPN server found', 'No VPN server found.<br>Please try again later.')
+                    return None
 
-        cur_chunk = ''
 
-        for chunk in r.iter_content(chunk_size=1024):
-            cur_chunk += chunk.decode('utf-8')
-            split_chunk = cur_chunk.split('\n')
-            for line in split_chunk[:-1]:
-                server_data = line.split(',')
-                if len(server_data) > 1 and server_data[6] == 'JP' and server_data[1].startswith('219.'):
-                    logger.debug(server_data[1])
-                    servers.append(server_data)
-            cur_chunk = split_chunk[-1]
-
-            if len(servers) >= 5:
-                break
-
-        if len(servers) > 0:
-            # Randomly select a server
             server = random.choice(servers)
-            logger.info(server[1])
-            return server[1], server[14].rstrip()
+            ip = server['ip']
+            logger.info(f'Using VPN server: {ip}')
 
-        logger.error('No Japanese VPN server found')
-        util.show_warning_box('No Japanese VPN server found', 'No Japanese VPN server found.')
-        return None, None
+            try:
+                r = requests.get(f"https://nasu-ser.me/vpn/api/ip/{ip}")
+                r.raise_for_status()
+                server_data = r.json()
+
+                return base64.b64decode(server_data['config']).decode('utf-8')
+            except:
+                pass
+
+        logger.error('No VPN server found')
+        util.show_warning_box('No VPN server found', 'No VPN server found.<br>Please try again later.')
+        return None
 
 
     def _get_ip(self):
@@ -88,7 +94,6 @@ class VPNClient:
             except:
                 time.sleep(1)
                 tries += 1
-        logger.debug(ip)
         return ip
     
     def _after_ip_check(self):
@@ -121,7 +126,7 @@ class VPNClient:
 
         if before_ip == after_ip:
             logger.error('VPN connection failed')
-            util.show_warning_box('VPN connection failed', 'VPN connection failed')
+            util.show_warning_box('VPN connection failed', 'VPN connection failed.<br>Check if your settings are correct.')
             self._disconnect()
             return False
         
@@ -151,13 +156,13 @@ class NordVPNClient(VPNClient):
             return False
         
         logger.info('Connecting to NordVPN')
-        subprocess.Popen([self.exe_path, "-c", "-g", "Japan"], creationflags=subprocess.CREATE_NO_WINDOW)
+        subprocess.call([self.exe_path, "-c", "-g", "Japan"], creationflags=subprocess.CREATE_NO_WINDOW)
         time.sleep(5)
         return True
 
     def _disconnect(self):
         logger.info('Disconnecting from NordVPN')
-        subprocess.Popen([self.exe_path, "-d"], creationflags=subprocess.CREATE_NO_WINDOW)
+        subprocess.call([self.exe_path, "-d"], creationflags=subprocess.CREATE_NO_WINDOW)
         return True
 
 
@@ -167,11 +172,25 @@ class SoftEtherClient(VPNClient):
         self.ip_override = ip_override
 
     def _connect(self):
+        ip = ""
+
         if not self.ip_override:
-            ip, _ = self._determine_vpngate_server()
+            ovpn_config = self._determine_vpngate_server(must_be_vpngate=True)
+
+            if not ovpn_config:
+                return False
+            
+            for line in ovpn_config.split("\n"):
+                line = line.strip()
+                if line and not line.startswith("#") and line.startswith("remote "):
+                    _, ip, port = line.split(" ", 2)
+                    ip = f"{ip}:{port}"
+                    break
 
             if not ip:
+                util.show_warning_box('VPN connection failed', 'VPN connection failed.<br>The fetched OpenVPN config does not have a remote IP.')
                 return False
+
         else:
             ip = self.ip_override
             logger.info(f'Using IP override: {ip}')
@@ -204,7 +223,7 @@ class OpenVPNClient(VPNClient):
 
     def _connect(self):
         if not self.profile_override:
-            _, ovpn = self._determine_vpngate_server()
+            ovpn = self._determine_vpngate_server()
 
             if not ovpn:
                 return False
@@ -212,15 +231,16 @@ class OpenVPNClient(VPNClient):
             logger.info('Connecting to OpenVPN')
 
             with open(self.ovpn_path, 'w', encoding='utf-8') as f:
-                f.write(base64.b64decode(ovpn).decode('utf-8').replace("\ncipher ", "\n--data-ciphers "))
+                f.write(ovpn.replace("\ncipher ", "\n--data-ciphers "))
 
         else:
             self.ovpn_path = self.profile_override
 
         cmd = [self.exe_path, self.ovpn_path]
         
-        self.ovpn_process = subprocess.Popen(cmd)
+        self.ovpn_process = subprocess.Popen(cmd, creationflags=subprocess.CREATE_NO_WINDOW)
 
+        time.sleep(4)
         return True
 
     def _disconnect(self):

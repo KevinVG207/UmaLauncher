@@ -186,8 +186,8 @@ class DefaultSettings(se.Settings):
             priority=92
         )
         self.s_vpn_client_path = se.Setting(
-            "VPN client path",
-            "Path to the VPN client executable (openvpn.exe or nordvpn.exe). Not required for SoftEther.",
+            "VPN client path (OpenVPN/NordVPN)",
+            "Path to the VPN client executable (openvpn.exe or nordvpn.exe).<br>Not required for SoftEther.",
             None,
             se.SettingType.FILEDIALOG,
             priority=91
