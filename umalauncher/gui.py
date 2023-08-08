@@ -632,7 +632,10 @@ class UmaSettingsDialog(UmaMainDialog):
         lbl_setting_description.setText(setting.description)
         lbl_setting_description.setWordWrap(True)
         lbl_setting_description.setAlignment(qtc.Qt.AlignTop)
-        sizePolicy2 = qtw.QSizePolicy(qtw.QSizePolicy.Expanding, qtw.QSizePolicy.Preferred)
+
+        # sizePolicy2 = qtw.QSizePolicy(qtw.QSizePolicy.Expanding, qtw.QSizePolicy.Preferred)
+        # Make sure the label expands vertically to fit the text if it is very long.
+        sizePolicy2 = qtw.QSizePolicy(qtw.QSizePolicy.Expanding, qtw.QSizePolicy.Minimum)
         sizePolicy2.setHorizontalStretch(0)
         sizePolicy2.setVerticalStretch(0)
         sizePolicy2.setHeightForWidth(lbl_setting_description.sizePolicy().hasHeightForWidth())
