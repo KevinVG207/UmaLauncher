@@ -131,6 +131,7 @@ class VPNClient:
             return False
         
         logger.info('VPN connected')
+        time.sleep(4)
         return True
     
     def _disconnect(self):
@@ -240,7 +241,6 @@ class OpenVPNClient(VPNClient):
         
         self.ovpn_process = subprocess.Popen(cmd, creationflags=subprocess.CREATE_NO_WINDOW)
 
-        time.sleep(4)
         return True
 
     def _disconnect(self):
