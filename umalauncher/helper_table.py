@@ -255,8 +255,16 @@ class HelperTable():
                 # TODO: Maybe cache the mdb data for all race programs?
                 program_data = mdb.get_program_id_data(race_data['program_id'])
                 if not program_data:
-                    logger.warning(f"Could not get program data for program_id {race_data['program_id']}")
+                    util.show_warning_box(f"Could not get program data for program_id {race_data['program_id']}")
                     continue
+                
+                if program_data['base_program_id'] != 0:
+                    program_data = mdb.get_program_id_data(program_data['base_program_id'])
+                
+                if not program_data:
+                    util.show_warning_box(f"Could not get program data for program_id {race_data['program_id']}")
+                    continue
+
                 year = race_data['year'] - 1
                 month = program_data['month'] - 1
                 half = program_data['half'] - 1
