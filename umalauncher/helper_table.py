@@ -152,7 +152,7 @@ class HelperTable():
 
                 if cur_bond < usefulness_cutoff:
                     new_bond = cur_bond + amount
-                    new_bond = min(new_bond, 80)
+                    new_bond = min(new_bond, usefulness_cutoff)
                     effective_bond = new_bond - cur_bond
                 return effective_bond
 
