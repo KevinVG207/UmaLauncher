@@ -189,7 +189,7 @@ class BrowserWindow:
                 if self.driver:
                     return func(self, *args, **kwargs)
 
-            raise util.show_warning_box("Uma Launcher: Unable to reach browser.", "Webbrowser is unable to open.<br><br>If this problem persists, try restarting your computer<br>or selecting a different browser in the preferences.")
+            util.show_warning_box("Uma Launcher: Unable to reach browser.", "Webbrowser is unable to open.<br><br>If this problem persists, try restarting your computer<br>or selecting a different browser in the preferences.")
         return wrapper
 
     @ensure_focus
