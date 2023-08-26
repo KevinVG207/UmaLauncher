@@ -269,7 +269,7 @@ class ScreenStateHandler():
                     self.vpn.disconnect()
                     self.vpn = None
 
-            if not self.carrotjuicer_closed:
+            if not self.carrotjuicer_closed and self.threader.settings["s_hide_carrotjuicer"]:
                 carrotjuicer_handle = util.get_window_handle("Umapyoi", type=util.EXACT)
                 if carrotjuicer_handle:
                     logger.info("Attempting to minimize CarrotJuicer.")
