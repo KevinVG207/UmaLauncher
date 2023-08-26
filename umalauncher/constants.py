@@ -4,6 +4,7 @@ SCENARIO_DICT = {
     3: "Grand Live",
     4: "Make a New Track",
     5: "Grand Masters",
+    6: "Project L'Arc"
 }
 
 MOTIVATION_DICT = {
@@ -41,11 +42,11 @@ SUPPORT_CARD_TYPE_DISPLAY_DICT = {
 }
 
 SUPPORT_TYPE_TO_COMMAND_IDS = {
-    "speed": [101, 601],
-    "stamina": [105, 602],
-    "power": [102, 603],
-    "guts": [103, 604],
-    "wiz": [106, 605],
+    "speed": [101, 601, 1101],
+    "stamina": [105, 602, 1102],
+    "power": [102, 603, 1103],
+    "guts": [103, 604, 1104],
+    "wiz": [106, 605, 1105],
     "friend": [],
     "group": []
 }
@@ -60,7 +61,13 @@ COMMAND_ID_TO_KEY = {
     602: "stamina",
     603: "power",
     604: "guts",
-    605: "wiz"
+    605: "wiz",
+    1101: "speed",
+    1102: "stamina",
+    1103: "power",
+    1104: "guts",
+    1105: "wiz",
+    "ss_match": "ss_match"
 }
 
 TARGET_TYPE_TO_KEY = {

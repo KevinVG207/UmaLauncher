@@ -157,7 +157,7 @@ class NordVPNClient(VPNClient):
             return False
         
         logger.info('Connecting to NordVPN')
-        subprocess.call([self.exe_path, "-c", "-g", "Japan"], creationflags=subprocess.CREATE_NO_WINDOW)
+        subprocess.Popen([self.exe_path, "-c", "-g", "Japan"], creationflags=subprocess.CREATE_NO_WINDOW)
         time.sleep(5)
         return True
 

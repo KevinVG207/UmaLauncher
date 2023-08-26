@@ -269,7 +269,7 @@ class ScreenStateHandler():
                     self.vpn.disconnect()
                     self.vpn = None
 
-            if not self.carrotjuicer_closed:
+            if not self.carrotjuicer_closed and self.threader.settings["s_hide_carrotjuicer"]:
                 carrotjuicer_handle = util.get_window_handle("Umapyoi", type=util.EXACT)
                 if carrotjuicer_handle:
                     logger.info("Attempting to minimize CarrotJuicer.")
@@ -369,6 +369,10 @@ class ScreenStateHandler():
                             pos = subscr_data["pos"]
                             col = subscr_data["col"]
                             pixel_color = util.get_position_rgb(image, pos)
+
+                            if pixel_color is None:
+                                logger.warning(f"Couldn't get pixel color at {pos}.")
+                                break
 
                             tab_enabled = util.similar_color(pixel_color, col)
                             tab_visible = util.similar_color(pixel_color, (226, 223, 231))
