@@ -41,6 +41,12 @@ class HelperTable():
 
         if not 'home_info' in data:
             return None
+        
+        turn = data['chara_info']['turn']
+        scenario_id = data['chara_info']['scenario_id']
+        energy = data['chara_info']['vital']
+        max_energy = data['chara_info']['max_vital']
+        fans = data['chara_info']['fans']
 
         command_info = {}
 
@@ -89,7 +95,7 @@ class HelperTable():
             skillpt = 0
             total_bond = 0
             useful_bond = 0
-            energy = 0
+            gained_energy = 0
             rainbow_count = 0
 
             for param in command['params_inc_dec_info_array']:
@@ -98,7 +104,7 @@ class HelperTable():
                 elif param['target_type'] == 30:
                     skillpt += param['value']
                 elif param['target_type'] == 10:
-                    energy += param['value']
+                    gained_energy += param['value']
 
             for training_partner_id in command['training_partner_array']:
                 # Akikawa is 102
@@ -222,7 +228,7 @@ class HelperTable():
                     gl_tokens[constants.GL_TOKEN_LIST[token_data['performance_type']-1]] += token_data['value']
 
             command_info[command['command_id']] = {
-                'scenario_id': data['chara_info']['scenario_id'],
+                'scenario_id': scenario_id,
                 'current_stats': current_stats,
                 'level': level,
                 'partner_count': partner_count,
@@ -232,7 +238,7 @@ class HelperTable():
                 'gained_skillpt': skillpt,
                 'total_bond': total_bond,
                 'useful_bond': useful_bond,
-                'gained_energy': energy,
+                'gained_energy': gained_energy,
                 'rainbow_count': rainbow_count,
                 'gm_fragment': spirit_id,
                 'gm_fragment_double': spirit_boost,
@@ -268,14 +274,14 @@ class HelperTable():
                 year = race_data['year'] - 1
                 month = program_data['month'] - 1
                 half = program_data['half'] - 1
-                turn = 24 * year
-                turn += month * 2
-                turn += half
-                turn += 1
+                s_turn = 24 * year
+                s_turn += month * 2
+                s_turn += half
+                s_turn += 1
                 thumb_url = f"https://gametora.com/images/umamusume/race_banners/thum_race_rt_000_{str(program_data['race_instance_id'])[:4]}_00.png"
 
                 scheduled_races.append({
-                    "turn": turn,
+                    "turn": s_turn,
                     "fans": program_data['need_fan_count'],
                     "thumb_url": thumb_url
                 })
@@ -297,11 +303,11 @@ class HelperTable():
 
 
         main_info = {
-            "turn": data['chara_info']['turn'],
-            "scenario_id": data['chara_info']['scenario_id'],
-            "energy": data['chara_info']['vital'],
-            "max_energy": data['chara_info']['max_vital'],
-            "fans": data['chara_info']['fans'],
+            "turn": turn,
+            "scenario_id": scenario_id,
+            "energy": energy,
+            "max_energy": max_energy,
+            "fans": fans,
             "scheduled_races": scheduled_races,
             "gm_fragments": gm_fragments,
             "gl_stats": gl_stats,
