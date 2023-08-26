@@ -210,6 +210,13 @@ class CarrotJuicer():
 
             data = data['data']
 
+
+            # New loading behavior?
+            if 'single_mode_load_common' in data:
+                for key, value in data['single_mode_load_common'].items():
+                    data[key] = value
+
+
             # Close whatever popup is open
             if self.browser and self.browser.alive():
                 self.browser.execute_script(
@@ -341,7 +348,7 @@ class CarrotJuicer():
                 event_data = data['unchecked_event_array'][0]
                 event_title = mdb.get_event_title(event_data['story_id'])
                 logger.debug(f"Event title: {event_title}")
-                # TODO: Check if there can be multiple events??
+
                 if len(data['unchecked_event_array']) > 1:
                     logger.warning(f"Packet has more than 1 unchecked event! {message}")
 
