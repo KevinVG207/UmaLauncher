@@ -370,6 +370,10 @@ class ScreenStateHandler():
                             col = subscr_data["col"]
                             pixel_color = util.get_position_rgb(image, pos)
 
+                            if pixel_color is None:
+                                logger.warning(f"Couldn't get pixel color at {pos}.")
+                                break
+
                             tab_enabled = util.similar_color(pixel_color, col)
                             tab_visible = util.similar_color(pixel_color, (226, 223, 231))
 
