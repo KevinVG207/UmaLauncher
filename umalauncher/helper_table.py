@@ -42,6 +42,9 @@ class HelperTable():
         if not 'home_info' in data:
             return None
         
+        card_id = data['chara_info']['card_id']
+        chara_id = int(str(card_id)[:4])
+        
         turn = data['chara_info']['turn']
         scenario_id = data['chara_info']['scenario_id']
         energy = data['chara_info']['vital']
@@ -62,7 +65,8 @@ class HelperTable():
             'live_data_set',  # Grand Live
             'free_data_set', # MANT
             'team_data_set',  # Aoharu
-            'ura_data_set'  # URA
+            'ura_data_set',  # URA
+            'arc_data_set'  # Project L'Arc
         ]
         for key in scenario_keys:
             if key in data and 'command_info_array' in data[key]:
@@ -70,16 +74,35 @@ class HelperTable():
                     if 'params_inc_dec_info_array' in command:
                         all_commands[command['command_id']]['params_inc_dec_info_array'] += command['params_inc_dec_info_array']
 
+
         # Venus specific
         if 'venus_data_set' in data:
             for spirit_data in data['venus_data_set']['venus_chara_command_info_array']:
                 if spirit_data['command_id'] in all_commands:
                     all_commands[spirit_data['command_id']]['spirit_data'] = spirit_data
 
+
         # Grand Live specific
         if 'live_data_set' in data:
             for command in data['live_data_set']['command_info_array']:
                 all_commands[command['command_id']]['performance_inc_dec_info_array'] = command['performance_inc_dec_info_array']
+        
+
+        # Project L'Arc
+        arc_charas = {}
+        if 'arc_data_set' in data:
+            for arc_chara in data['arc_data_set'].get('arc_rival_array', []):
+                arc_charas[arc_chara['chara_id']] = arc_chara
+            
+            # Make new command for Matches
+            all_commands["ss_match"] = {
+                'command_id': "ss_match",
+                'params_inc_dec_info_array': data['arc_data_set'].get('selection_info', []).get('params_inc_dec_info_array', []) + \
+                                             data['arc_data_set'].get('selection_info', []).get('bonus_params_inc_dec_info_array', [])
+            }
+            
+
+
 
         for command in all_commands.values():
             if command['command_id'] not in constants.COMMAND_ID_TO_KEY:
@@ -89,8 +112,8 @@ class HelperTable():
                 eval_data['training_partner_id']: TrainingPartner(eval_data['training_partner_id'], eval_data['evaluation'])
                 for eval_data in data['chara_info']['evaluation_info_array']
             }
-            level = command['level']
-            failure_rate = command['failure_rate']
+            level = command.get('level', 0)
+            failure_rate = command.get('failure_rate', 0)
             gained_stats = {stat_type: 0 for stat_type in set(constants.COMMAND_ID_TO_KEY.values())}
             skillpt = 0
             total_bond = 0
@@ -98,7 +121,7 @@ class HelperTable():
             gained_energy = 0
             rainbow_count = 0
 
-            for param in command['params_inc_dec_info_array']:
+            for param in command.get('params_inc_dec_info_array', []):
                 if param['target_type'] < 6:
                     gained_stats[constants.TARGET_TYPE_TO_KEY[param['target_type']]] += param['value']
                 elif param['target_type'] == 30:
@@ -106,7 +129,18 @@ class HelperTable():
                 elif param['target_type'] == 10:
                     gained_energy += param['value']
 
-            for training_partner_id in command['training_partner_array']:
+
+            # Set up "training partners" for SS Match
+            if command['command_id'] == 'ss_match':
+                command['training_partner_array'] = []
+                arc_eval_dict = {partner_data['chara_id']: partner_data['target_id'] for partner_data in data['arc_data_set']['evaluation_info_array']}
+                
+                for chara in data['arc_data_set']['selection_info']['selection_rival_info_array']:
+                    partner_id = arc_eval_dict[chara['chara_id']]
+                    command['training_partner_array'].append(partner_id)
+
+
+            for training_partner_id in command.get('training_partner_array', []):
                 # Akikawa is 102
                 if training_partner_id <= 6 or training_partner_id == 102:
                     initial_gain = 7
@@ -120,7 +154,7 @@ class HelperTable():
 
                     eval_dict[training_partner_id].training_bond += initial_gain
 
-            for tips_partner_id in command['tips_event_partner_array']:
+            for tips_partner_id in command.get('tips_event_partner_array', []):
                 if tips_partner_id <= 6:
                     eval_dict[tips_partner_id].tip_bond += 5
 
@@ -154,7 +188,7 @@ class HelperTable():
 
                 usefulness_cutoff = 80
                 if partner_id == 102:
-                    usefulness_cutoff = 60
+                    usefulness_cutoff = 60 if not scenario_id in (6,) else 0  # Disable Akikawa usefulness in certain scenarios
 
                 if cur_bond < usefulness_cutoff:
                     new_bond = cur_bond + amount
@@ -167,7 +201,7 @@ class HelperTable():
             tip_gains_useful = [0]
             partner_count = 0
             useful_partner_count = 0
-            for training_partner_id in command['training_partner_array']:
+            for training_partner_id in command.get('training_partner_array', []):
                 partner_count += 1
 
                 # Detect if training_partner is rainbowing
@@ -191,6 +225,7 @@ class HelperTable():
                         rainbow_count += 1
                 elif training_partner_id > 1000:  # TODO: Maybe 1000 < training_partner_id < 9000
                     useful_partner_count += 1
+
 
                 # Cap bond at 100
                 new_bond = min(training_partner.starting_bond + training_partner.training_bond, 100)
@@ -219,13 +254,35 @@ class HelperTable():
                 total_bond += sum(tip_gains_total)
                 useful_bond += sum(tip_gains_useful)
 
-            current_stats = data['chara_info'][constants.COMMAND_ID_TO_KEY[command['command_id']]]
+            current_stats = data['chara_info'].get(constants.COMMAND_ID_TO_KEY[command['command_id']], 0)
 
             gl_tokens = {token_type: 0 for token_type in constants.GL_TOKEN_LIST}
             # Grand Live tokens
             if 'live_data_set' in data:
                 for token_data in command['performance_inc_dec_info_array']:
                     gl_tokens[constants.GL_TOKEN_LIST[token_data['performance_type']-1]] += token_data['value']
+
+
+            # L'Arc star gauge
+            arc_gauge_gain = 0
+            if 'arc_data_set' in data:
+                arc_eval_dict = {partner_data['target_id']: partner_data['chara_id'] for partner_data in data['arc_data_set']['evaluation_info_array']}
+
+                for chara_id in [arc_eval_dict[partner_id] for partner_id in command.get('training_partner_array', [])]:
+                    if chara_id in arc_charas:
+                        arc_chara = arc_charas[chara_id]
+                        arc_gauge_gain += min(1 + rainbow_count, 3 - arc_chara['rival_boost'])
+
+            # Override row data for SS Match
+            if command['command_id'] == "ss_match":
+                # Partners
+                partner_count = len(data['arc_data_set']['selection_info']['selection_rival_info_array'])
+                useful_partner_count = partner_count
+
+                # Energy
+                # Star Gauge
+                # Aptitude points
+
 
             command_info[command['command_id']] = {
                 'scenario_id': scenario_id,
@@ -243,6 +300,7 @@ class HelperTable():
                 'gm_fragment': spirit_id,
                 'gm_fragment_double': spirit_boost,
                 'gl_tokens': gl_tokens,
+                'arc_gauge_gain': arc_gauge_gain,
             }
 
         # Simplify everything down to a dict with only the keys we care about.

@@ -210,6 +210,13 @@ class CarrotJuicer():
 
             data = data['data']
 
+
+            # New loading behavior?
+            if 'single_mode_load_common' in data:
+                for key, value in data['single_mode_load_common'].items():
+                    data[key] = value
+
+
             # Close whatever popup is open
             if self.browser and self.browser.alive():
                 self.browser.execute_script(

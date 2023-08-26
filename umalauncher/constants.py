@@ -4,6 +4,7 @@ SCENARIO_DICT = {
     3: "Grand Live",
     4: "Make a New Track",
     5: "Grand Masters",
+    6: "Project L'Arc"
 }
 
 MOTIVATION_DICT = {
@@ -60,7 +61,8 @@ COMMAND_ID_TO_KEY = {
     602: "stamina",
     603: "power",
     604: "guts",
-    605: "wiz"
+    605: "wiz",
+    "ss_match": "ss_match"
 }
 
 TARGET_TYPE_TO_KEY = {

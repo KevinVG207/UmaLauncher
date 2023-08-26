@@ -310,7 +310,7 @@ class UsefulBondSettings(se.Settings):
 class UsefulBondRow(hte.Row):
     long_name = "Useful bond gained total"
     short_name = "Useful Bond"
-    description = "Shows the useful bond gain for each facility. Useful includes supports until orange bar, excluding friend/group cards. Also Akikawa until green bar."
+    description = "Shows the useful bond gain for each facility. Useful includes supports until orange bar, excluding friend/group cards.<br>Also Akikawa until green bar (except Project L'Arc)."
 
     def __init__(self):
         super().__init__()
@@ -670,6 +670,48 @@ class UsefulPartnerCountRow(hte.Row):
         return cells
 
 
+class LArcStarGaugeGainSettings(se.Settings):
+    def __init__(self):
+        self.s_highlight_max = se.Setting(
+            "Highlight max",
+            "Highlights the facility with the most star gauge gain.",
+            True,
+            se.SettingType.BOOL
+        )
+        self.s_highlight_max_color = se.Setting(
+            "Highlight max color",
+            "The color to use to highlight the facility with the most star gauge gain.",
+            "#90EE90",
+            se.SettingType.COLOR
+        )
+
+class LArcStarGaugeGainRow(hte.Row):
+    long_name = "L'Arc star gauge gain"
+    short_name = "Star Gauge"
+    description = "[Scenario-specific] Shows the total L'Arc star gauge gain per facility. Hidden in other scenarios."
+
+    def __init__(self):
+        super().__init__()
+        self.settings = LArcStarGaugeGainSettings()
+
+    def _generate_cells(self, game_state) -> list[hte.Cell]:
+        if game_state['speed']['scenario_id'] != 6:
+            return []
+
+        cells = [hte.Cell(self.short_name, title=self.description)]
+
+        max_star_gauge_gain = max(facility['arc_gauge_gain'] for facility in game_state.values())
+
+        for command in game_state.values():
+            star_gauge_gain = command['arc_gauge_gain']
+            if self.settings.s_highlight_max.value and max_star_gauge_gain > 0 and star_gauge_gain == max_star_gauge_gain:
+                cells.append(hte.Cell(star_gauge_gain, bold=True, color=self.settings.s_highlight_max_color.value))
+            else:
+                cells.append(hte.Cell(star_gauge_gain))
+
+        return cells
+
+
 class RowTypes(Enum):
     CURRENT_STATS = CurrentStatsRow
     GAINED_STATS = GainedStatsRow
@@ -686,6 +728,7 @@ class RowTypes(Enum):
     GL_TOKENS = GrandLiveTokensDistributionRow
     GL_TOKENS_TOTAL = GrandLiveTotalTokensRow
     GM_FRAGMENTS = GrandMastersFragmentsRow
+    LARC_STAR_GAUGE_GAIN = LArcStarGaugeGainRow
 
 
 class DefaultPreset(hte.Preset):
@@ -693,6 +736,7 @@ class DefaultPreset(hte.Preset):
     rows = [
         RowTypes.GL_TOKENS,
         RowTypes.GM_FRAGMENTS,
+        RowTypes.LARC_STAR_GAUGE_GAIN,
         RowTypes.CURRENT_STATS,
         RowTypes.GAINED_STATS,
         RowTypes.USEFUL_BOND,

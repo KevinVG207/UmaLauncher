@@ -5,14 +5,15 @@ import util
 import constants
 import settings_elements as se
 
-TABLE_HEADERS = [
-    "Facility",
-    "Speed",
-    "Stamina",
-    "Power",
-    "Guts",
-    "Wisdom"
-]
+TABLE_HEADERS = {
+    "fac": "Facility",
+    "speed": "Speed",
+    "stamina": "Stamina",
+    "power": "Power",
+    "guts": "Guts",
+    "wiz": "Wisdom",
+    "ss_match": "SS Match"
+}
 
 class Colors(enum.Enum):
     """Defines the colors used in the helper table.
@@ -23,7 +24,7 @@ class Colors(enum.Enum):
 
 
 class Cell():
-    def __init__(self, value="", bold=False, color=None, percent=False, title="", style=""):
+    def __init__(self, value="", bold=False, color=None, percent=False, title="", style="text-overflow: clip;white-space: nowrap;overflow: hidden;"):
         self.value = value
         self.bold = bold
         self.color = color
@@ -188,7 +189,7 @@ class Preset():
         if not command_info:
             return ""
 
-        table_header = ''.join(f"<th>{header}</th>" for header in TABLE_HEADERS)
+        table_header = ''.join(f"""<th style="text-overflow: clip;white-space: nowrap;overflow: hidden;">{TABLE_HEADERS[header]}</th>""" for header in ["fac"] + [command for command in command_info])
         table = [f"<tr>{table_header}</tr>"]
 
         for row in self.initialized_rows:
