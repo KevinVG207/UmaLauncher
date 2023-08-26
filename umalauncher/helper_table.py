@@ -3,6 +3,7 @@ from loguru import logger
 import mdb
 import util
 import constants
+from helper_table_defaults import RowTypes
 
 
 class TrainingPartner():
@@ -90,18 +91,29 @@ class HelperTable():
 
         # Project L'Arc
         arc_charas = {}
+        arc_beginning_or_overseas = False
         if 'arc_data_set' in data:
             for arc_chara in data['arc_data_set'].get('arc_rival_array', []):
                 arc_charas[arc_chara['chara_id']] = arc_chara
-            
-            # Make new command for Matches
-            all_commands["ss_match"] = {
-                'command_id': "ss_match",
-                'params_inc_dec_info_array': data['arc_data_set'].get('selection_info', []).get('params_inc_dec_info_array', []) + \
-                                             data['arc_data_set'].get('selection_info', []).get('bonus_params_inc_dec_info_array', [])
-            }
-            
 
+            for command in data['arc_data_set'].get('command_info_array', []):
+                if command['command_id'] in all_commands:
+                    all_commands[command['command_id']]['add_global_exp'] = command['add_global_exp']
+
+            arc_beginning_or_overseas = True
+            # Make new command for Matches
+            if 3 <= turn < 37 or 44 <= turn < 61:
+                arc_beginning_or_overseas = False
+                all_commands["ss_match"] = {
+                    'command_id': "ss_match",
+                    'params_inc_dec_info_array': data['arc_data_set'].get('selection_info', []).get('params_inc_dec_info_array', []) + \
+                                                 data['arc_data_set'].get('selection_info', []).get('bonus_params_inc_dec_info_array', [])
+                }
+
+            for row in self.selected_preset:
+                if isinstance(row, RowTypes.LARC_STAR_GAUGE_GAIN.value):
+                    row.disabled = arc_beginning_or_overseas
+                    break
 
 
         for command in all_commands.values():
@@ -120,6 +132,7 @@ class HelperTable():
             useful_bond = 0
             gained_energy = 0
             rainbow_count = 0
+            arc_aptitude_gain = 0
 
             for param in command.get('params_inc_dec_info_array', []):
                 if param['target_type'] < 6:
@@ -266,12 +279,17 @@ class HelperTable():
             # L'Arc star gauge
             arc_gauge_gain = 0
             if 'arc_data_set' in data:
+                # Aptitude points
+                if 'add_global_exp' in command:
+                    arc_aptitude_gain += command['add_global_exp']
+
+
                 arc_eval_dict = {partner_data['target_id']: partner_data['chara_id'] for partner_data in data['arc_data_set']['evaluation_info_array']}
 
                 for chara_id in [arc_eval_dict[partner_id] for partner_id in command.get('training_partner_array', [])]:
                     if chara_id in arc_charas:
                         arc_chara = arc_charas[chara_id]
-                        arc_gauge_gain += min(1 + rainbow_count, 3 - arc_chara['rival_boost'])
+                        arc_gauge_gain += min(1 + rainbow_count, 3 - arc_chara['rival_boost'])  # TODO: Try to avoid doing this right after a match is done?
 
                 # Override row data for SS Match
                 if command['command_id'] == "ss_match":
@@ -286,15 +304,17 @@ class HelperTable():
                         effect_data = rival_data['selection_peff_array'][0]
                         effect_type = effect_data['effect_group_id']
 
-                        if effect_type == 6:
+                        if effect_type == 3:
+                            # Energy recovery
+                            gained_energy += 20
+
+                        elif effect_type == 6:
                             # Star Gauge refill
                             arc_gauge_gain += 3
                         
-
-
-                # Energy
-                # Star Gauge
-                # Aptitude points
+                        elif effect_type == 7:
+                            # Aptitude points
+                            arc_aptitude_gain += 50
 
 
             command_info[command['command_id']] = {
@@ -314,6 +334,7 @@ class HelperTable():
                 'gm_fragment_double': spirit_boost,
                 'gl_tokens': gl_tokens,
                 'arc_gauge_gain': arc_gauge_gain,
+                'arc_aptitude_gain': arc_aptitude_gain
             }
 
         # Simplify everything down to a dict with only the keys we care about.

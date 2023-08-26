@@ -245,6 +245,11 @@ def turn_to_string(turn):
     if second_half:
         turn -= 1
     turn /= 2
+
+    if turn <= 6:  # TODO: Check if pre-debut string is correct
+        turn /= 2
+        turn += 3
+
     month = int(turn) % 12 + 1
     year = math.floor(turn / 12) + 1
 

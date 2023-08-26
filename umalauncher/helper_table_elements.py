@@ -63,6 +63,7 @@ class Row():
     def __init__(self):
         self.dialog = None
         self.style = None
+        self.disabled = False
 
     def _generate_cells(self, command_info) -> list[Cell]:
         """Returns a list of cells for this row.
@@ -193,7 +194,8 @@ class Preset():
         table = [f"<tr>{table_header}</tr>"]
 
         for row in self.initialized_rows:
-            table.append(row.to_tr(command_info))
+            if not row.disabled:
+                table.append(row.to_tr(command_info))
 
         thead = f"<thead>{table[0]}</thead>"
         tbody = f"<tbody>{''.join(table[1:])}</tbody>"
