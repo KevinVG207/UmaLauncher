@@ -241,14 +241,15 @@ def similar_color(col1: tuple[int,int,int], col2: tuple[int,int,int], threshold:
 def turn_to_string(turn):
     turn = turn - 1
 
+    if turn < 12:
+        turn /= 2
+        turn += 6
+        turn = math.floor(turn)
+
     second_half = turn % 2 != 0
     if second_half:
         turn -= 1
     turn /= 2
-
-    if turn <= 6:  # TODO: Check if pre-debut string is correct
-        turn /= 2
-        turn += 3
 
     month = int(turn) % 12 + 1
     year = math.floor(turn / 12) + 1
