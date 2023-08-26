@@ -85,6 +85,13 @@ class DefaultSettings(se.Settings):
             se.SettingType.BOOL,
             priority=99
         )
+        self.s_hide_carrotjuicer = se.Setting(
+            "Hide CarrotJuicer console",
+            "Hide the CarrotJuicer console window.",
+            True,
+            se.SettingType.BOOL,
+            priority=99
+        )
         self.s_track_trainings = se.Setting(
             "Track trainings",
             "Track training events in /training_logs as gzip files.",
