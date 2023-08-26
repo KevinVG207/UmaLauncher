@@ -273,11 +273,24 @@ class HelperTable():
                         arc_chara = arc_charas[chara_id]
                         arc_gauge_gain += min(1 + rainbow_count, 3 - arc_chara['rival_boost'])
 
-            # Override row data for SS Match
-            if command['command_id'] == "ss_match":
-                # Partners
-                partner_count = len(data['arc_data_set']['selection_info']['selection_rival_info_array'])
-                useful_partner_count = partner_count
+                # Override row data for SS Match
+                if command['command_id'] == "ss_match":
+                    # Partners
+                    rival_dict = {rival['chara_id']: rival for rival in data['arc_data_set']['arc_rival_array']}
+                    selection_list = data['arc_data_set']['selection_info']['selection_rival_info_array']
+                    partner_count = len(selection_list)
+                    useful_partner_count = partner_count
+
+                    for rival in selection_list:
+                        rival_data = rival_dict[rival['chara_id']]
+                        effect_data = rival_data['selection_peff_array'][0]
+                        effect_type = effect_data['effect_group_id']
+
+                        if effect_type == 6:
+                            # Star Gauge refill
+                            arc_gauge_gain += 3
+                        
+
 
                 # Energy
                 # Star Gauge
