@@ -47,3 +47,11 @@ You may still report issues you have with Chromium-based browsers.
 Uma Launcher is only built for and tested on Windows 10. It should work with Windows 11 as well.<br>
 If you are trying to use Uma Launcher on Linux or Mac, figure it out yourself since you managed to get Uma Musume running on it. ;)
 </details>
+
+<details>
+<summary>Streaming the game on Discord displays a frozen image?</summary>
+
+This appears to be a bug with Discord and it's unrelated to Uma Launcher. I've found this happens when the game's window is close to the taskbar.<br>
+Right-click the horseshoe icon and uncheck `Lock game window`. Move the game window in a way so that there is a gap between the game and the taskbar. If you had the game maximized, make the game window slightly smaller and move it away from the taskbar. (Something like 20 pixels should be more than enough.)<br>
+Then re-enable `Lock game window`.
+</details>
