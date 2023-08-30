@@ -515,6 +515,14 @@ class TrainingAnalyzer():
             match = re.match(r'80(\d{4})003', str(story_id))
             if match:
                 # Skill hint
+
+                # TODO: All skill hints seem to have become story_id 801000003.
+                # Checking for chara_id in story_id is not possible anymore.
+                # Instead, the partner_id is in prev_resp['unchecked_event_array'][0]['event_contents_info']['tips_training_partner_id']
+                # Need to manually match that up to the training partner and then chara_id.
+                # The old code needs to still exist for backwards compatibility.
+                # Maybe add a check if match.group(1) == 1000
+
                 action.action_type = ActionType.SkillHint
                 action.text = self.chara_names_dict[int(match.group(1))] if int(match.group(1)) in self.chara_names_dict else "Unknown Chara"
                 action.action_type = ActionType.SkillHint
