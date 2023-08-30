@@ -244,19 +244,18 @@ class TrainingAnalyzer():
     next_action_type = None
     gm_effect_active = False
     action_list = []
-    chara_names_dict = util.get_character_name_dict()
-    event_title_dict = mdb.get_event_title_dict()
-    race_program_name_dict = mdb.get_race_program_name_dict()
-    skill_name_dict = mdb.get_skill_name_dict()
-    skill_hint_name_dict = mdb.get_skill_hint_name_dict()
-    status_name_dict = mdb.get_status_name_dict()
-    outfit_name_dict = util.get_outfit_name_dict()
-    support_card_string_dict = mdb.get_support_card_string_dict()
-    mant_item_string_dict = mdb.get_mant_item_string_dict()
-    gl_lesson_dict = mdb.get_gl_lesson_dict()
 
     def __init__(self):
-        pass
+        self.chara_names_dict = util.get_character_name_dict()
+        self.event_title_dict = mdb.get_event_title_dict()
+        self.race_program_name_dict = mdb.get_race_program_name_dict()
+        self.skill_name_dict = mdb.get_skill_name_dict()
+        self.skill_hint_name_dict = mdb.get_skill_hint_name_dict()
+        self.status_name_dict = mdb.get_status_name_dict()
+        self.outfit_name_dict = util.get_outfit_name_dict()
+        self.support_card_string_dict = mdb.get_support_card_string_dict()
+        self.mant_item_string_dict = mdb.get_mant_item_string_dict()
+        self.gl_lesson_dict = mdb.get_gl_lesson_dict()
 
     def set_training_tracker(self, training_tracker):
         self.training_tracker = training_tracker
@@ -820,6 +819,9 @@ def training_csv_dialog(training_paths=None):
 
     if not output_file_path.endswith(".csv"):
         output_file_path += ".csv"
+
+    # Update cached dicts first
+    mdb.update_mdb_cache()
 
     if not combine_trainings(training_paths, output_file_path):
         return

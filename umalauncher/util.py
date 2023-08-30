@@ -12,6 +12,8 @@ from PIL import Image
 from loguru import logger
 import constants
 
+ignore_errors = False
+
 relative_dir = os.path.abspath(os.getcwd())
 unpack_dir = relative_dir
 is_script = True
@@ -150,6 +152,10 @@ def show_error_box(error, message, custom_traceback=None):
     traceback_str = traceback.format_exc() if custom_traceback is None else custom_traceback
     logger.error(traceback_str)
 
+    global ignore_errors
+    if ignore_errors:
+        return
+    
     gui.show_widget(
         gui.UmaErrorPopup,
         error,
@@ -159,10 +165,24 @@ def show_error_box(error, message, custom_traceback=None):
         gui.ICONS.Critical
     )
 
+def show_error_box_no_report(error, message):
+    logger.error(error)
+    logger.error(message)
+
+    global ignore_errors
+    if ignore_errors:
+        return
+
+    _show_alert_box(error, message, gui.ICONS.Critical)
+
 
 def show_warning_box(error, message):
     logger.warning(f"{error}")
     logger.warning(f"{message}")
+
+    global ignore_errors
+    if ignore_errors:
+        return
     _show_alert_box(error, message, gui.ICONS.Warning)
 
 
@@ -314,10 +334,10 @@ def is_minimized(handle):
         return True
 
 downloaded_chara_dict = {}
-def get_character_name_dict():
+def get_character_name_dict(force=False):
     global downloaded_chara_dict
 
-    if not downloaded_chara_dict:
+    if force or not downloaded_chara_dict:
         chara_dict = mdb.get_chara_name_dict()
         response = do_get_request("https://umapyoi.net/api/v1/character/names")
         if not response:
@@ -326,14 +346,14 @@ def get_character_name_dict():
         for character in response.json():
             chara_dict[character['game_id']] = character['name']
 
-        downloaded_chara_dict = chara_dict
+        downloaded_chara_dict.update(chara_dict)
     return downloaded_chara_dict
 
 downloaded_outfit_dict = {}
-def get_outfit_name_dict():
+def get_outfit_name_dict(force=False):
     global downloaded_outfit_dict
 
-    if not downloaded_outfit_dict:
+    if force or not downloaded_outfit_dict:
         outfit_dict = mdb.get_outfit_name_dict()
         response = do_get_request("https://umapyoi.net/api/v1/outfit")
         if not response:
@@ -342,14 +362,14 @@ def get_outfit_name_dict():
         for outfit in response.json():
             outfit_dict[outfit['id']] = outfit['title']
 
-        downloaded_outfit_dict = outfit_dict
+        downloaded_outfit_dict.update(outfit_dict)
     return downloaded_outfit_dict
 
 downloaded_race_name_dict = {}
-def get_race_name_dict():
+def get_race_name_dict(force=False):
     global downloaded_race_name_dict
 
-    if not downloaded_race_name_dict:
+    if force or not downloaded_race_name_dict:
         race_name_dict = mdb.get_race_program_name_dict()
         logger.info("Requesting race names from umapyoi.net")
         response = do_get_request("https://umapyoi.net/api/v1/race_program")
@@ -359,7 +379,7 @@ def get_race_name_dict():
         for race_program in response.json():
             race_name_dict[race_program['id']] = race_program['name']
         
-        downloaded_race_name_dict = race_name_dict
+        downloaded_race_name_dict.update(race_name_dict)
     return downloaded_race_name_dict
 
 def create_gametora_helper_url(card_id, scenario_id, support_ids):
@@ -367,12 +387,12 @@ def create_gametora_helper_url(card_id, scenario_id, support_ids):
     return f"https://gametora.com/umamusume/training-event-helper?deck={np.base_repr(int(str(card_id) + str(scenario_id)), 36)}-{np.base_repr(int(support_ids[0] + support_ids[1] + support_ids[2]), 36)}-{np.base_repr(int(support_ids[3] + support_ids[4] + support_ids[5]), 36)}".lower()
 
 gm_fragment_dict = {}
-def get_gm_fragment_dict():
+def get_gm_fragment_dict(force=False):
     global gm_fragment_dict
 
-    if not gm_fragment_dict:
+    if force or not gm_fragment_dict:
         logger.debug("Loading Grand Master fragment images...")
-        gm_fragment_dict = {}
+        tmp_gm_fragment_dict = {}
         for i in range(0, 23):
             fragment_img_path = f"_assets/gm/frag_{i:02}.png"
             asset_path = get_asset(fragment_img_path)
@@ -390,19 +410,21 @@ def get_gm_fragment_dict():
 
             # Encode PNG image to base64 string
             b64 = "data:image/png;base64," + base64.b64encode(buffer.getvalue()).decode("utf-8")
-            gm_fragment_dict[i] = b64
+            tmp_gm_fragment_dict[i] = b64
 
             buffer.close()
+        
+        gm_fragment_dict.update(tmp_gm_fragment_dict)
     return gm_fragment_dict
 
 
 gl_token_dict = {}
-def get_gl_token_dict():
+def get_gl_token_dict(force=False):
     global gl_token_dict
 
-    if not gl_token_dict:
+    if force or not gl_token_dict:
         logger.debug("Loading Grand Live token images...")
-        gl_token_dict = {}
+        tmp_gl_token_dict = {}
 
         token_folder = get_asset("_assets/gl/tokens")
         for token_file in os.listdir(token_folder):
@@ -421,19 +443,21 @@ def get_gl_token_dict():
 
             # Encode PNG image to base64 string
             b64 = "data:image/png;base64," + base64.b64encode(buffer.getvalue()).decode("utf-8")
-            gl_token_dict[token_name] = b64
+            tmp_gl_token_dict[token_name] = b64
 
             buffer.close()
+        
+        gl_token_dict.update(tmp_gl_token_dict)
 
     return gl_token_dict
 
 GROUP_SUPPORT_ID_TO_PASSION_ZONE_EFFECT_ID_DICT = {}
-def get_group_support_id_to_passion_zone_effect_id_dict():
+def get_group_support_id_to_passion_zone_effect_id_dict(force=False):
     global GROUP_SUPPORT_ID_TO_PASSION_ZONE_EFFECT_ID_DICT
 
-    if not GROUP_SUPPORT_ID_TO_PASSION_ZONE_EFFECT_ID_DICT:
+    if force or not GROUP_SUPPORT_ID_TO_PASSION_ZONE_EFFECT_ID_DICT:
         cards = mdb.get_group_card_effect_ids()
-        GROUP_SUPPORT_ID_TO_PASSION_ZONE_EFFECT_ID_DICT = {card[0]: card[1] for card in cards}
+        GROUP_SUPPORT_ID_TO_PASSION_ZONE_EFFECT_ID_DICT.update({card[0]: card[1] for card in cards})
 
     return GROUP_SUPPORT_ID_TO_PASSION_ZONE_EFFECT_ID_DICT
 
@@ -454,3 +478,12 @@ def scouting_score_to_rank_string(score):
         else:
             break
     return current_rank
+
+UPDATE_FUNCS = [
+    get_character_name_dict,
+    get_outfit_name_dict,
+    get_race_name_dict,
+    get_gm_fragment_dict,
+    get_gl_token_dict,
+    get_group_support_id_to_passion_zone_effect_id_dict,
+]

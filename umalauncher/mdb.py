@@ -3,17 +3,41 @@ import os
 from loguru import logger
 import util
 import constants
+import gui
 
 DB_PATH = os.path.expandvars("%userprofile%\\appdata\\locallow\\Cygames\\umamusume\\master\\master.mdb")
-SUPPORT_CARD_DICT = {}
+
+def update_mdb_cache():
+    logger.info("Reloading cached dicts.")
+    all_update_funcs = UPDATE_FUNCS + util.UPDATE_FUNCS
+    for func in all_update_funcs:
+        func(force=True)
+
+CONNECTION_ERRORS = 5
 
 class Connection():
     def __init__(self):
-        self.conn = sqlite3.connect(DB_PATH)
+        try:
+            self.conn = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
+        except sqlite3.OperationalError:
+            util.show_error_box_no_report("Connection Error", "Could not connect to the game database.<br>Try restarting Uma Launcher after the game updates.<br>Uma Launcher will now close.")
+            if gui.THREADER:
+                gui.THREADER.stop()
     def __enter__(self):
         return self.conn, self.conn.cursor()
     def __exit__(self, type, value, traceback):
         self.conn.close()
+        
+        if type is not None:
+            global CONNECTION_ERRORS
+            CONNECTION_ERRORS += 1
+            logger.error(f"Error: {type} {value}")
+            logger.error(f"{traceback}")
+
+            if CONNECTION_ERRORS > 5:
+                util.show_error_box("Connection Error", "Could not connect to the game database.", custom_traceback=traceback)
+
+            return True
 
 def create_support_card_string(rarity, command_id, support_card_type, chara_id):
     return f"{constants.SUPPORT_CARD_RARITY_DICT[rarity]} {constants.SUPPORT_CARD_TYPE_DISPLAY_DICT[constants.SUPPORT_CARD_TYPE_DICT[(command_id, support_card_type)]]} {util.get_character_name_dict()[chara_id]}"
@@ -122,16 +146,16 @@ def get_event_title_dict():
             out[row[1]] = row[2]
     return out
 
-RACE_PROGRAM_NAME_DICT = None
-def get_race_program_name_dict():
+RACE_PROGRAM_NAME_DICT = {}
+def get_race_program_name_dict(force=False):
     global RACE_PROGRAM_NAME_DICT
-    if not RACE_PROGRAM_NAME_DICT:
+    if force or not RACE_PROGRAM_NAME_DICT:
         with Connection() as (_, cursor):
             cursor.execute(
                 """SELECT s.id, t.text FROM single_mode_program s INNER JOIN text_data t ON s.race_instance_id = t."index" AND t.category = 28"""
             )
             rows = cursor.fetchall()
-        RACE_PROGRAM_NAME_DICT = {row[0]: row[1] for row in rows}
+        RACE_PROGRAM_NAME_DICT.update({row[0]: row[1] for row in rows})
     return RACE_PROGRAM_NAME_DICT
 
 def get_skill_name_dict():
@@ -170,15 +194,16 @@ def get_outfit_name_dict():
 
     return {row[0]: row[1] for row in rows}
 
-def get_support_card_dict():
+SUPPORT_CARD_DICT = {}
+def get_support_card_dict(force=False):
     global SUPPORT_CARD_DICT
-    if not SUPPORT_CARD_DICT:
+    if force or not SUPPORT_CARD_DICT:
         with Connection() as (_, cursor):
             cursor.execute(
                 """SELECT id, rarity, command_id, support_card_type, chara_id FROM support_card_data"""
             )
             rows = cursor.fetchall()
-        SUPPORT_CARD_DICT = {row[0]: row[1:] for row in rows}
+        SUPPORT_CARD_DICT.update({row[0]: row[1:] for row in rows})
     return SUPPORT_CARD_DICT
 
 def get_support_card_type(support_data):
@@ -329,3 +354,8 @@ def determine_skill_id_from_group_id(group_id, rarity, skills_id_list):
             skills_id_list.remove(skill_id)
     
     return skill_id
+
+UPDATE_FUNCS = [
+    get_race_program_name_dict,
+    get_support_card_dict,
+]

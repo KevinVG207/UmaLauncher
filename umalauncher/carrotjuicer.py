@@ -36,12 +36,13 @@ class CarrotJuicer():
     last_data = None
     open_skill_window = False
     skill_browser = None
-    skill_id_dict = mdb.get_skill_id_dict()
     last_skills_rect = None
     skipped_msgpacks = []
 
     def __init__(self, threader):
         self.threader = threader
+
+        self.skill_id_dict = mdb.get_skill_id_dict()
 
         self.screen_state_handler = threader.screenstate
         self.restart_time()
@@ -294,6 +295,9 @@ class CarrotJuicer():
 
                 training_id = data['chara_info']['start_time']
                 if not self.training_tracker or not self.training_tracker.training_id_matches(training_id):
+                    # Update cached dicts first
+                    mdb.update_mdb_cache()
+
                     self.training_tracker = training_tracker.TrainingTracker(training_id, data['chara_info']['card_id'])
 
                 self.skills_list = []
@@ -445,6 +449,9 @@ class CarrotJuicer():
         self.previous_request = data
 
         try:
+            if 'attestation_type' in data:
+                mdb.update_mdb_cache()
+
             if 'is_force_delete' in data:
                 # Packet is a request to delete a training
                 self.end_training()
