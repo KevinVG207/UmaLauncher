@@ -84,7 +84,7 @@ def populate_race_instance(pb: data_pb2.UMDatabase, cursor: sqlite3.Cursor):
         r.id = row[0]
         r.distance = row[1]
         r.ground_type = row[2]
-        r.name = row[3]
+        r.name = row[3] or 'Unknown'
         pb.race_instance.append(r)
 
 
