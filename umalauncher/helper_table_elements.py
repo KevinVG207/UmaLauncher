@@ -113,6 +113,12 @@ class PresetSettings(se.Settings):
             True,
             se.SettingType.BOOL
         )
+        self.s_fans_enabled = se.Setting(
+            "Show fans",
+            "Displays fans in the event helper.",
+            False,
+            se.SettingType.BOOL
+        )
         self.s_schedule_enabled = se.Setting(
             "Show schedule countdown",
             "Displays the amount of turns until your next scheduled race. (If there is one.)",
@@ -121,7 +127,7 @@ class PresetSettings(se.Settings):
         )
         self.s_scenario_specific_enabled = se.Setting(
             "Show scenario specific elements",
-            "Show scenario specific elements in the event helper. \n(Grand Live tokens/Grand Masters fragments)",
+            "Show scenario specific elements in the event helper. \n(Grand Live tokens, Grand Masters fragments, Project L'Arc aptitude/supporter points & expectation gauge)",
             True,
             se.SettingType.BOOL
         )
@@ -169,6 +175,9 @@ class Preset():
 
         if self.settings.s_energy_enabled.value:
             html_elements.append(self.generate_energy(main_info))
+
+        if self.settings.s_fans_enabled.value:
+            html_elements.append(self.generate_fans(main_info))
         
         if self.settings.s_schedule_enabled.value:
             html_elements.append(self.generate_schedule(main_info))
@@ -176,6 +185,7 @@ class Preset():
         if self.settings.s_scenario_specific_enabled.value:
             html_elements.append(self.generate_gm_table(main_info))
             html_elements.append(self.generate_gl_table(main_info))
+            html_elements.append(self.generate_arc(main_info))
 
         html_elements.append(self.generate_table(command_info))
 
@@ -185,6 +195,9 @@ class Preset():
     
     def generate_energy(self, main_info):
         return f"<div id=\"energy\">Energy: {main_info['energy']}/{main_info['max_energy']}</div>"
+    
+    def generate_fans(self, main_info):
+        return f"<div id=\"fans\">Fans: {main_info['fans']:,}</div>"
     
     def generate_table(self, command_info):
         if not command_info:
@@ -253,6 +266,14 @@ class Preset():
             fan_warning = f"""<p style="color: orange; margin: 0;"><b>{fans_needed}</b> more fans needed!</p>"""
 
         return f"""<div id="schedule" style="display: flex; flex-direction: column; justify-content: center; align-items: center;"><div id="schedule-race-container" style="display: flex; align-items: center; gap: 0.5rem;">{text}{img}</div>{fan_warning}</div>"""
+
+    def generate_arc(self, main_info):
+        if main_info['scenario_id'] != 6 or main_info['turn'] < 3:
+            return ""
+
+        gauge_str = str(main_info['arc_expectation_gauge'] // 10)
+        gauge_str2 = str(main_info['arc_expectation_gauge'] % 10)
+        return f"<div id=\"arc\">Aptitude Points: {main_info['arc_aptitude_points']:,} - Supporter Points: {main_info['arc_supporter_points']:,} - Expectation Gauge: {gauge_str}.{gauge_str2}%</div>"
 
     def to_dict(self):
         return {

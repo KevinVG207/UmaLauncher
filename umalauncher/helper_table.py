@@ -188,18 +188,23 @@ class HelperTable():
                     logger.error(f"Training partner ID not found in eval dict: {partner_id}")
                     return 0
                 
-                # Ignore group and friend type cards
+                usefulness_cutoff = 80
+                
+                # Ignore group and friend type cards except Satake Mei in Project L'Arc
                 if partner_id <= 6:
                     support_card_id = data['chara_info']['support_card_array'][partner_id - 1]['support_card_id']
-                    support_card_data = mdb.get_support_card_dict()[support_card_id]
-                    support_card_type = constants.SUPPORT_CARD_TYPE_DICT[(support_card_data[1], support_card_data[2])]
-                    if support_card_type in ("group", "friend"):
-                        return 0
+
+                    if support_card_id == 30160 and scenario_id in (6,):
+                        usefulness_cutoff = 60
+                    else:
+                        support_card_data = mdb.get_support_card_dict()[support_card_id]
+                        support_card_type = constants.SUPPORT_CARD_TYPE_DICT[(support_card_data[1], support_card_data[2])]
+                        if support_card_type in ("group", "friend"):
+                            return 0
 
                 cur_bond = eval_dict[partner_id].starting_bond
                 effective_bond = 0
-
-                usefulness_cutoff = 80
+                
                 if partner_id == 102:
                     usefulness_cutoff = 60 if not scenario_id in (6,) else 0  # Disable Akikawa usefulness in certain scenarios
 
@@ -225,7 +230,8 @@ class HelperTable():
                     support_data = mdb.get_support_card_dict()[support_id]
                     support_card_type = mdb.get_support_card_type(support_data)
 
-                    if support_card_type != 'friend':
+                    # Don't count friend cards as useful except Mei Satake in Project L'Arc and Light Hello in Grand Live.
+                    if support_card_type != 'friend' or support_id == 30160 and scenario_id in (6,) or support_id == 30052 and scenario_id in (3,):
                         useful_partner_count += 1
 
                     if support_card_type not in ("group", "friend") and training_partner.starting_bond >= 80 and command['command_id'] in constants.SUPPORT_TYPE_TO_COMMAND_IDS[support_card_type]:
@@ -286,9 +292,9 @@ class HelperTable():
 
                 arc_eval_dict = {partner_data['target_id']: partner_data['chara_id'] for partner_data in data['arc_data_set']['evaluation_info_array']}
 
-                for chara_id in [arc_eval_dict[partner_id] for partner_id in command.get('training_partner_array', [])]:
-                    if chara_id in arc_charas:
-                        arc_chara = arc_charas[chara_id]
+                for arc_chara_id in [arc_eval_dict[partner_id] for partner_id in command.get('training_partner_array', [])]:
+                    if arc_chara_id in arc_charas:
+                        arc_chara = arc_charas[arc_chara_id]
                         arc_gauge_gain += min(1 + rainbow_count, 3 - arc_chara['rival_boost'])  # TODO: Try to avoid doing this right after a match is done?
 
                 # Override row data for SS Match
@@ -308,6 +314,14 @@ class HelperTable():
                             # Energy recovery
                             gained_energy += 20
 
+                        elif effect_type == 4:
+                            # Max energy up & Energy recovery
+                            gained_energy += 20
+
+                        elif effect_type == 5:
+                            # Motivation up & Energy recovery
+                            gained_energy += 20
+
                         elif effect_type == 6:
                             # Star Gauge refill
                             arc_gauge_gain += 3
@@ -316,6 +330,7 @@ class HelperTable():
                             # Aptitude points
                             arc_aptitude_gain += 50
 
+            gained_energy = min(gained_energy, max_energy - energy)
 
             command_info[command['command_id']] = {
                 'scenario_id': scenario_id,
@@ -393,6 +408,11 @@ class HelperTable():
         if 'live_data_set' in data:
             gl_stats = data['live_data_set']['live_performance_info']
 
+        # Project L'Arc Stats
+        if 'arc_data_set' in data:
+            arc_aptitude_points = data['arc_data_set']['arc_info']['global_exp']
+            arc_expectation_gauge = data['arc_data_set']['arc_info']['approval_rate']
+            arc_supporter_points = arc_charas[chara_id]['approval_point']
 
         main_info = {
             "turn": turn,
@@ -403,6 +423,9 @@ class HelperTable():
             "scheduled_races": scheduled_races,
             "gm_fragments": gm_fragments,
             "gl_stats": gl_stats,
+            "arc_aptitude_points": arc_aptitude_points,
+            "arc_expectation_gauge": arc_expectation_gauge,
+            "arc_supporter_points": arc_supporter_points,
         }
 
         overlay_html = self.selected_preset.generate_overlay(main_info, command_info)
