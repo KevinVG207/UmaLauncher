@@ -68,6 +68,7 @@ message WinsSaddle {
     repeated int32 race_instance_id = 3;
     optional int32 priority = 4;
     optional int32 group_id = 5;
+    // enum SingleModeDefine.WinSaddleType
     enum WinSaddleType {
         SPECIAL = 0;
         G3 = 1;
@@ -81,13 +82,17 @@ message SpecialCaseRace {
     optional int32 race_instance_id = 1;
     optional int32 program_group = 2;
 
+    // enum SingleModeDefine.RacePermissionType
     enum RacePermission {
         UNKNOWN_RACE_PERMISSION = 0;
-        FIRST_YEAR = 1;
-        SECOND_YEAR = 2;
-        SECOND_OR_THIRD_YEAR = 3;
-        THIRD_YEAR = 4;
-        EX = 5;
+        JUNIOR_ONLY = 1;
+        CLASSIC_ONLY = 2;
+        CLASSIC_AFTER = 3;
+        SENIOR_AFTER = 4;
+        ORIGINAL = 5;
+        HIDE_CLASSIC_AFTER = 6;
+        CLASSIC_ONLY_SENIOR = 7;
+        SENIOR_AFTER_CLASSIC = 8;
     }
     optional RacePermission race_permission = 3;
 
@@ -100,9 +105,32 @@ message Skill {
     optional string name = 2;
     optional sint32 grade_value = 3;
 
-    // Known tags:
-    // 10[1-4]: running style restricted
-    // 20[1-4]: distance type restricted
+    // enum SingleModeDefine.SkillTag
+    //    RunningStyleBegin = 100;
+    //    Nige = 101;
+    //    Senko = 102;
+    //    Sashi = 103;
+    //    Oikomi = 104;
+    //    RunningStyleEnd = 199;
+    //    DistanceBegin = 200;
+    //    Short = 201;
+    //    Mile = 202;
+    //    Middle = 203;
+    //    Long = 204;
+    //    DistanceEnd = 299;
+    //    SPEED = 401;
+    //    STAMINA = 402;
+    //    POWER = 403;
+    //    GUTS = 404;
+    //    WIZ = 405;
+    //    DOWN = 406;
+    //    SPECIAL = 407;
+    //    GroundBegin = 500;
+    //    Turf = 501;
+    //    Dirt = 502;
+    //    GroundEnd = 599;
+    //    ScenarioBegin = 800;
+    //    ScenarioEnd = 899;
     repeated string tag_id = 4;
 }
 

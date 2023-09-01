@@ -110,6 +110,7 @@ class Threader():
 
     def stop(self):
         logger.info("=== Closing launcher ===")
+        util.ignore_errors = True
         self.should_stop = True
 
 
