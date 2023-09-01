@@ -89,6 +89,10 @@ message RaceSimulateEventData {
         COMPETE_TOP = 4;
         COMPETE_FIGHT = 5;
         RELEASE_CONSERVE_POWER = 6;
+        STAMINA_LIMIT_BREAK_BUFF = 7;
+        COMPETE_BEFORE_SPURT = 8;
+        STAMINA_KEEP = 9;
+        SECURE_LEAD = 10;
     }
     optional SimulateEventType type = 2; // byte
     optional uint32 param_count = 3; // byte
