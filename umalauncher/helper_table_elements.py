@@ -268,7 +268,12 @@ class Preset():
         return f"""<div id="schedule" style="display: flex; flex-direction: column; justify-content: center; align-items: center;"><div id="schedule-race-container" style="display: flex; align-items: center; gap: 0.5rem;">{text}{img}</div>{fan_warning}</div>"""
 
     def generate_arc(self, main_info):
-        return f"<div id=\"arc\">Aptitude Points: {main_info['arc_aptitude_points']:,} - Supporter Points: {main_info['arc_supporter_points']:,} - Expectation Gauge: {round(main_info['arc_expectation_gauge'] * 0.1, 1)}%</div>"
+        if main_info['scenario_id'] != 6 or main_info['turn'] < 3:
+            return ""
+
+        gauge_str = str(main_info['arc_expectation_gauge'] // 10)
+        gauge_str2 = str(main_info['arc_expectation_gauge'] % 10)
+        return f"<div id=\"arc\">Aptitude Points: {main_info['arc_aptitude_points']:,} - Supporter Points: {main_info['arc_supporter_points']:,} - Expectation Gauge: {gauge_str}.{gauge_str2}%</div>"
 
     def to_dict(self):
         return {
