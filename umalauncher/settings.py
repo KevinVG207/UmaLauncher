@@ -328,32 +328,15 @@ class SettingsHandler():
     def get_helper_table_data(self):
         preset_dict = {preset.name: preset for preset in self.get_preset_list()}
         selected_preset_name = self["s_training_helper_table_preset"]
-        if selected_preset_name in preset_dict:
+        if self.threader.test_mode:
+            selected_preset = htd.AllPreset(htd.RowTypes)
+        elif selected_preset_name in preset_dict:
             selected_preset = preset_dict[selected_preset_name]
         else:
             selected_preset = htd.DefaultPreset(htd.RowTypes)
+
         return preset_dict, selected_preset
 
-    def update_helper_table(self):
-        logger.debug("Showing helper table preset menu.")
-        preset_dict, selected_preset = self.get_helper_table_data()
-        new_preset_list = []
-        gui.show_widget(gui.UmaPresetMenu,
-            selected_preset=selected_preset,
-            default_preset=htd.DefaultPreset(htd.RowTypes),
-            new_preset_class=hte.Preset,
-            preset_list=list(preset_dict.values()),
-            row_types_enum=htd.RowTypes,
-            output_list=new_preset_list
-        )
-        if new_preset_list:
-            logger.debug("Saving new helper table preset list.")
-            selected_preset = new_preset_list.pop(0)
-            self["s_training_helper_table_preset"] = selected_preset.name
-            self["s_training_helper_table_preset_list"] = [preset.to_dict() for preset in new_preset_list]
-            if self.threader.carrotjuicer.helper_table:
-                self.threader.carrotjuicer.helper_table.update_presets(*self.get_helper_table_data())
-            self.save_settings()
 
     def notify_server(self):
         version_str = version.VERSION

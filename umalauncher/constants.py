@@ -124,6 +124,10 @@ REQUEST_KEYS_TO_BE_REMOVED = [
     "dmm_onetime_token",
 ]
 
+RESPONSE_DATA_HEADERS_KEYS_TO_BE_REMOVED = [
+    "sid"
+]
+
 HEROES_SCORE_TO_LEAGUE_DICT = {
     0: "Bronze 1",
     1000: "Bronze 2",

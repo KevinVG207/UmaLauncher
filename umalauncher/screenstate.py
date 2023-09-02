@@ -132,8 +132,9 @@ class ScreenStateHandler():
 
     vpn = None
 
-    def __init__(self, threader):
+    def __init__(self, threader, test_mode=False):
         self.threader = threader
+        self.test_mode = test_mode
 
         self.get_available_icons()
         self.chara_names_dict = util.get_character_name_dict()
@@ -174,6 +175,9 @@ class ScreenStateHandler():
 
 
     def get_screenshot(self):
+        if self.test_mode:
+            return None
+
         if util.is_minimized(self.game_handle):
             # logger.warning("Game is minimized, cannot get screenshot.")
             return None
@@ -211,6 +215,9 @@ class ScreenStateHandler():
         if game_handle:
             self.game_handle = game_handle
             self.game_seen = True
+        elif self.test_mode:
+            self.game_handle = -1
+            self.game_seen = True
 
     def stop(self):
         self.should_stop = True
@@ -224,12 +231,12 @@ class ScreenStateHandler():
 
     def run(self):
         # Enable VPN if needed
-        if self.threader.settings["s_vpn_enabled"] and not self.threader.settings["s_vpn_dmm_only"]:
+        if not self.test_mode and self.threader.settings["s_vpn_enabled"] and not self.threader.settings["s_vpn_dmm_only"]:
             self.vpn = vpn.create_client(self.threader)
             self.vpn.connect()
 
         # If DMM is not seen AND Game is not seen: Start DMM
-        if not self.game_seen:
+        if not self.test_mode and not self.game_seen:
             if self.threader.settings["s_vpn_enabled"] and self.threader.settings["s_vpn_dmm_only"]:
                 self.vpn = vpn.create_client(self.threader)
                 self.vpn.connect()
@@ -240,7 +247,7 @@ class ScreenStateHandler():
             time.sleep(self.sleep_time)
 
             # Check if game exists
-            if self.game_handle and not win32gui.IsWindow(self.game_handle):
+            if not self.test_mode and self.game_handle and not win32gui.IsWindow(self.game_handle):
                 self.game_handle = None
 
             # Game was never seen before
@@ -256,7 +263,7 @@ class ScreenStateHandler():
                 continue
 
             # Close DMM
-            if not self.dmm_closed and self.threader.settings["s_autoclose_dmm"]:
+            if not self.test_mode and not self.dmm_closed and self.threader.settings["s_autoclose_dmm"]:
                 # Attempt to close DMM, even if it doesn't exist
                 new_dmm_handle = dmm.get_dmm_handle()
                 if new_dmm_handle:
@@ -269,7 +276,7 @@ class ScreenStateHandler():
                     self.vpn.disconnect()
                     self.vpn = None
 
-            if not self.carrotjuicer_closed and self.threader.settings["s_hide_carrotjuicer"]:
+            if not self.test_mode and not self.carrotjuicer_closed and self.threader.settings["s_hide_carrotjuicer"]:
                 carrotjuicer_handle = util.get_window_handle("Umapyoi", type=util.EXACT)
                 if carrotjuicer_handle:
                     logger.info("Attempting to minimize CarrotJuicer.")

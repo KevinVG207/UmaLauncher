@@ -42,11 +42,11 @@ class Threader():
     umaserver = None
     should_stop = False
     show_preferences = False
-    show_helper_table_dialog = False
     show_training_csv_dialog = False
     widget_queue = []
 
-    def __init__(self):
+    def __init__(self, test_mode=False):
+        self.test_mode = test_mode
         gui.THREADER = self
 
         # Set directory to find assets
@@ -61,7 +61,7 @@ class Threader():
         # Ping the server to track usage
         self.settings.notify_server()
 
-        self.screenstate = screenstate.ScreenStateHandler(self)
+        self.screenstate = screenstate.ScreenStateHandler(self, test_mode)
         THREAD_OBJECTS.append(self.screenstate)
         THREADS.append(threading.Thread(target=self.screenstate.run_with_catch, name="ScreenStateHandler"))
 
@@ -69,7 +69,7 @@ class Threader():
         THREAD_OBJECTS.append(self.umaserver)
         THREADS.append(threading.Thread(target=self.umaserver.run_with_catch, name="UmaServer"))
 
-        self.carrotjuicer = carrotjuicer.CarrotJuicer(self)
+        self.carrotjuicer = carrotjuicer.CarrotJuicer(self, test_mode)
         THREAD_OBJECTS.append(self.carrotjuicer)
         THREADS.append(threading.Thread(target=self.carrotjuicer.run_with_catch, name="CarrotJuicer"))
 
@@ -85,6 +85,8 @@ class Threader():
             thread.start()
 
         win32api.SetConsoleCtrlHandler(self.stop_signal, True)
+    
+    def run(self):
 
         while not self.should_stop:
             time.sleep(0.2)
@@ -92,10 +94,6 @@ class Threader():
             if self.show_preferences:
                 self.settings.display_preferences()
                 self.show_preferences = False
-
-            if self.show_helper_table_dialog:
-                self.settings.update_helper_table()
-                self.show_helper_table_dialog = False
             
             if self.show_training_csv_dialog:
                 training_tracker.training_csv_dialog()
@@ -154,16 +152,7 @@ def kill_threads():
         logger.info(f"Thread {thread.name} stopped")
 
 
-@logger.catch
-def main():
-    global THREADER_OBJECT
-
-    logger.info("==== Starting Launcher ====")
-    try:
-        THREADER_OBJECT = Threader()
-    except Exception:
-        util.show_error_box("Critical Error", "Uma Launcher has encountered a critical error and will now close.")
-    
+def cleanup():
     # Kill all threads that may be running
     logger.debug("Killing threads")
     kill_threads()
@@ -184,6 +173,21 @@ def main():
         os.remove(lock_path)
 
     logger.info("=== Launcher closed ===")
+
+
+@logger.catch
+def main():
+    global THREADER_OBJECT
+
+    logger.info("==== Starting Launcher ====")
+    try:
+        THREADER_OBJECT = Threader()
+        THREADER_OBJECT.run()
+    except Exception:
+        util.show_error_box("Critical Error", "Uma Launcher has encountered a critical error and will now close.")
+    
+    cleanup()
+
 
 if __name__ == "__main__":
     main()

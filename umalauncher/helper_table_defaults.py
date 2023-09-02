@@ -787,3 +787,7 @@ class DefaultPreset(hte.Preset):
         RowTypes.GAINED_SKILLPT,
         RowTypes.FAIL_PERCENTAGE,
     ]
+
+class AllPreset(hte.Preset):
+    name = "DEBUG_ALL"
+    rows = [row for row in RowTypes]

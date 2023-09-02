@@ -72,6 +72,11 @@ class TrainingTracker():
     def add_response(self, response: dict):
         logger.debug("Adding response.")
         response['_direction'] = 1
+
+        if 'data_headers' in response:
+            for key in constants.RESPONSE_DATA_HEADERS_KEYS_TO_BE_REMOVED:
+                if key in response['data_headers']:
+                    del response['data_headers'][key]
         self.add_packet(response)
 
 

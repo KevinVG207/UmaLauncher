@@ -39,8 +39,9 @@ class CarrotJuicer():
     last_skills_rect = None
     skipped_msgpacks = []
 
-    def __init__(self, threader):
+    def __init__(self, threader, test_mode=False):
         self.threader = threader
+        self.test_mode = test_mode
 
         self.skill_id_dict = mdb.get_skill_id_dict()
 
@@ -63,6 +64,9 @@ class CarrotJuicer():
 
 
     def load_request(self, msg_path):
+        if not os.path.exists(msg_path):
+            return {}
+
         try:
             with open(msg_path, "rb") as in_file:
                 unpacked = msgpack.unpackb(in_file.read()[170:], strict_map_key=False)
@@ -78,9 +82,19 @@ class CarrotJuicer():
 
 
     def load_response(self, msg_path):
+        if not os.path.exists(msg_path):
+            return {}
+
         try:
             with open(msg_path, "rb") as in_file:
-                return msgpack.unpackb(in_file.read(), strict_map_key=False)
+                unpacked = msgpack.unpackb(in_file.read(), strict_map_key=False)
+
+                if 'data_headers' in unpacked:
+                    for key in constants.RESPONSE_DATA_HEADERS_KEYS_TO_BE_REMOVED:
+                        if key in unpacked['data_headers']:
+                            del unpacked['data_headers'][key]
+                
+                return unpacked
         except PermissionError:
             logger.warning("Could not load response because it is already in use!")
             time.sleep(0.1)
@@ -193,12 +207,7 @@ class CarrotJuicer():
 
         return f"{grade_text} {self.EVENT_ID_TO_POS_STRING[event_id]}"
 
-    def handle_response(self, message, is_json=False):
-        if is_json:
-            data = message
-        else:
-            data = self.load_response(message)
-
+    def handle_response(self, data):
         if self.threader.settings["s_save_packets"]:
             logger.debug("Response:")
             logger.debug(json.dumps(data))
@@ -438,9 +447,7 @@ class CarrotJuicer():
         self.screen_state_handler.carrotjuicer_state = screenstate_utils.make_concert_state(music_id, self.threader.screenstate)
         return
 
-    def handle_request(self, message):
-        data = self.load_request(message)
-
+    def handle_request(self, data):
         if self.threader.settings["s_save_packets"]:
             logger.debug("Request:")
             logger.debug(json.dumps(data))
@@ -523,11 +530,11 @@ class CarrotJuicer():
 
         if message.endswith("R.msgpack"):
             # Response
-            self.handle_response(message)
+            self.handle_response(self.load_response(message))
 
         else:
             # Request
-            self.handle_request(message)
+            self.handle_request(self.load_request(message))
 
         self.remove_message(message)
         return
@@ -649,16 +656,29 @@ class CarrotJuicer():
                     else:
                         self.save_skill_window_rect()
 
+                # Debug packet in
                 if os.path.exists(util.get_relative("debug.in")) and util.is_debug:
                     try:
                         with open(util.get_relative("debug.in"), "r", encoding="utf-8") as f:
                             data = json.load(f)
-                        self.handle_response(data, is_json=True)
+                        self.handle_response(data)
                         os.remove(util.get_relative("debug.in"))
                     except Exception as e:
                         logger.error(traceback.format_exc())
                         pass
 
+                # Debug packet out
+                if os.path.exists(util.get_relative("debug.out")) and util.is_debug:
+                    try:
+                        with open(util.get_relative("debug.out"), "r", encoding="utf-8") as f:
+                            data = json.load(f)
+                        self.handle_request(data)
+                        os.remove(util.get_relative("debug.out"))
+                    except Exception as e:
+                        logger.error(traceback.format_exc())
+                        pass
+
+                # Check for new msgpack files.
                 messages = self.get_msgpack_batch(msg_path)
                 for message in messages:
                     self.process_message(message)

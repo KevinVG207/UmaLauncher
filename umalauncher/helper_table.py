@@ -3,6 +3,7 @@ from loguru import logger
 import mdb
 import util
 import constants
+import helper_table_defaults as htd
 from helper_table_defaults import RowTypes
 
 
@@ -22,7 +23,6 @@ class HelperTable():
     def __init__(self, carrotjuicer):
         self.carrotjuicer = carrotjuicer
         self.preset_dict = {}
-        self.selected_preset = None
         self.preset_dict, self.selected_preset = self.carrotjuicer.threader.settings.get_helper_table_data()
 
     def update_presets(self, preset_dict, selected_preset):

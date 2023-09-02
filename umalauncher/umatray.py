@@ -51,9 +51,6 @@ class UmaTray():
     def show_preferences(self):
         self.threader.show_preferences = True
 
-    def show_helper_table_dialog(self):
-        self.threader.show_helper_table_dialog = True
-
     def show_training_csv_dialog(self):
         self.threader.show_training_csv_dialog = True
 
