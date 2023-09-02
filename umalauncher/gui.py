@@ -299,6 +299,7 @@ class UmaPresetMenu(UmaMainDialog):
         self.output_list.append(self.selected_preset)
         for preset in self.preset_list:
             self.output_list.append(preset)
+        return True
 
     @qtc.pyqtSlot()
     def on_toggle_elements(self):
@@ -611,9 +612,19 @@ class UmaSettingsDialog(UmaMainDialog):
         self.load_settings()
     
     def save_settings(self):
+        new_settings_dict = {}
+
         for setting_key, value_func in self.setting_elements.items():
-            logger.debug(f"Setting {setting_key} to {value_func()}")
-            getattr(self.settings_var[0], setting_key).value = value_func()
+            try:
+                new_settings_dict[setting_key] = value_func()
+            except ValueError:
+                UmaInfoPopup(self, "Cannot save settings", f"Invalid value for {getattr(self.settings_var[0], setting_key).name}", ICONS.Critical).exec_()
+                return False
+        
+        for key, value in new_settings_dict.items():
+            logger.debug(f"Setting {key} to {value}")
+            getattr(self.settings_var[0], key).value = value
+        return True
 
     def add_group_box(self, setting):
         grp_setting = qtw.QGroupBox(self.scrollAreaWidgetContents)
@@ -746,6 +757,7 @@ class UmaSettingsDialog(UmaMainDialog):
         sizePolicy3.setHeightForWidth(lbl_picked_color.sizePolicy().hasHeightForWidth())
         lbl_picked_color.setSizePolicy(sizePolicy3)
         lbl_picked_color.setMaximumSize(qtc.QSize(20, 20))
+        lbl_picked_color.setMinimumSize(qtc.QSize(20, 20))
         lbl_picked_color.setAutoFillBackground(False)
         lbl_picked_color.setStyleSheet(f"background-color: {setting.value};")
         lbl_picked_color.setText("")
@@ -856,8 +868,9 @@ class UmaPresetSettingsDialog(UmaSettingsDialog):
         self.btn_save_close.clicked.connect(self.save_and_close)
     
     def save_and_close(self):
-        self.save_settings()
-        self.close()
+        success = self.save_settings()
+        if success:
+            self.close()
 
 
 class UmaGeneralSettingsDialog(UmaSettingsDialog):
@@ -933,10 +946,14 @@ class UmaPreferences(UmaMainWidget):
     
     def save_and_close(self):
         # Save general settings
-        self.general_widget.save_settings()
+        success = self.general_widget.save_settings()
+        if not success:
+            return
 
         # Save presets
-        self.presets_widget.save_settings()
+        success = self.presets_widget.save_settings()
+        if not success:
+            return
 
         self.has_saved = True
         self.close()
@@ -1107,7 +1124,7 @@ class UmaErrorPopup(qtw.QMessageBox):
     def __init__(self, parent, title: str, message: str, traceback_str: str, user_id: str, msg_icon: qtw.QMessageBox.Icon = qtw.QMessageBox.Icon.Information):
         super().__init__()
         self.setWindowTitle(title)
-        self.setText(f"<b>{message}</b><br>{traceback_str}<br><b>You may send this error report to the developer to help fix this issue.</b>")
+        self.setText(f"<b>{message}<br>You may send this error report to the developer to help fix this issue.<br>If an error appears multiple times, please join the <a href=\"https://discord.gg/wvGHW65C6A\">Discord server</a>, because the developer might need your help to fix the issue.</b><br>{traceback_str}")
         upload_button = qtw.QPushButton("Send error report")
         upload_button.clicked.connect(lambda: self.upload_error_report(traceback_str, user_id))
         self.addButton(upload_button, qtw.QMessageBox.ButtonRole.ActionRole)

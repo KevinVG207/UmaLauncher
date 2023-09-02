@@ -164,7 +164,7 @@ class BrowserWindow:
 
         self.driver = self.init_browser()
     
-        if not self.driver:
+        if not self.driver or not self.driver.window_handles:
             return
 
         self.active_tab_handle = self.driver.window_handles[0]

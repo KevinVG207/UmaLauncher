@@ -189,6 +189,11 @@ class CommandType(Enum):
     SummerPower = 603
     SummerGuts = 604
     SummerWisdom = 605
+    OverseasSpeed = 1101
+    OverseasStamina = 1102
+    OverseasPower = 1103
+    OverseasGuts = 1104
+    OverseasWisdom = 1105
 
 
 @dataclass
@@ -299,6 +304,10 @@ class TrainingAnalyzer():
                     self.card_id = chara_info['card_id']
                     self.chara_id = int(str(self.card_id)[:4])
                     self.support_cards = chara_info['support_card_array']
+                
+                # TODO: Fix L'Arc
+                # if self.scenario_id == 6:
+                #     raise NotImplementedError("Sorry, the Project L'Arc scenario is not supported yet due to unforeseen problems.")
 
                 # Create base action
                 action = TrainingAction(
@@ -506,8 +515,16 @@ class TrainingAnalyzer():
             match = re.match(r'80(\d{4})003', str(story_id))
             if match:
                 # Skill hint
+
+                # TODO: All skill hints seem to have become story_id 801000003.
+                # Checking for chara_id in story_id is not possible anymore.
+                # Instead, the partner_id is in prev_resp['unchecked_event_array'][0]['event_contents_info']['tips_training_partner_id']
+                # Need to manually match that up to the training partner and then chara_id.
+                # The old code needs to still exist for backwards compatibility.
+                # Maybe add a check if match.group(1) == 1000
+
                 action.action_type = ActionType.SkillHint
-                action.text = self.chara_names_dict[int(match.group(1))]
+                action.text = self.chara_names_dict[int(match.group(1))] if int(match.group(1)) in self.chara_names_dict else "Unknown Chara"
                 action.action_type = ActionType.SkillHint
                 return
 
@@ -717,11 +734,15 @@ class TrainingCombiner:
                 training_name, _ = os.path.splitext(training_name)
                 training_analyzer.set_training_tracker(TrainingTracker(training_name, full_path=os.path.splitext(training_path)[0]))
                 csvs.append(training_analyzer.to_csv_list())
+            except NotImplementedError as e:
+                util.show_error_box_no_report(f"Error while generating CSV for {training_name}", str(e))
+                self.result.append(False)
+                return
             except Exception:
                 logger.error(traceback.format_exc())
-                util.show_error_box("Error", f"Error while generating CSV for {training_path}")
+                util.show_error_box("Error", f"Error while generating CSV for {training_name}")
                 self.result.append(False)
-                logger.debug("Error while generating CSV for %s", training_path)
+                logger.debug(f"Error while generating CSV for {training_path}")
                 return
 
         with open(self.output_file_path, 'w', encoding='utf-8') as csv_file:

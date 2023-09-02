@@ -240,9 +240,9 @@ class GainedEnergyRow(hte.Row):
             gained_energy = command['gained_energy']
             if self.settings.s_enable_colors.value:
                 if gained_energy > 0:
-                    cells.append(hte.Cell(gained_energy, color=self.settings.s_gain_color.value))
+                    cells.append(hte.Cell(gained_energy, bold=True, color=self.settings.s_gain_color.value))
                 elif gained_energy < 0:
-                    cells.append(hte.Cell(gained_energy, color=self.settings.s_loss_color.value))
+                    cells.append(hte.Cell(gained_energy, bold=True, color=self.settings.s_loss_color.value))
                 else:
                     cells.append(hte.Cell(gained_energy))
             else:
