@@ -52,6 +52,10 @@ class HelperTable():
         max_energy = data['chara_info']['max_vital']
         fans = data['chara_info']['fans']
 
+        arc_aptitude_points = 0
+        arc_expectation_gauge = 0
+        arc_supporter_points = 0
+
         command_info = {}
 
         all_commands = {}
