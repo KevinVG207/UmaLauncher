@@ -52,7 +52,7 @@ class Setting():
     max_value: int = None
     choices: list = None
 
-    def __init__(self, name, description, value, type, priority=0, min_value=0, max_value=100, choices=None):
+    def __init__(self, name, description, value, type, priority=0, min_value=0, max_value=100, choices=None, tab=" General"):
         self.name = name
         self.description = description
         self.value = value
@@ -61,3 +61,4 @@ class Setting():
         self.min_value = min_value
         self.max_value = max_value
         self.choices = choices if choices else []
+        self.tab = tab
