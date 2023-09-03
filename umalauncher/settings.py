@@ -62,7 +62,7 @@ class DefaultSettings(se.Settings):
             "Automatically close DMM Game Player when the game is launched.",
             True,
             se.SettingType.BOOL,
-            priority=95
+            priority=94
         )
         self.s_lock_game_window = se.Setting(
             "Lock game window",
@@ -97,14 +97,14 @@ class DefaultSettings(se.Settings):
             "Track training events in /training_logs as gzip files.",
             True,
             se.SettingType.BOOL,
-            priority=96
+            priority=95
         )
         self.s_game_install_path = se.Setting(
             "Game install path",
-            "Path to the game's installation folder.",
+            "Path to the game's installation folder. (Where DMM installed the game and umamusume.exe is located.)",
             "%userprofile%/Umamusume",
             se.SettingType.FOLDERDIALOG,
-            priority=-1
+            priority=96
         )
         self.s_game_position_portrait = se.Setting(
             "Game position (portrait)",
