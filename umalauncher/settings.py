@@ -167,6 +167,14 @@ class DefaultSettings(se.Settings):
             se.SettingType.LIST,
             priority=-1
         )
+        self.s_vpn_message = se.Setting(
+            "VPN Help",
+            """<p>Automatic VPN is still experimental. Please report any issues you encounter.<br>For a guide on how to set up automatic VPN, see the guide on the <a href="https://github.com/KevinVG207/UmaLauncher/blob/main/FAQ.md">Frequently Asked Questions</a> page.</p>""",
+            None,
+            se.SettingType.MESSAGE,
+            priority=100,
+            tab="VPN"
+        )
         self.s_vpn_enabled = se.Setting(
             "Auto-VPN enabled",
             "Connect to VPN when Uma Launcher is started.<br>For OpenVPN and SoftEther: A random JP server<br>will be chosen from VPN Gate to connect to.<br>NordVPN will connect to Japan.",
