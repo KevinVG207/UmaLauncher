@@ -71,6 +71,15 @@ You will need to do this again when the game switches into landscape mode.
 
 </details>
 
+<details>
+<summary><b>DMMGamePlayer opens but the game never starts!</b></summary>
+
+This happens if there is an update available for Uma Musume. You will need to update the game manually.<br>
+Move to the "My Games" (マイゲーム) page and click the orange button when you hover over the Uma Musume game image.<br>
+The way DMM works makes it impossible to automate this process. (In an old version of DMM, it would properly show the update popup, but that is no longer the case.)<br>
+If you want to know when there is an update available, you can follow either Umapyoi.net's Twitter account, or the official Japanese Uma Musume Twitter account.
+
+</details>
 
 <details>
 <summary><b>What OS does Uma Launcher support?</b></summary>
