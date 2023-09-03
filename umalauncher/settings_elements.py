@@ -11,6 +11,7 @@ class SettingType(enum.Enum):
     RADIOBUTTONS = "radiobuttons"
     FOLDERDIALOG = "folderdialog"
     FILEDIALOG = "filedialog"
+    MESSAGE = "message"
 
 
 class Settings():
@@ -19,7 +20,7 @@ class Settings():
 
     def to_dict(self):
         settings = self.get_settings_keys()
-        return {setting: getattr(self, setting).value for setting in settings} if settings else {}
+        return {setting: getattr(self, setting).value for setting in settings if getattr(self, setting).type != SettingType.MESSAGE} if settings else {}
 
     def import_dict(self, settings_dict, keep_undefined=False):
         for key, value in settings_dict.items():

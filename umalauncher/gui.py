@@ -600,8 +600,11 @@ class UmaSettingsDialog(UmaMainDialog):
 
             if not group_box:
                 continue
-
-            self.setting_elements[setting_key] = value_func
+            
+            # Only add elements that have a value_func.
+            # This lets us add elements like messages.
+            if value_func:
+                self.setting_elements[setting_key] = value_func
 
             if setting_key == last_setting:
                 self.verticalLayout.addWidget(group_box, 0, qtc.Qt.AlignTop)
@@ -653,9 +656,12 @@ class UmaSettingsDialog(UmaMainDialog):
         lbl_setting_description.setWordWrap(True)
         lbl_setting_description.setAlignment(qtc.Qt.AlignTop)
 
-        # sizePolicy2 = qtw.QSizePolicy(qtw.QSizePolicy.Expanding, qtw.QSizePolicy.Preferred)
         # Make sure the label expands vertically to fit the text if it is very long.
-        sizePolicy2 = qtw.QSizePolicy(qtw.QSizePolicy.Expanding, qtw.QSizePolicy.Minimum)
+        if setting.type == se.SettingType.MESSAGE:
+            lbl_setting_description.setOpenExternalLinks(True)
+            sizePolicy2 = qtw.QSizePolicy(qtw.QSizePolicy.Minimum, qtw.QSizePolicy.Minimum)
+        else:
+            sizePolicy2 = qtw.QSizePolicy(qtw.QSizePolicy.Expanding, qtw.QSizePolicy.Minimum)
         sizePolicy2.setHorizontalStretch(0)
         sizePolicy2.setVerticalStretch(0)
         sizePolicy2.setHeightForWidth(lbl_setting_description.sizePolicy().hasHeightForWidth())
@@ -664,7 +670,10 @@ class UmaSettingsDialog(UmaMainDialog):
         horizontalLayout.addWidget(lbl_setting_description)
 
         input_widgets = []
-        if setting.type == se.SettingType.BOOL:
+        value_func = None
+        if setting.type == se.SettingType.MESSAGE:
+            input_widgets = [None]
+        elif setting.type == se.SettingType.BOOL:
             input_widgets, value_func = self.add_checkbox(setting, grp_setting)
         elif setting.type == se.SettingType.INT:
             input_widgets, value_func = self.add_spinbox(setting, grp_setting)
@@ -686,10 +695,10 @@ class UmaSettingsDialog(UmaMainDialog):
             return None, None
 
         for input_widget in input_widgets:
-            horizontalLayout.addWidget(input_widget)
+            if input_widget:
+                horizontalLayout.addWidget(input_widget)
 
         return grp_setting, value_func
-
 
     def add_checkbox(self, setting, parent):
         ckb_setting_checkbox = qtw.QCheckBox(parent)
