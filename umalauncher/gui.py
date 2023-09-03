@@ -659,9 +659,8 @@ class UmaSettingsDialog(UmaMainDialog):
         # Make sure the label expands vertically to fit the text if it is very long.
         if setting.type == se.SettingType.MESSAGE:
             lbl_setting_description.setOpenExternalLinks(True)
-            sizePolicy2 = qtw.QSizePolicy(qtw.QSizePolicy.Minimum, qtw.QSizePolicy.Minimum)
-        else:
-            sizePolicy2 = qtw.QSizePolicy(qtw.QSizePolicy.Expanding, qtw.QSizePolicy.Minimum)
+
+        sizePolicy2 = qtw.QSizePolicy(qtw.QSizePolicy.Minimum, qtw.QSizePolicy.Minimum)
         sizePolicy2.setHorizontalStretch(0)
         sizePolicy2.setVerticalStretch(0)
         sizePolicy2.setHeightForWidth(lbl_setting_description.sizePolicy().hasHeightForWidth())
@@ -687,6 +686,8 @@ class UmaSettingsDialog(UmaMainDialog):
             input_widgets, value_func = self.add_radiobuttons(setting, grp_setting)
         elif setting.type == se.SettingType.FILEDIALOG:
             input_widgets, value_func = self.add_filedialog(setting, grp_setting)
+        elif setting.type == se.SettingType.FOLDERDIALOG:
+            input_widgets, value_func = self.add_folderdialog(setting, grp_setting)
         
         if not input_widgets:
             logger.debug(f"{setting.type} not implemented for {setting.name}")
@@ -833,21 +834,13 @@ class UmaSettingsDialog(UmaMainDialog):
 
 
     def add_filedialog(self, setting, parent):
-        grp_box = qtw.QGroupBox(parent)
-        grp_box.setObjectName(f"grp_box_{setting.name}")
-
-        horizontalLayout = qtw.QHBoxLayout(grp_box)
-        horizontalLayout.setObjectName(f"horizontal_layout_{setting.name}")
-
-        line_edit = qtw.QLineEdit(grp_box)
+        line_edit = qtw.QLineEdit(parent)
         line_edit.setObjectName(f"lineEdit_{setting.name}")
         line_edit.setMinimumSize(qtc.QSize(150, 0))
         line_edit.setMaximumSize(qtc.QSize(150, 16777215))
         line_edit.setText(setting.value)
 
-        horizontalLayout.addWidget(line_edit)
-
-        browse_button = qtw.QPushButton(grp_box)
+        browse_button = qtw.QPushButton(parent)
         browse_button.setObjectName(f"pushButton_{setting.name}")
         sizePolicy4 = qtw.QSizePolicy(qtw.QSizePolicy.Fixed, qtw.QSizePolicy.Fixed)
         sizePolicy4.setHorizontalStretch(0)
@@ -858,8 +851,6 @@ class UmaSettingsDialog(UmaMainDialog):
         browse_button.setMaximumSize(qtc.QSize(50, 16777215))
         browse_button.setText(u"Browse")
 
-        horizontalLayout.addWidget(browse_button)
-
         def browse():
             tmp_path = qtw.QFileDialog.getOpenFileName(parent, "Select file", line_edit.text())
             if tmp_path[0]:
@@ -867,7 +858,38 @@ class UmaSettingsDialog(UmaMainDialog):
 
         browse_button.clicked.connect(browse)
 
-        return [grp_box], lambda: line_edit.text()
+        return [line_edit, browse_button], lambda: line_edit.text()
+
+
+    def add_folderdialog(self, setting, parent):
+        line_edit = qtw.QLineEdit(parent)
+        line_edit.setObjectName(f"lineEdit_{setting.name}")
+        line_edit.setMinimumSize(qtc.QSize(150, 0))
+        line_edit.setMaximumSize(qtc.QSize(150, 16777215))
+        line_edit.setText(setting.value)
+
+        browse_button = qtw.QPushButton(parent)
+        browse_button.setObjectName(f"pushButton_{setting.name}")
+        sizePolicy4 = qtw.QSizePolicy(qtw.QSizePolicy.Fixed, qtw.QSizePolicy.Fixed)
+        sizePolicy4.setHorizontalStretch(0)
+        sizePolicy4.setVerticalStretch(0)
+        sizePolicy4.setHeightForWidth(browse_button.sizePolicy().hasHeightForWidth())
+        browse_button.setSizePolicy(sizePolicy4)
+        browse_button.setMinimumSize(qtc.QSize(50, 0))
+        browse_button.setMaximumSize(qtc.QSize(50, 16777215))
+        browse_button.setText(u"Browse")
+
+        def browse():
+            tmp_path = qtw.QFileDialog.getExistingDirectory(parent, "Select folder", line_edit.text())
+            if tmp_path:
+                line_edit.setText(tmp_path)
+            # tmp_path = qtw.QFileDialog.getOpenFileName(parent, "Select file", line_edit.text())
+            # if tmp_path[0]:
+            #     line_edit.setText(tmp_path[0])
+
+        browse_button.clicked.connect(browse)
+
+        return [line_edit, browse_button], lambda: line_edit.text()
 
 
     def add_lineedit(self, setting, parent):
