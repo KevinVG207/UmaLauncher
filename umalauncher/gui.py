@@ -534,9 +534,10 @@ class UmaNewPresetDialog(UmaMainDialog):
         self.close()
 
 class UmaSettingsDialog(UmaMainDialog):
-    def init_ui(self, settings_var, window_title="Change options", *args, **kwargs):
+    def init_ui(self, settings_var, tab=" General", window_title="Change options", *args, **kwargs):
         self.setting_elements = {}
         self.settings_var = settings_var
+        self.tab = tab
 
         self.resize(481, 401)
         # Disable resizing
@@ -591,7 +592,8 @@ class UmaSettingsDialog(UmaMainDialog):
         for setting_key in settings_keys:
             setting = getattr(self.settings_var[0], setting_key)
 
-            if setting.priority < 0:
+            # Filter tab and priority
+            if setting.priority < 0 or setting.tab != self.tab:
                 continue
 
             group_box, value_func = self.add_group_box(setting)
@@ -607,7 +609,14 @@ class UmaSettingsDialog(UmaMainDialog):
                 self.verticalLayout.addWidget(group_box)
     
     def restore_defaults(self):
-        self.settings_var[0] = type(self.settings_var[0])()
+        default_settings_var = type(self.settings_var[0])()
+        for setting_key in default_settings_var.get_settings_keys():
+            setting = getattr(default_settings_var, setting_key)
+            if setting.priority < 0 or setting.tab != self.tab:
+                continue
+            logger.debug(f"Resetting {setting_key} to {setting.value}")
+            getattr(self.settings_var[0], setting_key).value = setting.value
+
         self.settings_elements = {}
         self.load_settings()
     
@@ -896,13 +905,23 @@ class UmaPreferences(UmaMainWidget):
         self.tabWidget.setSizePolicy(qtw.QSizePolicy.Preferred, qtw.QSizePolicy.Preferred)
         self.tabWidget.currentChanged.connect(self.tab_changed)
 
-        self.general_widget = UmaGeneralSettingsDialog(self, general_var)
-        # self.general_widget.setFixedSize(self.general_widget.size())
-        # self.general_widget.setSizePolicy(qtw.QSizePolicy.Fixed, qtw.QSizePolicy.Fixed)
+        unique_tabs = {getattr(general_var[0], key).tab for key in general_var[0].get_settings_keys()}
 
-        self.tab_general = self.general_widget
-        self.tab_general.setObjectName("tab_general")
-        self.tabWidget.addTab(self.tab_general, "General")
+        self.settings_widgets = []
+
+        for tab in sorted(list(unique_tabs)):
+            tab_widget = UmaGeneralSettingsDialog(self, general_var, tab=tab)
+            tab_widget.setObjectName(f"tab_{tab}")
+            self.settings_widgets.append(tab_widget)
+            self.tabWidget.addTab(tab_widget, tab.lstrip(" "))
+
+        # self.general_widget = UmaGeneralSettingsDialog(self, general_var)
+        # # self.general_widget.setFixedSize(self.general_widget.size())
+        # # self.general_widget.setSizePolicy(qtw.QSizePolicy.Fixed, qtw.QSizePolicy.Fixed)
+
+        # self.tab_general = self.general_widget
+        # self.tab_general.setObjectName("tab_general")
+        # self.tabWidget.addTab(self.tab_general, "General")
 
         self.presets_widget = UmaPresetMenu(self,
             selected_preset=selected_preset,
@@ -946,9 +965,10 @@ class UmaPreferences(UmaMainWidget):
     
     def save_and_close(self):
         # Save general settings
-        success = self.general_widget.save_settings()
-        if not success:
-            return
+        for widget in self.settings_widgets:
+            success = widget.save_settings()
+            if not success:
+                return
 
         # Save presets
         success = self.presets_widget.save_settings()
