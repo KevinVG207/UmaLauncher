@@ -63,6 +63,16 @@ You may still report issues you have with Chromium-based browsers.
 </details>
 
 <details>
+<summary><b>I can't move my game window!</b></summary>
+
+Right-click the horseshoe icon and uncheck `Lock game window`. You should now be able to move the game window.<br>
+When you are done moving the window, re-enable `Lock game window` and it will remember the position of the game window.<br>
+You will need to do this again when the game switches into landscape mode.
+
+</details>
+
+
+<details>
 <summary><b>What OS does Uma Launcher support?</b></summary>
 
 Uma Launcher is only built for and tested on Windows 10. It should work with Windows 11 as well.<br>
