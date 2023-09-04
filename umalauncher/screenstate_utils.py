@@ -57,3 +57,11 @@ def make_scouting_state(handler: ss.ScreenStateHandler, team_score, outfit_id) -
     new_state.set_chara(chara_id, outfit_id=int(outfit_id), small_text="Team Leader")
 
     return new_state
+
+def make_claw_machine_state(packet_data, handler: ss.ScreenStateHandler) -> ss.ScreenState:
+    new_state = ss.ScreenState(handler)
+    new_state.location = ss.Location.CLAW_MACHINE
+    new_state.main = "Trying their luck at the Claw Machine"
+    new_state.sub = f"Total plushies collected: ?"
+    new_state.large_image = "claw_machine"
+    return new_state
