@@ -61,7 +61,12 @@ def make_scouting_state(handler: ss.ScreenStateHandler, team_score, outfit_id) -
 def make_claw_machine_state(packet_data, handler: ss.ScreenStateHandler) -> ss.ScreenState:
     new_state = ss.ScreenState(handler)
     new_state.location = ss.Location.CLAW_MACHINE
-    new_state.main = "Trying their luck at the Claw Machine"
-    new_state.sub = f"Total plushies collected: ?"
+    new_state.main = "Playing the Claw Machine"
     new_state.large_image = "claw_machine"
+
+    count = 0
+    for plushie in packet_data['collected_plushies']:
+        count += plushie['count']
+
+    new_state.sub = f"Total plushies: {count}"
     return new_state
