@@ -2,6 +2,7 @@ from loguru import logger
 import screenstate as ss
 import util
 import constants
+import mdb
 
 def _make_default_training_state(data, handler) -> ss.ScreenState:
     new_state = ss.ScreenState(handler)
@@ -64,9 +65,13 @@ def make_claw_machine_state(packet_data, handler: ss.ScreenStateHandler) -> ss.S
     new_state.main = "Playing the Claw Machine"
     new_state.large_image = "claw_machine"
 
-    count = 0
+    unique_count = 0
+    total_count = 0
     for plushie in packet_data['collected_plushies']:
-        count += plushie['count']
+        unique_count += 1
+        total_count += plushie['count']
+    
+    total_unique_count = mdb.get_total_minigame_plushies()
 
-    new_state.sub = f"Total plushies: {count}"
+    new_state.sub = f"Collected: {unique_count} / {total_unique_count} Total: {total_count}"
     return new_state
