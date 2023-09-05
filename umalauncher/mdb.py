@@ -401,6 +401,21 @@ def determine_skill_id_from_group_id(group_id, rarity, skills_id_list):
     
     return skill_id
 
+def get_total_minigame_plushies(force=False):
+    with Connection() as (_, cursor):
+        cursor.execute(
+            """SELECT chara_id FROM card_data c WHERE default_rarity != 0;"""
+        )
+        rows = cursor.fetchall()
+    
+    total_charas = set()
+    total_plushies = len(rows)
+
+    for row in rows:
+        total_charas.add(row[0])
+    
+    return 3 * (total_plushies + len(total_charas))
+
 UPDATE_FUNCS = [
     get_event_title_dict,
     get_race_program_name_dict,
