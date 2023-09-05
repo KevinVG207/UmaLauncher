@@ -69,7 +69,8 @@ class DefaultSettings(se.Settings):
             "Lock the game window to prevent accidental resizing.",
             True,
             se.SettingType.BOOL,
-            priority=-1
+            priority=100,
+            tab="Position"
         )
         self.s_discord_rich_presence = se.Setting(
             "Discord rich presence",
@@ -110,29 +111,39 @@ class DefaultSettings(se.Settings):
             "Game position (portrait)",
             "Position of the game window in portrait mode.",
             None,
-            se.SettingType.LIST,
+            se.SettingType.XYWHSPINBOXES,
             priority=-1
         )
         self.s_game_position_landscape = se.Setting(
             "Game position (landscape)",
             "Position of the game window in landscape mode.",
             None,
-            se.SettingType.LIST,
+            se.SettingType.XYWHSPINBOXES,
             priority=-1
         )
         self.s_browser_position = se.Setting(
             "Browser position",
             "Position of the browser window.",
             None,
-            se.SettingType.LIST,
-            priority=-1
+            se.SettingType.XYWHSPINBOXES,
+            priority=70,
+            tab="Position"
         )
         self.s_skills_position = se.Setting(
             "Skills browser position",
             "Position of the skills browser window.",
             None,
-            se.SettingType.LIST,
-            priority=-1
+            se.SettingType.XYWHSPINBOXES,
+            priority=60,
+            tab="Position"
+        )
+        self.s_maximize_safezone = se.Setting(
+            "Safezone for \"Maximize + center game\" in tray menu",
+            "Amount of pixels to leave around the game window when maximizing.<br><b>If you are having issues streaming the game on Discord,</b> try adding a safezone of at least 8 pixels where your taskbar is.",
+            None,
+            se.SettingType.LRTBSPINBOXES,
+            priority=50,
+            tab="Position"
         )
         self.s_selected_browser = se.Setting(
             "Selected browser",

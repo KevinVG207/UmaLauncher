@@ -7,8 +7,9 @@ class GameWindow():
     # Object to be shared with Threader and holds functions to manipulate the game window.
     carrotjuicer_maximized_trigger = False
 
-    def __init__(self, handle):
+    def __init__(self, handle, threader):
         self.handle = handle
+        self.threader = threader
         return
 
     def get_rect(self):
@@ -41,6 +42,18 @@ class GameWindow():
         if not workspace_rect:
             logger.error("Cannot find workspace of game window")
             return
+        
+        # Apply safezone from settings
+        safezone = self.threader.settings["s_maximize_safezone"]
+        if not safezone:
+            safezone = [0, 0, 0, 0]  # Left, Right, Top, Bottom
+        
+        workspace_rect = [
+            workspace_rect[0] + safezone[0],
+            workspace_rect[1] + safezone[2],
+            workspace_rect[2] - safezone[1],
+            workspace_rect[3] - safezone[3]
+        ]
 
         # Get the current game rect, dejankify it and turn it into pos.
         game_rect, is_portrait = self.get_rect()
@@ -130,7 +143,7 @@ class WindowMover():
             new_pos, is_portrait = self.window.calc_max_and_center_pos()
             self.threader.settings.save_game_position(new_pos, is_portrait)
             self.window.set_pos(new_pos)
-            self.threader.carrotjuicer.reset_browser = True
+            # self.threader.carrotjuicer.reset_browser = True
 
     def stop(self):
         self.should_stop = True
@@ -146,7 +159,7 @@ class WindowMover():
         while not self.should_stop and not self.screenstate.game_handle:
             time.sleep(0.25)
 
-        self.window = GameWindow(self.screenstate.game_handle)
+        self.window = GameWindow(self.screenstate.game_handle, self.threader)
 
         while not self.should_stop and self.screenstate.game_handle:
             time.sleep(0.25)
