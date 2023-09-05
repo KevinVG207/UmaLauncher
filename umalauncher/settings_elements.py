@@ -12,6 +12,8 @@ class SettingType(enum.Enum):
     FOLDERDIALOG = "folderdialog"
     FILEDIALOG = "filedialog"
     MESSAGE = "message"
+    XYWHSPINBOXES = "xywhspinboxes"
+    LRTBSPINBOXES = "lrtbspinboxes"
 
 
 class Settings():

@@ -1,4 +1,5 @@
 import copy
+import math
 from loguru import logger
 import PyQt5.QtCore as qtc
 import PyQt5.QtWidgets as qtw
@@ -688,6 +689,10 @@ class UmaSettingsDialog(UmaMainDialog):
             input_widgets, value_func = self.add_filedialog(setting, grp_setting)
         elif setting.type == se.SettingType.FOLDERDIALOG:
             input_widgets, value_func = self.add_folderdialog(setting, grp_setting)
+        elif setting.type == se.SettingType.XYWHSPINBOXES:
+            input_widgets, value_func = self.add_multi_spinboxes(setting, grp_setting, ['Left', 'Top', 'Width', 'Height'])
+        elif setting.type == se.SettingType.LRTBSPINBOXES:
+            input_widgets, value_func = self.add_multi_spinboxes(setting, grp_setting, ['Left', 'Right', 'Top', 'Bottom'])
         
         if not input_widgets:
             logger.debug(f"{setting.type} not implemented for {setting.name}")
@@ -766,6 +771,56 @@ class UmaSettingsDialog(UmaMainDialog):
             radio_buttons.append(rdb_setting_radiobutton)
 
         return [grp_box], lambda: {rdb.text(): rdb.isChecked() for rdb in radio_buttons}
+
+    def add_multi_spinboxes(self, setting, parent, names=['Left', 'Top', 'Width', 'Height']):
+        grp_box = qtw.QGroupBox(parent)
+        grp_box.setObjectName(f"grp_box_{setting.name}")
+        grp_box.setSizePolicy(qtw.QSizePolicy(qtw.QSizePolicy.Maximum, qtw.QSizePolicy.Maximum))
+        grp_box.setStyleSheet("QGroupBox { border: 0; }")
+
+        vert_layout = qtw.QVBoxLayout(grp_box)
+        vert_layout.setObjectName(f"vert_layout_{setting.name}")
+        vert_layout.setContentsMargins(0, 0, 0, 0)
+        vert_layout.setSpacing(0)
+        vert_layout.setAlignment(qtc.Qt.AlignTop)
+
+        spinboxes = []
+
+        for i in range(len(names)):
+            horizontalLayout = qtw.QHBoxLayout()
+            horizontalLayout.setObjectName(f"horizontalLayout_{setting.name}_{names[i]}")
+            horizontalLayout.setAlignment(qtc.Qt.AlignRight|qtc.Qt.AlignVCenter)
+            horizontalLayout.setSpacing(3)
+
+            lbl_setting_label = qtw.QLabel(grp_box)
+            lbl_setting_label.setObjectName(f"lbl_setting_{setting.name}_{names[i]}")
+            lbl_setting_label.setText(names[i])
+            horizontalLayout.addWidget(lbl_setting_label)
+
+            spn_setting_spinbox = qtw.QSpinBox(grp_box)
+            spn_setting_spinbox.setMaximum(int(math.pow(2, 31) - 1))
+            spn_setting_spinbox.setMinimum(int(-math.pow(2, 31)))
+            spn_setting_spinbox.setObjectName(f"spn_setting_{setting.name}_{names[i]}")
+            sizePolicy = qtw.QSizePolicy(qtw.QSizePolicy.Fixed, qtw.QSizePolicy.Fixed)
+            sizePolicy.setHorizontalStretch(0)
+            sizePolicy.setVerticalStretch(0)
+            sizePolicy.setHeightForWidth(spn_setting_spinbox.sizePolicy().hasHeightForWidth())
+            spn_setting_spinbox.setSizePolicy(sizePolicy)
+            spn_setting_spinbox.setMinimumSize(qtc.QSize(50, 0))
+            spn_setting_spinbox.setAlignment(qtc.Qt.AlignRight|qtc.Qt.AlignVCenter)
+            spn_setting_spinbox.setValue(setting.value[i] if setting.value and i < len(setting.value) else 0)
+            
+            horizontalLayout.addWidget(spn_setting_spinbox)
+            vert_layout.addLayout(horizontalLayout)
+            spinboxes.append(spn_setting_spinbox)
+        
+        def get_values():
+            lst = [spn.value() for spn in spinboxes]
+            if all(value == 0 for value in lst):
+                return None
+            return lst
+
+        return [grp_box], lambda: get_values()
 
     def add_colorpicker(self, setting, parent):
         lbl_picked_color = qtw.QLabel(parent)
