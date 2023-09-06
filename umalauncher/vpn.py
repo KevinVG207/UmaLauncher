@@ -12,14 +12,15 @@ def create_client(threader):
     vpn_radiobutton_status = threader.settings['s_vpn_client']
 
     if vpn_radiobutton_status['OpenVPN']:
-        return OpenVPNClient(threader.settings['s_vpn_client_path'], threader.settings['s_vpn_ip_override'])
+        return OpenVPNClient(threader, threader.settings['s_vpn_client_path'], threader.settings['s_vpn_ip_override'])
     elif vpn_radiobutton_status['NordVPN']:
-        return NordVPNClient(threader.settings['s_vpn_client_path'])
+        return NordVPNClient(threader, threader.settings['s_vpn_client_path'])
     elif vpn_radiobutton_status['SoftEther']:
-        return SoftEtherClient(threader.settings['s_vpn_ip_override'])
+        return SoftEtherClient(threader, threader.settings['s_vpn_ip_override'])
 
 class VPNClient:
-    def __init__(self, exe_path=""):
+    def __init__(self, threader, exe_path=""):
+        self.threader = threader
         self.exe_path = exe_path
         self.timeout = 30
 
@@ -103,6 +104,7 @@ class VPNClient:
         pass
 
     def connect(self):
+        self.threader.tray.set_connecting()
         before_ip = self._get_ip()
         try:
             success = self._connect()
@@ -114,6 +116,7 @@ class VPNClient:
             return False
 
         if not success:
+            self._disconnect()
             return False
 
         check_start_time = time.time()
@@ -132,6 +135,7 @@ class VPNClient:
         
         logger.info('VPN connected')
         time.sleep(4)
+        self.threader.tray.set_connected()
         return True
     
     def _disconnect(self):
@@ -139,12 +143,13 @@ class VPNClient:
 
     def disconnect(self):
         self._disconnect()
+        self.threader.tray.reset_status()
         logger.info('VPN disconnected')
 
 
 class NordVPNClient(VPNClient):
-    def __init__(self, exe_path=""):
-        super().__init__(exe_path)
+    def __init__(self, threader, exe_path=""):
+        super().__init__(threader, exe_path)
         self.timeout = 30
 
     def _after_ip_check(self):
@@ -168,8 +173,8 @@ class NordVPNClient(VPNClient):
 
 
 class SoftEtherClient(VPNClient):
-    def __init__(self, ip_override=""):
-        super().__init__()
+    def __init__(self, threader, ip_override=""):
+        super().__init__(threader)
         self.ip_override = ip_override
 
     def _connect(self):
@@ -216,8 +221,8 @@ class SoftEtherClient(VPNClient):
         return True
 
 class OpenVPNClient(VPNClient):
-    def __init__(self, exe_path="", profile_override=""):
-        super().__init__(exe_path)
+    def __init__(self, threader, exe_path="", profile_override=""):
+        super().__init__(threader, exe_path)
         self.ovpn_path = util.get_asset('vpn.ovpn')
         self.ovpn_process = None
         self.profile_override = profile_override

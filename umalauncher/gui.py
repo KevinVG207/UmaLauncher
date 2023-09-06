@@ -62,7 +62,7 @@ def stop_application():
 class UmaApp():
     def __init__(self):
         self.app = qtw.QApplication([])
-        self.app.setWindowIcon(qtg.QIcon(util.get_asset("favicon.ico")))
+        self.app.setWindowIcon(qtg.QIcon(util.get_asset("_assets/icon/default.ico")))
         self.main_widget = None
 
         self.init_app()
