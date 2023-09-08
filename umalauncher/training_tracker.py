@@ -467,7 +467,18 @@ class TrainingAnalyzer():
                             action.add_status,
                             action.remove_status]):
                     continue
-            row = ",".join([f"\"{str(remove_zero(header[1](action)))}\"" for header in headers])
+
+            # Format lines
+            formatted_cells = []
+            for header in headers:
+                cell_data = str(remove_zero(header[1](action)))
+                cell_data = cell_data.replace('"', '""')
+                if ',' in cell_data:
+                    cell_data = f"\"{cell_data}\""
+                formatted_cells.append(cell_data)
+
+            # Combine lines
+            row = ",".join(formatted_cells)
             out_rows.append(row)
 
         return out_rows
