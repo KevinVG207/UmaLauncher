@@ -467,7 +467,7 @@ class TrainingAnalyzer():
                             action.add_status,
                             action.remove_status]):
                     continue
-            row = ",".join([str(remove_zero(header[1](action))) for header in headers])
+            row = ",".join([f"\"{str(remove_zero(header[1](action)))}\"" for header in headers])
             out_rows.append(row)
 
         return out_rows
