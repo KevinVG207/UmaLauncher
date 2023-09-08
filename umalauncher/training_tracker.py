@@ -576,7 +576,7 @@ class TrainingAnalyzer():
         if 'race_reward_info' in resp and resp['race_reward_info']:
             # Race Completed
             action.action_type = ActionType.AfterRace
-            action.text = self.race_program_name_dict[self.last_program_id]
+            action.text = self.race_program_name_dict.get(self.last_program_id, "Race Name Unknown")
             action.value = resp['race_reward_info']['result_rank']  # Saving the finishing position here for now.
             # self.next_action_type = ActionType.AfterRace2
             return
