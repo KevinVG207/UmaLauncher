@@ -111,25 +111,36 @@ class PresetSettings(se.Settings):
             "Show energy",
             "Displays energy in the event helper.",
             True,
-            se.SettingType.BOOL
+            se.SettingType.BOOL,
+            priority=10
+        )
+        self.s_skillpt_enabled = se.Setting(
+            "Show skill points",
+            "Displays skill points in the event helper.",
+            False,
+            se.SettingType.BOOL,
+            priority=9
         )
         self.s_fans_enabled = se.Setting(
             "Show fans",
             "Displays fans in the event helper.",
             False,
-            se.SettingType.BOOL
+            se.SettingType.BOOL,
+            priority=8
         )
         self.s_schedule_enabled = se.Setting(
             "Show schedule countdown",
             "Displays the amount of turns until your next scheduled race. (If there is one.)",
             True,
-            se.SettingType.BOOL
+            se.SettingType.BOOL,
+            priority=7
         )
         self.s_scenario_specific_enabled = se.Setting(
             "Show scenario specific elements",
             "Show scenario specific elements in the event helper. \n(Grand Live tokens, Grand Masters fragments, Project L'Arc aptitude/supporter points & expectation gauge)",
             True,
-            se.SettingType.BOOL
+            se.SettingType.BOOL,
+            priority=6
         )
 
 
@@ -176,6 +187,9 @@ class Preset():
         if self.settings.s_energy_enabled.value:
             html_elements.append(self.generate_energy(main_info))
 
+        if self.settings.s_skillpt_enabled.value:
+            html_elements.append(self.generate_skillpt(main_info))
+
         if self.settings.s_fans_enabled.value:
             html_elements.append(self.generate_fans(main_info))
         
@@ -194,10 +208,13 @@ class Preset():
         return ''.join(html_elements)
     
     def generate_energy(self, main_info):
-        return f"<div id=\"energy\">Energy: {main_info['energy']}/{main_info['max_energy']}</div>"
+        return f"<div id=\"energy\"><b>Energy:</b> {main_info['energy']}/{main_info['max_energy']}</div>"
     
+    def generate_skillpt(self, main_info):
+        return f"<div id=\"skill-pt\"><b>Skill Points:</b> {main_info['skillpt']:,}</div>"
+
     def generate_fans(self, main_info):
-        return f"<div id=\"fans\">Fans: {main_info['fans']:,}</div>"
+        return f"<div id=\"fans\"><b>Fans:</b> {main_info['fans']:,}</div>"
     
     def generate_table(self, command_info):
         if not command_info:
@@ -256,14 +273,14 @@ class Preset():
             return ""
         
         turns_left = next_race['turn'] - cur_turn
-        text = f"<p>{turns_left} turn{'' if turns_left == 1 else 's'} until</p>"
+        text = f"<p><b>{turns_left} turn{'' if turns_left == 1 else 's'}</b> until</p>"
         img = f"<img width=100 height=50 src=\"{next_race['thumb_url']}\"/>"
 
         fan_warning = ""
 
         if main_info['fans'] < next_race['fans']:
             fans_needed = next_race['fans'] - main_info['fans']
-            fan_warning = f"""<p style="color: orange; margin: 0;"><b>{fans_needed}</b> more fans needed!</p>"""
+            fan_warning = f"""<p style="color: orange; margin: 0;"><b>{fans_needed} more</b> fans needed!</p>"""
 
         return f"""<div id="schedule" style="display: flex; flex-direction: column; justify-content: center; align-items: center;"><div id="schedule-race-container" style="display: flex; align-items: center; gap: 0.5rem;">{text}{img}</div>{fan_warning}</div>"""
 
@@ -273,7 +290,7 @@ class Preset():
 
         gauge_str = str(main_info['arc_expectation_gauge'] // 10)
         gauge_str2 = str(main_info['arc_expectation_gauge'] % 10)
-        return f"<div id=\"arc\">Aptitude Points: {main_info['arc_aptitude_points']:,} - Supporter Points: {main_info['arc_supporter_points']:,} - Expectation Gauge: {gauge_str}.{gauge_str2}%</div>"
+        return f"<div id=\"arc\"><b>Aptitude Points:</b> {main_info['arc_aptitude_points']:,} - <b>Supporter Points:</b> {main_info['arc_supporter_points']:,} - <b>Expectation Gauge:</b> {gauge_str}.{gauge_str2}%</div>"
 
     def to_dict(self):
         return {
