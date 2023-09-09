@@ -56,7 +56,7 @@ If the helper window still does not show up, please ask for help in the Discord 
 
 
 <details>
-<summary><b>Other browser-related issues<b></summary>
+<summary><b>Other browser-related issues</b></summary>
 
 If you get error messages related to the web browser, try switching to Firefox in the preferences. Chromium-based browsers (Chrome, Edge) are inconsistent and a pain to work with. Firefox is the most stable browser to use with Uma Launcher.<br>
 You may still report issues you have with Chromium-based browsers.
