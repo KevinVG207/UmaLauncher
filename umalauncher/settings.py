@@ -62,14 +62,15 @@ class DefaultSettings(se.Settings):
             "Automatically close DMM Game Player when the game is launched.",
             True,
             se.SettingType.BOOL,
-            priority=95
+            priority=94
         )
         self.s_lock_game_window = se.Setting(
             "Lock game window",
             "Lock the game window to prevent accidental resizing.",
             True,
             se.SettingType.BOOL,
-            priority=-1
+            priority=100,
+            tab="Position"
         )
         self.s_discord_rich_presence = se.Setting(
             "Discord rich presence",
@@ -97,42 +98,52 @@ class DefaultSettings(se.Settings):
             "Track training events in /training_logs as gzip files.",
             True,
             se.SettingType.BOOL,
-            priority=96
+            priority=95
         )
         self.s_game_install_path = se.Setting(
             "Game install path",
-            "Path to the game's installation folder.",
+            "Path to the game's installation folder. (Where DMM installed the game and umamusume.exe is located.)",
             "%userprofile%/Umamusume",
             se.SettingType.FOLDERDIALOG,
-            priority=-1
+            priority=96
         )
         self.s_game_position_portrait = se.Setting(
             "Game position (portrait)",
             "Position of the game window in portrait mode.",
             None,
-            se.SettingType.LIST,
+            se.SettingType.XYWHSPINBOXES,
             priority=-1
         )
         self.s_game_position_landscape = se.Setting(
             "Game position (landscape)",
             "Position of the game window in landscape mode.",
             None,
-            se.SettingType.LIST,
+            se.SettingType.XYWHSPINBOXES,
             priority=-1
         )
         self.s_browser_position = se.Setting(
             "Browser position",
             "Position of the browser window.",
             None,
-            se.SettingType.LIST,
-            priority=-1
+            se.SettingType.XYWHSPINBOXES,
+            priority=70,
+            tab="Position"
         )
         self.s_skills_position = se.Setting(
             "Skills browser position",
             "Position of the skills browser window.",
             None,
-            se.SettingType.LIST,
-            priority=-1
+            se.SettingType.XYWHSPINBOXES,
+            priority=60,
+            tab="Position"
+        )
+        self.s_maximize_safezone = se.Setting(
+            "Safezone for \"Maximize + center game\" in tray menu",
+            "Amount of pixels to leave around the game window when maximizing.<br><b>If you are having issues streaming the game on Discord,</b> try adding a safezone of at least 8 pixels where your taskbar is.",
+            None,
+            se.SettingType.LRTBSPINBOXES,
+            priority=50,
+            tab="Position"
         )
         self.s_selected_browser = se.Setting(
             "Selected browser",
@@ -167,19 +178,29 @@ class DefaultSettings(se.Settings):
             se.SettingType.LIST,
             priority=-1
         )
+        self.s_vpn_message = se.Setting(
+            "VPN Help",
+            """<p>Automatic VPN is still experimental. Please report any issues you encounter.<br>For a guide on how to set up automatic VPN, see the guide on the <a href="https://github.com/KevinVG207/UmaLauncher/blob/main/FAQ.md">Frequently Asked Questions</a> page.</p>""",
+            None,
+            se.SettingType.MESSAGE,
+            priority=100,
+            tab="VPN"
+        )
         self.s_vpn_enabled = se.Setting(
             "Auto-VPN enabled",
             "Connect to VPN when Uma Launcher is started.<br>For OpenVPN and SoftEther: A random JP server<br>will be chosen from VPN Gate to connect to.<br>NordVPN will connect to Japan.",
             False,
             se.SettingType.BOOL,
-            priority=94
+            priority=94,
+            tab="VPN"
         )
         self.s_vpn_dmm_only = se.Setting(
             "VPN for DMM only",
             "Disconnect from VPN after DMM Game Player is closed.<br>If unchecked, VPN will stay connected until Uma Launcher is closed.",
             True,
             se.SettingType.BOOL,
-            priority=93
+            priority=93,
+            tab="VPN"
         )
         self.s_vpn_client = se.Setting(
             "VPN client",
@@ -190,21 +211,24 @@ class DefaultSettings(se.Settings):
                 "NordVPN": False
             },
             se.SettingType.RADIOBUTTONS,
-            priority=92
+            priority=92,
+            tab="VPN"
         )
         self.s_vpn_client_path = se.Setting(
             "VPN client path (OpenVPN/NordVPN)",
             "Path to the VPN client executable (openvpn.exe or nordvpn.exe).<br>Not required for SoftEther.",
             None,
             se.SettingType.FILEDIALOG,
-            priority=91
+            priority=91,
+            tab="VPN"
         )
         self.s_vpn_ip_override = se.Setting(
             "VPN override (OpenVPN/SoftEther)",
             "OpenVPN: Place a path to a custom ovpn profile.<br>SoftEther: Place an IP to override (no port, port is assumed to be 443.)",
             "",
             se.SettingType.STRING,
-            priority=90
+            priority=90,
+            tab="VPN"
         )
 
 
@@ -391,3 +415,4 @@ class SettingsHandler():
 
         self.save_settings()
         self.load_settings()
+        self.threader.tray.icon_thread.update_menu()

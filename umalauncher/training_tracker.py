@@ -467,7 +467,18 @@ class TrainingAnalyzer():
                             action.add_status,
                             action.remove_status]):
                     continue
-            row = ",".join([str(remove_zero(header[1](action))) for header in headers])
+
+            # Format lines
+            formatted_cells = []
+            for header in headers:
+                cell_data = str(remove_zero(header[1](action)))
+                cell_data = cell_data.replace('"', '""')
+                if ',' in cell_data:
+                    cell_data = f"\"{cell_data}\""
+                formatted_cells.append(cell_data)
+
+            # Combine lines
+            row = ",".join(formatted_cells)
             out_rows.append(row)
 
         return out_rows
@@ -516,15 +527,18 @@ class TrainingAnalyzer():
             if match:
                 # Skill hint
 
-                # TODO: All skill hints seem to have become story_id 801000003.
-                # Checking for chara_id in story_id is not possible anymore.
-                # Instead, the partner_id is in prev_resp['unchecked_event_array'][0]['event_contents_info']['tips_training_partner_id']
-                # Need to manually match that up to the training partner and then chara_id.
-                # The old code needs to still exist for backwards compatibility.
-                # Maybe add a check if match.group(1) == 1000
-
                 action.action_type = ActionType.SkillHint
-                action.text = self.chara_names_dict[int(match.group(1))] if int(match.group(1)) in self.chara_names_dict else "Unknown Chara"
+
+                hint_chara_id = int(match.group(1))
+
+                # Get chara_id from training partner because of the new system.
+                if hint_chara_id == 1000:
+                    if prev_resp:
+                        support_index = prev_resp['unchecked_event_array'][0]['event_contents_info']['tips_training_partner_id'] - 1
+                        support_id = self.support_cards[support_index]['support_card_id']
+                        hint_chara_id = mdb.get_support_card_dict()[support_id][3]
+
+                action.text = self.chara_names_dict[hint_chara_id] if hint_chara_id in self.chara_names_dict else "Unknown Chara"
                 action.action_type = ActionType.SkillHint
                 return
 
@@ -573,7 +587,7 @@ class TrainingAnalyzer():
         if 'race_reward_info' in resp and resp['race_reward_info']:
             # Race Completed
             action.action_type = ActionType.AfterRace
-            action.text = self.race_program_name_dict[self.last_program_id]
+            action.text = self.race_program_name_dict.get(self.last_program_id, "Race Name Unknown")
             action.value = resp['race_reward_info']['result_rank']  # Saving the finishing position here for now.
             # self.next_action_type = ActionType.AfterRace2
             return

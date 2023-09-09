@@ -35,10 +35,50 @@ Keep in mind that this feature is experimental, so be sure to let me know if any
 </details>
 
 <details>
-<summary><b>Browser-related issues<b></summary>
+<summary><b>The automatic training event helper window does not show up when a training run is started/continued.</b></summary>
+
+This feature requires you install the CarrotJuicer mod for Uma Musume. Please carefully read <a href="https://umapyoi.net/uma-launcher" target="_blank">the instructions</a> on how to install it. (See bottom of the instructions section on how to use if you already use Trainers' Legend G or Noccu's English Patch.)<br>
+If you installed CarrotJuicer according to the instructions but nothing happens when you start/enter a training run, try the following:
+
+* Make sure CarrotJuicer functionality is enabled in the preferences of Uma Launcher.
+  * Right-click the horseshoe icon in the taskbar tray and click on `Preferences`. Make sure `Enable CarrotJuicer` is checked.
+* Make sure Uma Launcher uses the correct game folder when it looks for CarrotJuicer's output.
+  * Right-click the horseshoe icon in the taskbar tray and click on `Preferences`. Make sure `Game install path` is set to the folder where you installed Uma Musume.
+  * If you ever had Uma Musume installed in its default location, but have since installed it elsewhere, make sure you confirm where the game is installed directly in DMMGamePlayer.
+    * Open DMMGamePlayer, open the "My Games" (マイゲーム) page.
+    * Hover over the Uma Musume game image and click the information icon 🛈
+    * Click on the link in the bottom-right of the popup that says `ダウンロード先フォルダを表示` and has a folder icon next to it.
+    * This will open a file browser and highlight the folder that the game is installed in (it has `umamusume.exe` inside it). Set that folder in Uma Launcher's preferences.
+
+Make sure to **restart Uma Launcher** after doing any of the above. (Right-click the horseshoe icon in the taskbar tray and click on `Close`.)<br>
+If the helper window still does not show up, please ask for help in the Discord server (see top of the page.)
+</details>
+
+
+<details>
+<summary><b>Other browser-related issues<b></summary>
 
 If you get error messages related to the web browser, try switching to Firefox in the preferences. Chromium-based browsers (Chrome, Edge) are inconsistent and a pain to work with. Firefox is the most stable browser to use with Uma Launcher.<br>
 You may still report issues you have with Chromium-based browsers.
+</details>
+
+<details>
+<summary><b>I can't move my game window!</b></summary>
+
+Right-click the horseshoe icon and uncheck `Lock game window`. You should now be able to move the game window.<br>
+When you are done moving the window, re-enable `Lock game window` and it will remember the position of the game window.<br>
+You will need to do this again when the game switches into landscape mode.
+
+</details>
+
+<details>
+<summary><b>DMMGamePlayer opens but the game never starts!</b></summary>
+
+This happens if there is an update available for Uma Musume. You will need to update the game manually.<br>
+Move to the "My Games" (マイゲーム) page and click the orange button when you hover over the Uma Musume game image.<br>
+The way DMM works makes it impossible to automate this process. (In an old version of DMM, it would properly show the update popup, but that is no longer the case.)<br>
+If you want to know when there is an update available, you can follow either Umapyoi.net's Twitter account, or the official Japanese Uma Musume Twitter account.
+
 </details>
 
 <details>

@@ -131,20 +131,23 @@ def get_support_card_string(support_id):
 
     return create_support_card_string(*row)
 
+EVENT_TITLE_DICT = {}
+def get_event_title_dict(force=False):
+    global EVENT_TITLE_DICT
+    if force or not EVENT_TITLE_DICT:
+        with Connection() as (_, cursor):
+            cursor.execute(
+                """SELECT s.story_id, s.short_story_id, t.text FROM text_data t JOIN single_mode_story_data s ON t."index" = s.story_id WHERE category = 181"""
+            )
+            rows = cursor.fetchall()
 
-def get_event_title_dict():
-    with Connection() as (_, cursor):
-        cursor.execute(
-            """SELECT s.story_id, s.short_story_id, t.text FROM text_data t JOIN single_mode_story_data s ON t."index" = s.story_id WHERE category = 181"""
-        )
-        rows = cursor.fetchall()
-
-    out = {}
-    for row in rows:
-        out[row[0]] = row[2]
-        if row[1] != 0:
-            out[row[1]] = row[2]
-    return out
+        out = {}
+        for row in rows:
+            out[row[0]] = row[2]
+            if row[1] != 0:
+                out[row[1]] = row[2]
+        EVENT_TITLE_DICT.update(out)
+    return EVENT_TITLE_DICT
 
 RACE_PROGRAM_NAME_DICT = {}
 def get_race_program_name_dict(force=False):
@@ -158,41 +161,61 @@ def get_race_program_name_dict(force=False):
         RACE_PROGRAM_NAME_DICT.update({row[0]: row[1] for row in rows})
     return RACE_PROGRAM_NAME_DICT
 
-def get_skill_name_dict():
-    with Connection() as (_, cursor):
-        cursor.execute(
-            """SELECT sd.id, td.text FROM skill_data sd INNER JOIN text_data td ON sd.id = td."index" AND td.category = 47"""
-        )
-        rows = cursor.fetchall()
+SKILL_NAME_DICT = {}
+def get_skill_name_dict(force=False):
+    global SKILL_NAME_DICT
+    if force or not SKILL_NAME_DICT:
+        with Connection() as (_, cursor):
+            cursor.execute(
+                """SELECT sd.id, td.text FROM skill_data sd INNER JOIN text_data td ON sd.id = td."index" AND td.category = 47"""
+            )
+            rows = cursor.fetchall()
 
-    return {row[0]: row[1] for row in rows}
+        SKILL_NAME_DICT.update({row[0]: row[1] for row in rows})
 
-def get_skill_hint_name_dict():
-    with Connection() as (_, cursor):
-        cursor.execute(
-            """SELECT sd.group_id, sd.rarity, td.text FROM skill_data sd INNER JOIN text_data td ON sd.id = td."index" AND td.category = 47"""
-        )
-        rows = cursor.fetchall()
+    return SKILL_NAME_DICT
 
-    return {(row[0], row[1]): row[2] for row in rows}
+SKILL_HINT_NAME_DICT = {}
+def get_skill_hint_name_dict(force=False):
+    global SKILL_HINT_NAME_DICT
+    if force or not SKILL_HINT_NAME_DICT:
+        with Connection() as (_, cursor):
+            cursor.execute(
+                """SELECT sd.group_id, sd.rarity, td.text FROM skill_data sd INNER JOIN text_data td ON sd.id = td."index" AND td.category = 47"""
+            )
+            rows = cursor.fetchall()
+        
+        SKILL_HINT_NAME_DICT.update({(row[0], row[1]): row[2] for row in rows})
 
-def get_status_name_dict():
-    with Connection() as (_, cursor):
-        cursor.execute(
-            """SELECT "index", text FROM text_data WHERE category = 142"""
-        )
-        rows = cursor.fetchall()
+    return SKILL_HINT_NAME_DICT
 
-    return {row[0]: row[1] for row in rows}
+STATUS_NAME_DICT = {}
+def get_status_name_dict(force=False):
+    global STATUS_NAME_DICT
+    if force or not STATUS_NAME_DICT:
+        with Connection() as (_, cursor):
+            cursor.execute(
+                """SELECT "index", text FROM text_data WHERE category = 142"""
+            )
+            rows = cursor.fetchall()
+        
+        STATUS_NAME_DICT.update({row[0]: row[1] for row in rows})
 
-def get_outfit_name_dict():
-    with Connection() as (_, cursor):
-        cursor.execute(
-            """SELECT "index", text FROM text_data WHERE category = 5"""
-        )
-        rows = cursor.fetchall()
+    return STATUS_NAME_DICT
 
-    return {row[0]: row[1] for row in rows}
+OUTFIT_NAME_DICT = {}
+def get_outfit_name_dict(force=False):
+    global OUTFIT_NAME_DICT
+    if force or not OUTFIT_NAME_DICT:
+        with Connection() as (_, cursor):
+            cursor.execute(
+                """SELECT "index", text FROM text_data WHERE category = 5"""
+            )
+            rows = cursor.fetchall()
+        
+        OUTFIT_NAME_DICT.update({row[0]: row[1] for row in rows})
+
+    return OUTFIT_NAME_DICT
 
 SUPPORT_CARD_DICT = {}
 def get_support_card_dict(force=False):
@@ -209,48 +232,71 @@ def get_support_card_dict(force=False):
 def get_support_card_type(support_data):
     return constants.SUPPORT_CARD_TYPE_DICT[(support_data[1], support_data[2])]
 
-def get_support_card_string_dict():
-    support_card_dict = get_support_card_dict()
-    return {id: create_support_card_string(*data) for id, data in support_card_dict.items()}
-
-def get_chara_name_dict():
-    with Connection() as (_, cursor):
-        cursor.execute(
-            """SELECT "index", text FROM text_data WHERE category = 170"""
-        )
-        rows = cursor.fetchall()
-
-    return {row[0]: row[1] for row in rows}
-
-def get_mant_item_string_dict():
-    with Connection() as (_, cursor):
-        cursor.execute(
-            """SELECT "index", text FROM text_data WHERE category = 225"""
-        )
-        rows = cursor.fetchall()
-
-    return {row[0]: row[1] for row in rows}
-
-def get_gl_lesson_dict():
-    with Connection() as (_, cursor):
-        cursor.execute(
-            """SELECT s.id, t.text, s.square_type FROM single_mode_live_square s JOIN text_data t ON t."index" = s.square_title_text_id AND t.category = 209"""
-        )
-        rows = cursor.fetchall()
-
-    return {row[0]: (row[1], row[2]) for row in rows}
-
-def get_group_card_effect_ids():
-    with Connection() as (_, cursor):
-        cursor.execute(
-            """SELECT id, effect_id FROM support_card_data WHERE support_card_type = 3"""
-        )
-        rows = cursor.fetchall()
+SUPPORT_CARD_STRING_DICT = {}
+def get_support_card_string_dict(force=False):
+    global SUPPORT_CARD_STRING_DICT
+    if force or not SUPPORT_CARD_STRING_DICT:
+        support_card_dict = get_support_card_dict()
+        SUPPORT_CARD_STRING_DICT.update({id: create_support_card_string(*data) for id, data in support_card_dict.items()})
     
-    if not rows:
-        return []
+    return SUPPORT_CARD_STRING_DICT
 
-    return rows
+CHARA_NAME_DICT = {}
+def get_chara_name_dict(force=False):
+    global CHARA_NAME_DICT
+    if force or not CHARA_NAME_DICT:
+        with Connection() as (_, cursor):
+            cursor.execute(
+                """SELECT "index", text FROM text_data WHERE category = 170"""
+            )
+            rows = cursor.fetchall()
+
+        CHARA_NAME_DICT.update({row[0]: row[1] for row in rows})
+    
+    return CHARA_NAME_DICT
+
+MANT_ITEM_STRING_DICT = {}
+def get_mant_item_string_dict(force=False):
+    global MANT_ITEM_STRING_DICT
+    if force or not MANT_ITEM_STRING_DICT:
+        with Connection() as (_, cursor):
+            cursor.execute(
+                """SELECT "index", text FROM text_data WHERE category = 225"""
+            )
+            rows = cursor.fetchall()
+
+        MANT_ITEM_STRING_DICT.update({row[0]: row[1] for row in rows})
+    
+    return MANT_ITEM_STRING_DICT
+
+GL_LESSON_DICT = {}
+def get_gl_lesson_dict(force=False):
+    global GL_LESSON_DICT
+    if force or not GL_LESSON_DICT:
+        with Connection() as (_, cursor):
+            cursor.execute(
+                """SELECT s.id, t.text, s.square_type FROM single_mode_live_square s JOIN text_data t ON t."index" = s.square_title_text_id AND t.category = 209"""
+            )
+            rows = cursor.fetchall()
+
+        GL_LESSON_DICT.update({row[0]: (row[1], row[2]) for row in rows})
+    
+    return GL_LESSON_DICT
+
+GROUP_CARD_EFFECT_IDS = []
+def get_group_card_effect_ids(force=False):
+    global GROUP_CARD_EFFECT_IDS
+    if force or not GROUP_CARD_EFFECT_IDS:
+        with Connection() as (_, cursor):
+            cursor.execute(
+                """SELECT id, effect_id FROM support_card_data WHERE support_card_type = 3"""
+            )
+            rows = cursor.fetchall()
+        
+        if rows:
+            GROUP_CARD_EFFECT_IDS[:] = rows  # Thanks StellatedCube
+
+    return GROUP_CARD_EFFECT_IDS
 
 def get_program_id_grade(program_id):
     with Connection() as (_, cursor):
@@ -278,29 +324,29 @@ def get_program_id_data(program_id):
         return None
     return rows_to_dict(rows, columns)[0]
 
-
-def get_skill_id_dict():
-    skill_id_dict = {}
-
-    with Connection() as (_, cursor):
-        cursor.execute(
-            """SELECT id, group_id, rarity, unique_skill_id_1 FROM skill_data ORDER BY group_rate DESC;"""
-        )
-        rows = cursor.fetchall()
-    
-    if not rows:
-        return skill_id_dict
-    
-    for row in rows:
-        true_id = row[0]
-        # if row[3] != 0:
-        #     true_id = row[3]
+SKILL_ID_DICT = {}
+def get_skill_id_dict(force=False):
+    global SKILL_ID_DICT
+    if force or not SKILL_ID_DICT:
+        with Connection() as (_, cursor):
+            cursor.execute(
+                """SELECT id, group_id, rarity, unique_skill_id_1 FROM skill_data ORDER BY group_rate DESC;"""
+            )
+            rows = cursor.fetchall()
         
-        skill_key = (row[1], row[2])
-        if skill_key not in skill_id_dict:
-            skill_id_dict[skill_key] = true_id
+        if rows:
+            tmp = {}
+            for row in rows:
+                true_id = row[0]
+                # if row[3] != 0:
+                #     true_id = row[3]
+                
+                skill_key = (row[1], row[2])
+                if skill_key not in tmp:
+                    tmp[skill_key] = true_id
+            SKILL_ID_DICT.update(tmp)
     
-    return skill_id_dict
+    return SKILL_ID_DICT
 
 
 def get_card_inherent_skills(card_id, level=99):
@@ -355,7 +401,33 @@ def determine_skill_id_from_group_id(group_id, rarity, skills_id_list):
     
     return skill_id
 
+def get_total_minigame_plushies(force=False):
+    with Connection() as (_, cursor):
+        cursor.execute(
+            """SELECT chara_id FROM card_data c WHERE default_rarity != 0;"""
+        )
+        rows = cursor.fetchall()
+    
+    total_charas = set()
+    total_plushies = len(rows)
+
+    for row in rows:
+        total_charas.add(row[0])
+    
+    return 3 * (total_plushies + len(total_charas))
+
 UPDATE_FUNCS = [
+    get_event_title_dict,
     get_race_program_name_dict,
+    get_skill_name_dict,
+    get_skill_hint_name_dict,
+    get_status_name_dict,
+    get_outfit_name_dict,
     get_support_card_dict,
+    get_support_card_string_dict,
+    get_chara_name_dict,
+    get_mant_item_string_dict,
+    get_gl_lesson_dict,
+    get_group_card_effect_ids,
+    get_skill_id_dict,
 ]

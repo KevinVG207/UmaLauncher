@@ -24,6 +24,7 @@ class Location(Enum):
     EVENT = 4
     LEAGUE_OF_HEROES = 5
     SCOUTING_EVENT = 6
+    CLAW_MACHINE = 7
 
 class ScreenState:
     location = None

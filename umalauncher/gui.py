@@ -1,4 +1,5 @@
 import copy
+import math
 from loguru import logger
 import PyQt5.QtCore as qtc
 import PyQt5.QtWidgets as qtw
@@ -61,7 +62,7 @@ def stop_application():
 class UmaApp():
     def __init__(self):
         self.app = qtw.QApplication([])
-        self.app.setWindowIcon(qtg.QIcon(util.get_asset("favicon.ico")))
+        self.app.setWindowIcon(qtg.QIcon(util.get_asset("_assets/icon/default.ico")))
         self.main_widget = None
 
         self.init_app()
@@ -534,9 +535,10 @@ class UmaNewPresetDialog(UmaMainDialog):
         self.close()
 
 class UmaSettingsDialog(UmaMainDialog):
-    def init_ui(self, settings_var, window_title="Change options", *args, **kwargs):
+    def init_ui(self, settings_var, tab=" General", window_title="Change options", *args, **kwargs):
         self.setting_elements = {}
         self.settings_var = settings_var
+        self.tab = tab
 
         self.resize(481, 401)
         # Disable resizing
@@ -591,15 +593,19 @@ class UmaSettingsDialog(UmaMainDialog):
         for setting_key in settings_keys:
             setting = getattr(self.settings_var[0], setting_key)
 
-            if setting.priority < 0:
+            # Filter tab and priority
+            if setting.priority < 0 or setting.tab != self.tab:
                 continue
 
             group_box, value_func = self.add_group_box(setting)
 
             if not group_box:
                 continue
-
-            self.setting_elements[setting_key] = value_func
+            
+            # Only add elements that have a value_func.
+            # This lets us add elements like messages.
+            if value_func:
+                self.setting_elements[setting_key] = value_func
 
             if setting_key == last_setting:
                 self.verticalLayout.addWidget(group_box, 0, qtc.Qt.AlignTop)
@@ -607,7 +613,14 @@ class UmaSettingsDialog(UmaMainDialog):
                 self.verticalLayout.addWidget(group_box)
     
     def restore_defaults(self):
-        self.settings_var[0] = type(self.settings_var[0])()
+        default_settings_var = type(self.settings_var[0])()
+        for setting_key in default_settings_var.get_settings_keys():
+            setting = getattr(default_settings_var, setting_key)
+            if setting.priority < 0 or setting.tab != self.tab:
+                continue
+            logger.debug(f"Resetting {setting_key} to {setting.value}")
+            getattr(self.settings_var[0], setting_key).value = setting.value
+
         self.settings_elements = {}
         self.load_settings()
     
@@ -644,9 +657,11 @@ class UmaSettingsDialog(UmaMainDialog):
         lbl_setting_description.setWordWrap(True)
         lbl_setting_description.setAlignment(qtc.Qt.AlignTop)
 
-        # sizePolicy2 = qtw.QSizePolicy(qtw.QSizePolicy.Expanding, qtw.QSizePolicy.Preferred)
         # Make sure the label expands vertically to fit the text if it is very long.
-        sizePolicy2 = qtw.QSizePolicy(qtw.QSizePolicy.Expanding, qtw.QSizePolicy.Minimum)
+        if setting.type == se.SettingType.MESSAGE:
+            lbl_setting_description.setOpenExternalLinks(True)
+
+        sizePolicy2 = qtw.QSizePolicy(qtw.QSizePolicy.Minimum, qtw.QSizePolicy.Minimum)
         sizePolicy2.setHorizontalStretch(0)
         sizePolicy2.setVerticalStretch(0)
         sizePolicy2.setHeightForWidth(lbl_setting_description.sizePolicy().hasHeightForWidth())
@@ -655,7 +670,10 @@ class UmaSettingsDialog(UmaMainDialog):
         horizontalLayout.addWidget(lbl_setting_description)
 
         input_widgets = []
-        if setting.type == se.SettingType.BOOL:
+        value_func = None
+        if setting.type == se.SettingType.MESSAGE:
+            input_widgets = [None]
+        elif setting.type == se.SettingType.BOOL:
             input_widgets, value_func = self.add_checkbox(setting, grp_setting)
         elif setting.type == se.SettingType.INT:
             input_widgets, value_func = self.add_spinbox(setting, grp_setting)
@@ -669,6 +687,12 @@ class UmaSettingsDialog(UmaMainDialog):
             input_widgets, value_func = self.add_radiobuttons(setting, grp_setting)
         elif setting.type == se.SettingType.FILEDIALOG:
             input_widgets, value_func = self.add_filedialog(setting, grp_setting)
+        elif setting.type == se.SettingType.FOLDERDIALOG:
+            input_widgets, value_func = self.add_folderdialog(setting, grp_setting)
+        elif setting.type == se.SettingType.XYWHSPINBOXES:
+            input_widgets, value_func = self.add_multi_spinboxes(setting, grp_setting, ['Left', 'Top', 'Width', 'Height'])
+        elif setting.type == se.SettingType.LRTBSPINBOXES:
+            input_widgets, value_func = self.add_multi_spinboxes(setting, grp_setting, ['Left', 'Right', 'Top', 'Bottom'])
         
         if not input_widgets:
             logger.debug(f"{setting.type} not implemented for {setting.name}")
@@ -677,10 +701,10 @@ class UmaSettingsDialog(UmaMainDialog):
             return None, None
 
         for input_widget in input_widgets:
-            horizontalLayout.addWidget(input_widget)
+            if input_widget:
+                horizontalLayout.addWidget(input_widget)
 
         return grp_setting, value_func
-
 
     def add_checkbox(self, setting, parent):
         ckb_setting_checkbox = qtw.QCheckBox(parent)
@@ -747,6 +771,56 @@ class UmaSettingsDialog(UmaMainDialog):
             radio_buttons.append(rdb_setting_radiobutton)
 
         return [grp_box], lambda: {rdb.text(): rdb.isChecked() for rdb in radio_buttons}
+
+    def add_multi_spinboxes(self, setting, parent, names=['Left', 'Top', 'Width', 'Height']):
+        grp_box = qtw.QGroupBox(parent)
+        grp_box.setObjectName(f"grp_box_{setting.name}")
+        grp_box.setSizePolicy(qtw.QSizePolicy(qtw.QSizePolicy.Maximum, qtw.QSizePolicy.Maximum))
+        grp_box.setStyleSheet("QGroupBox { border: 0; }")
+
+        vert_layout = qtw.QVBoxLayout(grp_box)
+        vert_layout.setObjectName(f"vert_layout_{setting.name}")
+        vert_layout.setContentsMargins(0, 0, 0, 0)
+        vert_layout.setSpacing(0)
+        vert_layout.setAlignment(qtc.Qt.AlignTop)
+
+        spinboxes = []
+
+        for i in range(len(names)):
+            horizontalLayout = qtw.QHBoxLayout()
+            horizontalLayout.setObjectName(f"horizontalLayout_{setting.name}_{names[i]}")
+            horizontalLayout.setAlignment(qtc.Qt.AlignRight|qtc.Qt.AlignVCenter)
+            horizontalLayout.setSpacing(3)
+
+            lbl_setting_label = qtw.QLabel(grp_box)
+            lbl_setting_label.setObjectName(f"lbl_setting_{setting.name}_{names[i]}")
+            lbl_setting_label.setText(names[i])
+            horizontalLayout.addWidget(lbl_setting_label)
+
+            spn_setting_spinbox = qtw.QSpinBox(grp_box)
+            spn_setting_spinbox.setMaximum(int(math.pow(2, 31) - 1))
+            spn_setting_spinbox.setMinimum(int(-math.pow(2, 31)))
+            spn_setting_spinbox.setObjectName(f"spn_setting_{setting.name}_{names[i]}")
+            sizePolicy = qtw.QSizePolicy(qtw.QSizePolicy.Fixed, qtw.QSizePolicy.Fixed)
+            sizePolicy.setHorizontalStretch(0)
+            sizePolicy.setVerticalStretch(0)
+            sizePolicy.setHeightForWidth(spn_setting_spinbox.sizePolicy().hasHeightForWidth())
+            spn_setting_spinbox.setSizePolicy(sizePolicy)
+            spn_setting_spinbox.setMinimumSize(qtc.QSize(50, 0))
+            spn_setting_spinbox.setAlignment(qtc.Qt.AlignRight|qtc.Qt.AlignVCenter)
+            spn_setting_spinbox.setValue(setting.value[i] if setting.value and i < len(setting.value) else 0)
+            
+            horizontalLayout.addWidget(spn_setting_spinbox)
+            vert_layout.addLayout(horizontalLayout)
+            spinboxes.append(spn_setting_spinbox)
+        
+        def get_values():
+            lst = [spn.value() for spn in spinboxes]
+            if all(value == 0 for value in lst):
+                return None
+            return lst
+
+        return [grp_box], lambda: get_values()
 
     def add_colorpicker(self, setting, parent):
         lbl_picked_color = qtw.QLabel(parent)
@@ -815,21 +889,13 @@ class UmaSettingsDialog(UmaMainDialog):
 
 
     def add_filedialog(self, setting, parent):
-        grp_box = qtw.QGroupBox(parent)
-        grp_box.setObjectName(f"grp_box_{setting.name}")
-
-        horizontalLayout = qtw.QHBoxLayout(grp_box)
-        horizontalLayout.setObjectName(f"horizontal_layout_{setting.name}")
-
-        line_edit = qtw.QLineEdit(grp_box)
+        line_edit = qtw.QLineEdit(parent)
         line_edit.setObjectName(f"lineEdit_{setting.name}")
         line_edit.setMinimumSize(qtc.QSize(150, 0))
         line_edit.setMaximumSize(qtc.QSize(150, 16777215))
         line_edit.setText(setting.value)
 
-        horizontalLayout.addWidget(line_edit)
-
-        browse_button = qtw.QPushButton(grp_box)
+        browse_button = qtw.QPushButton(parent)
         browse_button.setObjectName(f"pushButton_{setting.name}")
         sizePolicy4 = qtw.QSizePolicy(qtw.QSizePolicy.Fixed, qtw.QSizePolicy.Fixed)
         sizePolicy4.setHorizontalStretch(0)
@@ -840,8 +906,6 @@ class UmaSettingsDialog(UmaMainDialog):
         browse_button.setMaximumSize(qtc.QSize(50, 16777215))
         browse_button.setText(u"Browse")
 
-        horizontalLayout.addWidget(browse_button)
-
         def browse():
             tmp_path = qtw.QFileDialog.getOpenFileName(parent, "Select file", line_edit.text())
             if tmp_path[0]:
@@ -849,7 +913,38 @@ class UmaSettingsDialog(UmaMainDialog):
 
         browse_button.clicked.connect(browse)
 
-        return [grp_box], lambda: line_edit.text()
+        return [line_edit, browse_button], lambda: line_edit.text()
+
+
+    def add_folderdialog(self, setting, parent):
+        line_edit = qtw.QLineEdit(parent)
+        line_edit.setObjectName(f"lineEdit_{setting.name}")
+        line_edit.setMinimumSize(qtc.QSize(150, 0))
+        line_edit.setMaximumSize(qtc.QSize(150, 16777215))
+        line_edit.setText(setting.value)
+
+        browse_button = qtw.QPushButton(parent)
+        browse_button.setObjectName(f"pushButton_{setting.name}")
+        sizePolicy4 = qtw.QSizePolicy(qtw.QSizePolicy.Fixed, qtw.QSizePolicy.Fixed)
+        sizePolicy4.setHorizontalStretch(0)
+        sizePolicy4.setVerticalStretch(0)
+        sizePolicy4.setHeightForWidth(browse_button.sizePolicy().hasHeightForWidth())
+        browse_button.setSizePolicy(sizePolicy4)
+        browse_button.setMinimumSize(qtc.QSize(50, 0))
+        browse_button.setMaximumSize(qtc.QSize(50, 16777215))
+        browse_button.setText(u"Browse")
+
+        def browse():
+            tmp_path = qtw.QFileDialog.getExistingDirectory(parent, "Select folder", line_edit.text())
+            if tmp_path:
+                line_edit.setText(tmp_path)
+            # tmp_path = qtw.QFileDialog.getOpenFileName(parent, "Select file", line_edit.text())
+            # if tmp_path[0]:
+            #     line_edit.setText(tmp_path[0])
+
+        browse_button.clicked.connect(browse)
+
+        return [line_edit, browse_button], lambda: line_edit.text()
 
 
     def add_lineedit(self, setting, parent):
@@ -896,13 +991,23 @@ class UmaPreferences(UmaMainWidget):
         self.tabWidget.setSizePolicy(qtw.QSizePolicy.Preferred, qtw.QSizePolicy.Preferred)
         self.tabWidget.currentChanged.connect(self.tab_changed)
 
-        self.general_widget = UmaGeneralSettingsDialog(self, general_var)
-        # self.general_widget.setFixedSize(self.general_widget.size())
-        # self.general_widget.setSizePolicy(qtw.QSizePolicy.Fixed, qtw.QSizePolicy.Fixed)
+        unique_tabs = {getattr(general_var[0], key).tab for key in general_var[0].get_settings_keys()}
 
-        self.tab_general = self.general_widget
-        self.tab_general.setObjectName("tab_general")
-        self.tabWidget.addTab(self.tab_general, "General")
+        self.settings_widgets = []
+
+        for tab in sorted(list(unique_tabs)):
+            tab_widget = UmaGeneralSettingsDialog(self, general_var, tab=tab)
+            tab_widget.setObjectName(f"tab_{tab}")
+            self.settings_widgets.append(tab_widget)
+            self.tabWidget.addTab(tab_widget, tab.lstrip(" "))
+
+        # self.general_widget = UmaGeneralSettingsDialog(self, general_var)
+        # # self.general_widget.setFixedSize(self.general_widget.size())
+        # # self.general_widget.setSizePolicy(qtw.QSizePolicy.Fixed, qtw.QSizePolicy.Fixed)
+
+        # self.tab_general = self.general_widget
+        # self.tab_general.setObjectName("tab_general")
+        # self.tabWidget.addTab(self.tab_general, "General")
 
         self.presets_widget = UmaPresetMenu(self,
             selected_preset=selected_preset,
@@ -946,9 +1051,10 @@ class UmaPreferences(UmaMainWidget):
     
     def save_and_close(self):
         # Save general settings
-        success = self.general_widget.save_settings()
-        if not success:
-            return
+        for widget in self.settings_widgets:
+            success = widget.save_settings()
+            if not success:
+                return
 
         # Save presets
         success = self.presets_widget.save_settings()

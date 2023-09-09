@@ -7,6 +7,10 @@ class UmaTray():
     menu_items = None
     icon_thread = None
     threader = None
+    default_title = "Uma Launcher"
+    default_icon = Image.open(util.get_asset("_assets/icon/default.ico"))
+    connecting_icon = Image.open(util.get_asset("_assets/icon/connecting.ico"))
+    connected_icon = Image.open(util.get_asset("_assets/icon/connected.ico"))
 
     def __init__(self, threader):
         self.threader = threader
@@ -24,20 +28,39 @@ class UmaTray():
             # menu_items.append(pystray.MenuItem("Debug", lambda: self.threader.carrotjuicer.helper_table.debug_change_settings()))
 
         self.icon_thread = pystray.Icon(
-            'Uma Launcher',
-            Image.open(util.get_asset("favicon.ico")),
-            menu=pystray.Menu(*menu_items)
+            self.default_title,
+            self.default_icon,
+            menu=pystray.Menu(*menu_items),
+            title=self.default_title
         )
 
     def run(self):
         self.icon_thread.run()
-    
+
     def run_with_catch(self):
         try:
             self.run()
         except Exception:
             util.show_error_box("Critical Error", "Uma Launcher has encountered a critical error and will now close.")
             self.threader.stop()
+
+    def set_title(self, title):
+        self.icon_thread.title = title
+
+    def reset_title(self):
+        self.icon_thread.title = self.default_title
+    
+    def set_connecting(self):
+        self.icon_thread.icon = self.connecting_icon
+        self.set_title("Connecting to VPN...")
+    
+    def set_connected(self):
+        self.icon_thread.icon = self.connected_icon
+        self.set_title("Uma Launcher - Connected to VPN")
+    
+    def reset_status(self):
+        self.icon_thread.icon = self.default_icon
+        self.reset_title()
 
     def stop(self):
         self.icon_thread.stop()
