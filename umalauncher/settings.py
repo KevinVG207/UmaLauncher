@@ -415,3 +415,4 @@ class SettingsHandler():
 
         self.save_settings()
         self.load_settings()
+        self.threader.tray.icon_thread.update_menu()
