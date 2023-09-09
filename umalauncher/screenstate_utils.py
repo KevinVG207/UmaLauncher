@@ -66,12 +66,12 @@ def make_claw_machine_state(packet_data, handler: ss.ScreenStateHandler) -> ss.S
     new_state.large_image = "claw_machine"
 
     unique_count = 0
-    total_count = 0
+    # total_count = 0
     for plushie in packet_data['collected_plushies']:
         unique_count += 1
-        total_count += plushie['count']
+        # total_count += plushie['count']
     
     total_unique_count = mdb.get_total_minigame_plushies()
 
-    new_state.sub = f"Collected: {unique_count} / {total_unique_count} Total: {total_count}"
+    new_state.sub = f"Collected: {unique_count} / {total_unique_count}"
     return new_state
