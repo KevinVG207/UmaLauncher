@@ -89,9 +89,13 @@ If you are trying to use Uma Launcher on Linux or Mac, figure it out yourself si
 </details>
 
 <details>
-<summary>Streaming the game on Discord displays a frozen image?</summary>
+<summary><b>Streaming the game on Discord displays a frozen image?</b></summary>
 
 This appears to be a bug with Discord and it's unrelated to Uma Launcher. I've found this happens when the game's window is close to the taskbar.<br>
-Right-click the horseshoe icon and uncheck `Lock game window`. Move the game window in a way so that there is a gap between the game and the taskbar. If you had the game maximized, make the game window slightly smaller and move it away from the taskbar. (Something like 20 pixels should be more than enough.)<br>
-Then re-enable `Lock game window`.
+* Right-click the horseshoe icon and choose `Preferences`.
+* Move to the `Position` tab.
+* Scroll down to the safezone offsets.
+* Add at least 8 offset to whatever side your taskbar is at.
+* Click `Save and close`.
+* Right-click the horseshoe icon and choose `Maximize + center game`.
 </details>
