@@ -35,7 +35,7 @@ Keep in mind that this feature is experimental, so be sure to let me know if any
 </details>
 
 <details>
-<summary><b>The automatic training event helper window does not show up when a training run is started/continued.</b></summary>
+<summary><b>CarrotJuicer issues / The automatic training event helper window does not show up when a training run is started/continued.</b></summary>
 
 This feature requires you install the CarrotJuicer mod for Uma Musume. Please carefully read <a href="https://umapyoi.net/uma-launcher" target="_blank">the instructions</a> on how to install it. (See bottom of the instructions section on how to use if you already use Trainers' Legend G or Noccu's English Patch.)<br>
 If you installed CarrotJuicer according to the instructions but nothing happens when you start/enter a training run, try the following:
