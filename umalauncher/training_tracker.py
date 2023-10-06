@@ -177,6 +177,7 @@ class ActionType(Enum):
     AfterRace = 15
     Continue = 16
     AoharuRaces = 17
+    SSMatch = 18
 
 class CommandType(Enum):
     Speed = 101
@@ -303,11 +304,7 @@ class TrainingAnalyzer():
                     self.scenario_id = chara_info['scenario_id']
                     self.card_id = chara_info['card_id']
                     self.chara_id = int(str(self.card_id)[:4])
-                    self.support_cards = chara_info['support_card_array']
-                
-                # TODO: Fix L'Arc
-                # if self.scenario_id == 6:
-                #     raise NotImplementedError("Sorry, the Project L'Arc scenario is not supported yet due to unforeseen problems.")
+                    self.support_cards = chara_info['support_card_array']            
 
                 # Create base action
                 action = TrainingAction(
@@ -596,6 +593,14 @@ class TrainingAnalyzer():
             # Race Packet
             return self.make_race_action(action, resp)
 
+
+        # Project L'Arc specific
+        if self.scenario_id == 6:
+            if 'selection_result_info' in resp:
+                action.action_type = ActionType.SSMatch
+                
+                if prev_resp and prev_resp.get('arc_data_set') and prev_resp['arc_data_set'].get('selection_info') and 'is_special_match' in prev_resp['arc_data_set']['selection_info']:
+                    action.value = prev_resp['arc_data_set']['selection_info']['is_special_match'] + 1
 
         # Grand Masters specific
         if self.scenario_id == 5:

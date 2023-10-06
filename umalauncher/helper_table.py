@@ -51,6 +51,7 @@ class HelperTable():
         energy = data['chara_info']['vital']
         max_energy = data['chara_info']['max_vital']
         fans = data['chara_info']['fans']
+        skillpt = data['chara_info']['skill_point']
 
         arc_aptitude_points = 0
         arc_expectation_gauge = 0
@@ -131,7 +132,7 @@ class HelperTable():
             level = command.get('level', 0)
             failure_rate = command.get('failure_rate', 0)
             gained_stats = {stat_type: 0 for stat_type in set(constants.COMMAND_ID_TO_KEY.values())}
-            skillpt = 0
+            gained_skillpt = 0
             total_bond = 0
             useful_bond = 0
             gained_energy = 0
@@ -142,7 +143,7 @@ class HelperTable():
                 if param['target_type'] < 6:
                     gained_stats[constants.TARGET_TYPE_TO_KEY[param['target_type']]] += param['value']
                 elif param['target_type'] == 30:
-                    skillpt += param['value']
+                    gained_skillpt += param['value']
                 elif param['target_type'] == 10:
                     gained_energy += param['value']
 
@@ -344,7 +345,7 @@ class HelperTable():
                 'useful_partner_count': useful_partner_count,
                 'failure_rate': failure_rate,
                 'gained_stats': gained_stats,
-                'gained_skillpt': skillpt,
+                'gained_skillpt': gained_skillpt,
                 'total_bond': total_bond,
                 'useful_bond': useful_bond,
                 'gained_energy': gained_energy,
@@ -424,6 +425,7 @@ class HelperTable():
             "energy": energy,
             "max_energy": max_energy,
             "fans": fans,
+            "skillpt": skillpt,
             "scheduled_races": scheduled_races,
             "gm_fragments": gm_fragments,
             "gl_stats": gl_stats,

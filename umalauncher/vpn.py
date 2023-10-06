@@ -8,15 +8,15 @@ import base64
 import traceback
 import random
 
-def create_client(threader):
+def create_client(threader, cygames=False):
     vpn_radiobutton_status = threader.settings['s_vpn_client']
 
     if vpn_radiobutton_status['OpenVPN']:
-        return OpenVPNClient(threader, threader.settings['s_vpn_client_path'], threader.settings['s_vpn_ip_override'])
+        return OpenVPNClient(threader, threader.settings['s_vpn_client_path'], threader.settings['s_vpn_ip_override'], cygames)
     elif vpn_radiobutton_status['NordVPN']:
         return NordVPNClient(threader, threader.settings['s_vpn_client_path'])
     elif vpn_radiobutton_status['SoftEther']:
-        return SoftEtherClient(threader, threader.settings['s_vpn_ip_override'])
+        return SoftEtherClient(threader, threader.settings['s_vpn_ip_override'], cygames)
 
 class VPNClient:
     def __init__(self, threader, exe_path=""):
@@ -24,57 +24,19 @@ class VPNClient:
         self.exe_path = exe_path
         self.timeout = 30
 
-    def _determine_vpngate_server(self, must_be_vpngate=False):
-        logger.info('Requesting VPN server list from Nasu\'s API')
+    def _determine_vpngate_server(self, cygames=False):
+        logger.info('Requesting VPN server list from Umapyoi.net')
 
-        r = requests.get('https://nasu-ser.me/vpn/api/game/uma')
+        vpn_type = 'cygames' if cygames else 'dmm'
+
+        logger.info(f"Type: {vpn_type}")
+
+        r = requests.get(f'https://umapyoi.net/api/v1/vpn/{vpn_type}')
         r.raise_for_status()
 
-        servers = []
-
-        for server in r.json():
-            if server['country'] == "JP":
-                servers.append(server)
-
+        servers = r.json()
         if servers:
-            if must_be_vpngate:
-                try:
-                    logger.info("Fetching VPN Gate servers")
-                    r = requests.get("http://www.vpngate.net/api/iphone/")
-                    r.raise_for_status()
-                except Exception as e:
-                    logger.error(e)
-                    util.show_warning_box('VPN connection failed', 'VPN connection failed.<br>Could not fetch VPN server list from vpngate.net.')
-                    return None
-
-                vpngate_set = set()
-                split_text = r.text.split("\n")
-                print(len(split_text))
-                vpngate_servers = split_text[2:-2]
-                for server in vpngate_servers:
-                    server = server.split(",")
-                    vpngate_set.add(server[1])
-                
-                servers = [server for server in servers if server['ip'] in vpngate_set]
-
-                if not servers:
-                    logger.error('No VPN server found')
-                    util.show_warning_box('No VPN server found', 'No VPN server found.<br>Please try again later.')
-                    return None
-
-
-            server = random.choice(servers)
-            ip = server['ip']
-            logger.info(f'Using VPN server: {ip}')
-
-            try:
-                r = requests.get(f"https://nasu-ser.me/vpn/api/ip/{ip}")
-                r.raise_for_status()
-                server_data = r.json()
-
-                return base64.b64decode(server_data['config']).decode('utf-8')
-            except:
-                pass
+            return servers[0]['_profile']
 
         logger.error('No VPN server found')
         util.show_warning_box('No VPN server found', 'No VPN server found.<br>Please try again later.')
@@ -150,7 +112,7 @@ class VPNClient:
 class NordVPNClient(VPNClient):
     def __init__(self, threader, exe_path=""):
         super().__init__(threader, exe_path)
-        self.timeout = 30
+        self.timeout = 60
 
     def _after_ip_check(self):
         self._connect()
@@ -173,15 +135,16 @@ class NordVPNClient(VPNClient):
 
 
 class SoftEtherClient(VPNClient):
-    def __init__(self, threader, ip_override=""):
+    def __init__(self, threader, ip_override="", cygames=False):
         super().__init__(threader)
         self.ip_override = ip_override
+        self.cygames = cygames
 
     def _connect(self):
         ip = ""
 
         if not self.ip_override:
-            ovpn_config = self._determine_vpngate_server(must_be_vpngate=True)
+            ovpn_config = self._determine_vpngate_server(cygames=self.cygames)
 
             if not ovpn_config:
                 return False
@@ -221,15 +184,16 @@ class SoftEtherClient(VPNClient):
         return True
 
 class OpenVPNClient(VPNClient):
-    def __init__(self, threader, exe_path="", profile_override=""):
+    def __init__(self, threader, exe_path="", profile_override="", cygames=False):
         super().__init__(threader, exe_path)
         self.ovpn_path = util.get_asset('vpn.ovpn')
         self.ovpn_process = None
         self.profile_override = profile_override
+        self.cygames = cygames
 
     def _connect(self):
         if not self.profile_override:
-            ovpn = self._determine_vpngate_server()
+            ovpn = self._determine_vpngate_server(cygames=self.cygames)
 
             if not ovpn:
                 return False
@@ -237,7 +201,7 @@ class OpenVPNClient(VPNClient):
             logger.info('Connecting to OpenVPN')
 
             with open(self.ovpn_path, 'w', encoding='utf-8') as f:
-                f.write(ovpn.replace("\ncipher ", "\n--data-ciphers "))
+                f.write(ovpn)
 
         else:
             self.ovpn_path = self.profile_override
