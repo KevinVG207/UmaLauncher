@@ -10,7 +10,7 @@ The feature is disabled by default. Please read the usage guide below on how to 
 
 ## Usage guide:
 Currently only **OpenVPN Community**, **SoftEther** and **NordVPN** are supported.
-For OpenVPN and SoftEther, a server will be chosen from [https://nasu-ser.me/vpn/](https://nasu-ser.me/vpn/).
+For OpenVPN and SoftEther, a server will be chosen from [https://umapyoi.net](https://umapyoi.net/docs/vpn.html).
 ### Step 1
 Start Uma Launcher, right-click the horseshoe icon in the taskbar tray and click on `Preferences`.
 ### Step 2

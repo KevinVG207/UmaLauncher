@@ -226,7 +226,7 @@ class ScreenStateHandler():
     def run(self):
         # Enable VPN if needed
         if self.threader.settings["s_vpn_enabled"] and not self.threader.settings["s_vpn_dmm_only"]:
-            self.vpn = vpn.create_client(self.threader)
+            self.vpn = vpn.create_client(self.threader, cygames=True)
             self.vpn.connect()
 
         # If DMM is not seen AND Game is not seen: Start DMM
