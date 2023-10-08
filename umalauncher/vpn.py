@@ -4,7 +4,6 @@ import time
 import util
 import os
 import subprocess
-import base64
 import traceback
 import random
 
@@ -23,24 +22,36 @@ class VPNClient:
         self.threader = threader
         self.exe_path = exe_path
         self.timeout = 30
+        self.server_list = []
 
     def _determine_vpngate_server(self, cygames=False):
-        logger.info('Requesting VPN server list from Umapyoi.net')
+        if not self.server_list:
+            logger.info('Requesting VPN server list from Umapyoi.net')
 
-        vpn_type = 'cygames' if cygames else 'dmm'
+            vpn_type = 'cygames' if cygames else 'dmm'
 
-        logger.info(f"Type: {vpn_type}")
+            vpn_type = 'cygames'  # TODO: This is only to test if it becomes more reliable
 
-        r = requests.get(f'https://umapyoi.net/api/v1/vpn/{vpn_type}')
-        r.raise_for_status()
+            logger.info(f"Type: {vpn_type}")
 
-        servers = r.json()
-        if servers:
-            return servers[0]['_profile']
+            r = requests.get(f'https://umapyoi.net/api/v1/vpn/{vpn_type}')
+            r.raise_for_status()
 
-        logger.error('No VPN server found')
-        util.show_warning_box('No VPN server found', 'No VPN server found.<br>Please try again later.')
-        return None
+            servers = r.json()
+            if servers:
+                servers = servers[:5]
+                random.shuffle(servers)
+                self.server_list = [server['_profile'] for server in servers]
+
+            else:
+                logger.error('No VPN server found')
+                util.show_warning_box('No VPN server found', 'No VPN server found.<br>Please try again later.')
+                return None
+        
+        selected_server = self.server_list.pop(0)
+        self.server_list.append(selected_server)
+
+        return selected_server
 
 
     def _get_ip(self):
@@ -52,7 +63,7 @@ class VPNClient:
             if tries > 5:
                 url = url2
             try:
-                ip = requests.get(url, timeout=10).json()['ip']
+                ip = requests.get(url).json()['ip']
                 break
             except:
                 time.sleep(1)
@@ -68,28 +79,49 @@ class VPNClient:
     def connect(self):
         self.threader.tray.set_connecting()
         before_ip = self._get_ip()
-        try:
-            success = self._connect()
-        except Exception as e:
-            logger.error(f'VPN connection failed: {e}')
-            logger.error(traceback.format_exc())
-            util.show_warning_box('VPN connection failed', 'VPN connection failed.<br>Check if your settings are correct. VPN client path must be set when using OpenVPN or NordVPN.<br>For more details on the issue, check the log.')
-            self._disconnect()
-            return False
-
-        if not success:
-            self._disconnect()
-            return False
-
         check_start_time = time.time()
-        while time.time() - check_start_time < self.timeout:
-            after_ip = self._get_ip()
-            if before_ip != after_ip:
-                break
-            self._after_ip_check()
-            time.sleep(2)
+        total_success = False
+        while time.time() - check_start_time < 120:
+            try:
+                success = self._connect()
+            except Exception as e:
+                logger.error(f'VPN connection failed: {e}')
+                logger.error(traceback.format_exc())
+                util.show_warning_box('VPN connection failed', 'VPN connection failed.<br>Check if your settings are correct. VPN client path must be set when using OpenVPN or NordVPN.<br>For more details on the issue, check the log.')
+                self._disconnect()
+                return False
 
-        if before_ip == after_ip:
+            if not success:
+                self._disconnect()
+                continue
+
+            inner_check_start_time = time.time()
+            while time.time() - inner_check_start_time < self.timeout:
+                b_ip_check_time = time.time()
+                after_ip = self._get_ip()
+                a_ip_check_time = time.time()
+
+                if a_ip_check_time - b_ip_check_time > 10:
+                    # Changing connection makes it take longer to get the IP
+                    # Ensure we actually get the latest IP
+                    after_ip = self._get_ip()
+
+                if before_ip != after_ip:
+                    break
+                self._after_ip_check()
+                time.sleep(2)
+
+            if before_ip != after_ip:
+                total_success = True
+                break
+                # logger.error('VPN connection failed')
+                # util.show_warning_box('VPN connection failed', 'VPN connection failed.<br>Check if your settings are correct.')
+                # self._disconnect()
+                # return False
+            self._disconnect()
+
+
+        if not total_success:
             logger.error('VPN connection failed')
             util.show_warning_box('VPN connection failed', 'VPN connection failed.<br>Check if your settings are correct.')
             self._disconnect()
@@ -190,25 +222,38 @@ class OpenVPNClient(VPNClient):
         self.ovpn_process = None
         self.profile_override = profile_override
         self.cygames = cygames
+        self.timeout = 30
+        self.log_path = util.get_relative('ovpn.log')
+
+        if os.path.exists(self.log_path):
+            os.remove(self.log_path)
 
     def _connect(self):
+
         if not self.profile_override:
             ovpn = self._determine_vpngate_server(cygames=self.cygames)
 
             if not ovpn:
                 return False
-            
-            logger.info('Connecting to OpenVPN')
 
             with open(self.ovpn_path, 'w', encoding='utf-8') as f:
                 f.write(ovpn)
 
         else:
             self.ovpn_path = self.profile_override
+        
+        logger.info("Connecting to OpenVPN")
 
-        cmd = [self.exe_path, self.ovpn_path]
+        cmd = [self.exe_path, '--config', self.ovpn_path]
+
+        if util.is_debug:
+            cmd.append('--log-append')
+            cmd.append(self.log_path)
+
+        logger.debug(f"cmd: {cmd}")
         
         self.ovpn_process = subprocess.Popen(cmd, creationflags=subprocess.CREATE_NO_WINDOW)
+        # self.ovpn_process = subprocess.Popen(cmd)
 
         return True
 
