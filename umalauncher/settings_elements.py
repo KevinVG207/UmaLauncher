@@ -8,6 +8,7 @@ class SettingType(enum.Enum):
     LIST = "list"
     COLOR = "color"
     STRING = "string"
+    DICT = "dict"
     RADIOBUTTONS = "radiobuttons"
     FOLDERDIALOG = "folderdialog"
     FILEDIALOG = "filedialog"

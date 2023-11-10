@@ -9,6 +9,7 @@ import threading
 import requests
 import settings_elements as se
 import version
+import constants
 
 ICONS = qtw.QMessageBox.Icon
 
@@ -161,13 +162,15 @@ class UmaPresetMenu(UmaMainDialog):
     row_types_enum = None
     new_preset_class = None
 
-    def init_ui(self, selected_preset, default_preset, new_preset_class, preset_list, row_types_enum, output_list, *args, **kwargs):
+    def init_ui(self, selected_preset, default_preset, new_preset_class, preset_list, scenario_preset_dict, row_types_enum, output_list, output_dict, *args, **kwargs):
         self.selected_preset = selected_preset
         self.default_preset = default_preset
         self.preset_list = copy.deepcopy(preset_list)
+        self.scenario_preset_dict = copy.deepcopy(scenario_preset_dict)
         self.row_types_enum = row_types_enum
         self.new_preset_class = new_preset_class
         self.output_list = output_list
+        self.output_dict = output_dict
 
         self.resize(691, 471)
         # Disable resizing
@@ -285,6 +288,18 @@ class UmaPresetMenu(UmaMainDialog):
         self.lbl_description.setAlignment(qtc.Qt.AlignLeading|qtc.Qt.AlignLeft|qtc.Qt.AlignTop)
         self.lbl_description.setWordWrap(True)
 
+        self.check_scenario_presets = qtw.QCheckBox(self)
+        self.check_scenario_presets.setObjectName(u"check_scenario_presets")
+        self.check_scenario_presets.setGeometry(qtc.QRect(10, 440, 161, 21))
+        self.check_scenario_presets.setText(u"Enable per-scenario presets")
+        self.check_scenario_presets.setChecked(self.output_dict[0])
+
+        self.btn_scenario_presets = qtw.QPushButton(self)
+        self.btn_scenario_presets.setObjectName(u"btn_scenario_presets")
+        self.btn_scenario_presets.setGeometry(qtc.QRect(180, 440, 101, 23))
+        self.btn_scenario_presets.setText(u"Scenario Presets")
+        self.btn_scenario_presets.clicked.connect(self.on_scenario_presets)
+
         self.reload_preset_combobox()
 
 
@@ -300,6 +315,9 @@ class UmaPresetMenu(UmaMainDialog):
         self.output_list.append(self.selected_preset)
         for preset in self.preset_list:
             self.output_list.append(preset)
+        
+        self.output_dict[0] = (self.check_scenario_presets.isChecked())
+        self.output_dict.append(self.scenario_preset_dict)
         return True
 
     @qtc.pyqtSlot()
@@ -451,6 +469,10 @@ class UmaPresetMenu(UmaMainDialog):
                 self.cmb_select_preset.setCurrentIndex(i + 1)
                 self.lst_current.setEnabled(True)
         self.reload_current_rows()
+    
+    @qtc.pyqtSlot()
+    def on_scenario_presets(self):
+        UmaScenarioPresetDialog(self).exec_()
 
 
 class UmaNewPresetDialog(UmaMainDialog):
@@ -976,7 +998,7 @@ class UmaGeneralSettingsDialog(UmaSettingsDialog):
 
 
 class UmaPreferences(UmaMainWidget):
-    def init_ui(self, umasettings, general_var, preset_dict, selected_preset, new_preset_list, default_preset, new_preset_class, row_types_enum, *args, **kwargs):
+    def init_ui(self, umasettings, general_var, preset_dict, selected_preset, new_preset_list, default_preset, new_preset_class, new_scenario_preset_dict, row_types_enum, *args, **kwargs):
         self.previous_settings = copy.deepcopy(general_var[0])
         self.previous_presets = copy.deepcopy(preset_dict)
         self.previous_selected_preset = copy.deepcopy(selected_preset)
@@ -1014,8 +1036,10 @@ class UmaPreferences(UmaMainWidget):
             default_preset=default_preset,
             new_preset_class=new_preset_class,
             preset_list=list(preset_dict.values()),
+            scenario_preset_dict=getattr(general_var[0], 's_training_helper_table_scenario_presets').value,
             row_types_enum=row_types_enum,
-            output_list=new_preset_list
+            output_list=new_preset_list,
+            output_dict=new_scenario_preset_dict
         )
         self.tab_presets = self.presets_widget
         self.tab_presets.setObjectName("tab_presets")
@@ -1363,3 +1387,90 @@ class AboutDialog(UmaMainDialog):
     def on_refresh_id(self):
         self.settings.regenerate_unique_id()
         self.lbl_unique.setText(self.settings['s_unique_id'])
+
+
+class UmaScenarioPresetDialog(UmaMainDialog):
+    def init_ui(self):
+        self.setObjectName(u"UmaScenarioPresetDialog")
+        self.resize(391, 371)
+        self.setFixedSize(self.size())
+        self.setWindowFlag(qtc.Qt.WindowContextHelpButtonHint, False)
+
+        self.setWindowTitle(u"Set Scenario Presets")
+
+        self.scrollArea = qtw.QScrollArea(self)
+        self.scrollArea.setObjectName(u"scrollArea")
+        self.scrollArea.setGeometry(qtc.QRect(0, 0, 391, 331))
+        self.scrollArea.setWidgetResizable(True)
+        self.scrollAreaWidgetContents = qtw.QWidget()
+        self.scrollAreaWidgetContents.setObjectName(u"scrollAreaWidgetContents")
+        self.scrollAreaWidgetContents.setGeometry(qtc.QRect(0, 0, 389, 329))
+
+        self.verticalLayout = qtw.QVBoxLayout(self.scrollAreaWidgetContents)
+        self.verticalLayout.setObjectName(u"verticalLayout")
+
+        current_presets = self._parent.scenario_preset_dict
+        self.comboboxes = []
+
+        # Fill the layout with scenario preset comboboxes
+        for scenario_id, scenario_name in constants.SCENARIO_DICT.items():
+            hzl = qtw.QHBoxLayout()
+            hzl.setObjectName(f"hzl_scenario_{scenario_id}")
+            hzl.setContentsMargins(-1, 5, -1, 5)
+            lbl_scenario = qtw.QLabel(self.scrollAreaWidgetContents)
+            lbl_scenario.setObjectName(f"lbl_scenario_{scenario_id}")
+            lbl_scenario.setText(scenario_name)
+
+            hzl.addWidget(lbl_scenario)
+
+            cmb_preset = qtw.QComboBox(self.scrollAreaWidgetContents)
+            cmb_preset.setObjectName(f"cmb_preset_{scenario_id}")
+            # Save scenario_id in object data
+            cmb_preset.setProperty("scenario_id", str(scenario_id))
+
+            self.comboboxes.append(cmb_preset)
+
+            hzl.addWidget(cmb_preset)
+            
+            current_preset = current_presets.get(str(scenario_id), None)
+            set_index = 0
+
+            for i, preset in enumerate([self._parent.default_preset] + self._parent.preset_list):
+                cmb_preset.addItem(preset.name)
+                if current_preset is not None and current_preset == preset.name:
+                    set_index = i
+            
+            cmb_preset.setCurrentIndex(set_index)
+
+            self.verticalLayout.addLayout(hzl)
+
+        self.verticalSpacer = qtw.QSpacerItem(20, 40, qtw.QSizePolicy.Minimum, qtw.QSizePolicy.Expanding)
+
+        self.verticalLayout.addItem(self.verticalSpacer)
+
+        self.scrollArea.setWidget(self.scrollAreaWidgetContents)
+
+        self.btn_cancel = qtw.QPushButton(self)
+        self.btn_cancel.setObjectName(u"btn_cancel")
+        self.btn_cancel.setGeometry(qtc.QRect(300, 340, 81, 23))
+        self.btn_cancel.setText(u"Cancel")
+        self.btn_cancel.setDefault(True)
+        self.btn_cancel.clicked.connect(self.cancel)
+
+        self.btn_ok = qtw.QPushButton(self)
+        self.btn_ok.setObjectName(u"btn_ok")
+        self.btn_ok.setGeometry(qtc.QRect(210, 340, 81, 23))
+        self.btn_ok.setText(u"Apply")
+        self.btn_ok.clicked.connect(self.save)
+
+
+    def save(self):
+        out_dict = {}
+        for cmb in self.comboboxes:
+            scenario_id = cmb.property("scenario_id")
+            out_dict[scenario_id] = cmb.currentText()
+        self._parent.scenario_preset_dict = out_dict
+        self.close()
+    
+    def cancel(self):
+        self.close()

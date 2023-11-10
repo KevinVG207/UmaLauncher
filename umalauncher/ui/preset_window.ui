@@ -260,6 +260,32 @@
     </property>
    </widget>
   </widget>
+  <widget class="QCheckBox" name="check_scenario_presets">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>440</y>
+     <width>161</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string notr="true">Enable per-scenario presets</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="btn_scenario_presets">
+   <property name="geometry">
+    <rect>
+     <x>180</x>
+     <y>440</y>
+     <width>101</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string notr="true">Scenario Presets</string>
+   </property>
+  </widget>
  </widget>
  <resources/>
  <connections/>

@@ -178,6 +178,20 @@ class DefaultSettings(se.Settings):
             se.SettingType.LIST,
             priority=-1
         )
+        self.s_training_helper_table_scenario_presets_enabled = se.Setting(
+            "Training helper table scenario presets enabled",
+            "Enable scenario-specific presets for the Automatic Training Event Helper.",
+            False,
+            se.SettingType.BOOL,
+            priority=-1
+        )
+        self.s_training_helper_table_scenario_presets = se.Setting(
+            "Training helper table scenario presets",
+            "Scenario-specific selected preset.",
+            {key: "Default" for key in constants.SCENARIO_DICT},
+            se.SettingType.DICT,
+            priority=-1
+        )
         self.s_vpn_message = se.Setting(
             "VPN Help",
             """<p>Automatic VPN is still experimental. Please report any issues you encounter.<br>For a guide on how to set up automatic VPN, see the guide on the <a href="https://github.com/KevinVG207/UmaLauncher/blob/main/FAQ.md">Frequently Asked Questions</a> page.</p>""",
@@ -347,6 +361,19 @@ class SettingsHandler():
             preset_object.import_dict(preset)
             preset_list.append(preset_object)
         return preset_list
+    
+
+    def get_preset_with_name(self, name):
+        found_preset = None
+        for preset in self.get_preset_list():
+            if preset.name == name:
+                found_preset = preset
+                break
+        
+        if found_preset:
+            return found_preset
+        
+        return htd.DefaultPreset(htd.RowTypes)
 
 
     def get_helper_table_data(self):
@@ -390,6 +417,7 @@ class SettingsHandler():
         
         preset_dict, selected_preset = self.get_helper_table_data()
         new_preset_list = []
+        new_scenario_preset_dict = [self['s_training_helper_table_scenario_presets_enabled']]
 
         gui.show_widget(gui.UmaPreferences,
             umasettings=self,
@@ -399,6 +427,7 @@ class SettingsHandler():
             new_preset_list=new_preset_list,
             default_preset=htd.DefaultPreset(htd.RowTypes),
             new_preset_class=hte.Preset,
+            new_scenario_preset_dict=new_scenario_preset_dict,
             row_types_enum=htd.RowTypes
         )
 
@@ -410,8 +439,14 @@ class SettingsHandler():
             selected_preset = new_preset_list.pop(0)
             self["s_training_helper_table_preset"] = selected_preset.name
             self["s_training_helper_table_preset_list"] = [preset.to_dict() for preset in new_preset_list]
-            if self.threader.carrotjuicer.helper_table:
-                self.threader.carrotjuicer.helper_table.update_presets(*self.get_helper_table_data())
+        
+        if len(new_scenario_preset_dict) > 1:
+            logger.debug("Saving new helper table scenario preset list.")
+            self["s_training_helper_table_scenario_presets_enabled"] = new_scenario_preset_dict[0]
+            self["s_training_helper_table_scenario_presets"] = new_scenario_preset_dict[1]
+        
+        if self.threader.carrotjuicer.helper_table:
+            self.threader.carrotjuicer.helper_table.update_presets(*self.get_helper_table_data())
 
         self.save_settings()
         self.load_settings()
