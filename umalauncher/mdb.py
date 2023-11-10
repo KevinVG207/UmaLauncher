@@ -48,7 +48,59 @@ def get_columns(cursor):
 def rows_to_dict(rows, columns, keep_newline=False):
     return [{columns[i]: data if not isinstance(data, str) or keep_newline else data.replace("\\n", "") for i, data in enumerate(row)} for row in rows]
 
-def get_event_title(story_id):
+
+def _get_event_titles_special(story_id, card_id):
+    # Determine if it's a L'Arc special outfit event.
+    # First, determine if there is a dress icon.
+    event_titles = _get_event_titles_default(story_id)
+
+    with Connection() as (_, cursor):
+        cursor.execute(
+            """SELECT event_title_dress_icon FROM single_mode_story_data WHERE story_id = ? AND card_id = ? LIMIT 1""",
+            (story_id, card_id)
+        )
+        row = cursor.fetchone()
+        if row is None:
+            return event_titles
+
+        dress_icon = row[0]
+
+        if dress_icon == 0:
+            return event_titles
+        
+        # Now match up the events.
+        cursor.execute(
+            """SELECT story_id FROM single_mode_story_data WHERE event_title_dress_icon = ? ORDER BY id""",
+            (dress_icon,)
+        )
+        rows = cursor.fetchall()
+
+        if not rows:
+            return event_titles
+        
+        default_ids = []
+        larc_ids = []
+
+        for row in rows:
+            str_id = str(row[0])
+            if str_id.startswith("40"):
+                larc_ids.append(str_id)
+            elif str_id.startswith("50"):
+                default_ids.append(str_id)
+        
+        try:
+            index = larc_ids.index(str(story_id)) % len(default_ids)
+        except ValueError:
+            return event_titles
+        
+        if index >= len(default_ids):
+            return event_titles
+        
+        event_titles.append(_get_event_titles_default(default_ids[index]))
+        return event_titles
+
+
+def _get_event_titles_default(story_id):
     with Connection() as (_, cursor):
         cursor.execute(
             """SELECT text FROM text_data WHERE category = 181 AND "index" = ? LIMIT 1""",
@@ -56,12 +108,26 @@ def get_event_title(story_id):
         )
         row = cursor.fetchone()
         if row is None:
-            event_title = "NO EVENT TITLE"
-            logger.warning(f"Event title not found for story_id: {story_id}")  # TODO: Fix stories that aren't found.
-        else:
-            event_title = row[0]
+            return None
+        
+        return [row[0]]
 
-    return event_title
+def get_event_titles(story_id, card_id):
+    str_event_title = str(story_id)
+
+    if str_event_title.startswith("40"):
+        event_titles = _get_event_titles_special(story_id, card_id)
+
+    else:
+        event_titles = _get_event_titles_default(story_id)
+    
+    event_titles = [event_title for event_title in event_titles if event_title]
+
+    if not event_titles:
+        event_titles = ["NO EVENT TITLE"]
+        logger.warning(f"Event title not found for story_id: {story_id}")  # TODO: Fix stories that aren't found.
+
+    return event_titles
 
 def get_song_title(song_id):
     with Connection() as (_, cursor):

@@ -1,6 +1,7 @@
 venv/*
 _dump/*
 .vscode/*
+tests/packets/*
 *__pycache__*
 *.log*
 sandbox.*

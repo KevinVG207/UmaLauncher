@@ -434,6 +434,16 @@ class HelperTable():
             "arc_supporter_points": arc_supporter_points,
         }
 
+        # Update preset if needed.
+        if self.carrotjuicer.threader.settings['s_training_helper_table_scenario_presets_enabled']:
+            scenario_preset = self.carrotjuicer.threader.settings['s_training_helper_table_scenario_presets'].get(str(scenario_id), None)
+            if scenario_preset and self.selected_preset.name != scenario_preset:
+                self.selected_preset = self.carrotjuicer.threader.settings.get_preset_with_name(scenario_preset)
+        else:
+            general_preset = self.carrotjuicer.threader.settings['s_training_helper_table_preset']
+            if self.selected_preset.name != general_preset:
+                self.selected_preset = self.carrotjuicer.threader.settings.get_preset_with_name(general_preset)
+
         overlay_html = self.selected_preset.generate_overlay(main_info, command_info)
 
         return overlay_html

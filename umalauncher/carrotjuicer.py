@@ -191,7 +191,7 @@ class CarrotJuicer():
         else:
             grade_text = "G1"
 
-        return f"{grade_text} {self.EVENT_ID_TO_POS_STRING[event_id]}"
+        return [f"{grade_text} {self.EVENT_ID_TO_POS_STRING[event_id]}"]
 
     def handle_response(self, message, is_json=False):
         if is_json:
@@ -355,16 +355,13 @@ class CarrotJuicer():
                 # Training event.
                 logger.debug("Training event detected")
                 event_data = data['unchecked_event_array'][0]
-                event_title = mdb.get_event_title(event_data['story_id'])
-                logger.debug(f"Event title: {event_title}")
+                event_titles = mdb.get_event_titles(event_data['story_id'], data['chara_info']['card_id'])
+                logger.debug(f"Event titles: {event_titles}")
 
                 if len(data['unchecked_event_array']) > 1:
                     logger.warning(f"Packet has more than 1 unchecked event! {message}")
 
                 if len(event_data['event_contents_info']['choice_array']) > 1:
-
-                    logger.debug(f"Event title determined: {event_title}")
-
                     # Event has choices
 
                     # If character is the trained character
@@ -393,35 +390,22 @@ class CarrotJuicer():
                     # Check for after-race event.
                     if event_data['event_id'] in (7005, 7006, 7007):
                         logger.debug("After-race event detected.")
-                        event_title = self.get_after_race_event_title(event_data['event_id'])
+                        event_titles = self.get_after_race_event_title(event_data['event_id'])
 
                     # Activate and scroll to the outcome.
-                    previous_element = self.browser.execute_script(
-                        """a = document.querySelectorAll("[class^='compatibility_viewer_item_']");
-                        var ele = null;
-                        for (var i = 0; i < a.length; i++) {
-                        item = a[i];
-                        if (item.textContent.includes(arguments[0])) {
-                            item.click();
-                            ele = item;
-                            break;
-                        }
-                        }
-                        return ele;
-                        """,
-                        event_title
-                    )
-                    if not previous_element:
-                        logger.debug(f"Could not find event on GT page: {event_title} {event_data['story_id']}")
+                    event_element = self.determine_event_element(event_titles)
+
+                    if not event_element:
+                        logger.debug(f"Could not find event on GT page: {event_data['story_id']}")
                     self.browser.execute_script("""
                         if (arguments[0]) {
-                            // document.querySelector(".tippy-box").scrollIntoView({behavior:"smooth", block:"center"});
-                            // arguments[0].scrollIntoView({behavior:"smooth", block:"end"});
+                            arguments[0].click();
                             window.scrollBy({top: arguments[0].getBoundingClientRect().bottom - window.innerHeight + 32, left: 0, behavior: 'smooth'});
                         }
                         """,
-                        previous_element
+                        event_element
                     )
+
 
             if 'reserved_race_array' in data and 'chara_info' not in data and self.last_helper_data:
                 # User changed reserved races
@@ -601,6 +585,35 @@ class CarrotJuicer():
                 skills_table.appendChild(item);
             }
             """, self.skills_list)
+    
+    def determine_event_element(self, event_titles):
+        ranked_elements = []
+        for event_title in event_titles:
+            possible_elements = self.browser.execute_script(
+                """
+                let a = document.querySelectorAll("[class^='compatibility_viewer_item_']");
+                let ele = [];
+                for (let i = 0; i < a.length; i++) {
+                    let item = a[i];
+                    if (item.textContent.includes(arguments[0])) {
+                        let diff = item.textContent.length - arguments[0].length;
+                        ele.push([diff, item, item.textContent]);
+                    }
+                }
+                return ele;
+                """,
+                event_title
+            )
+            if possible_elements:
+                possible_elements.sort(key=lambda x: x[0])
+                ranked_elements.append(possible_elements[0])
+        
+        if not ranked_elements:
+            return None
+
+        ranked_elements.sort(key=lambda x: x[0])
+        logger.info(f"Event element: {ranked_elements[0][2]}")
+        return ranked_elements[0][1]
 
 
     def run_with_catch(self):
