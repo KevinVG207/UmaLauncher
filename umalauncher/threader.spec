@@ -7,7 +7,7 @@ a = Analysis(
     ['threader.py'],
     pathex=['venv\\Lib\\site-packages'],
     binaries=[],
-    datas=[('./favicon.ico', '.')],
+    datas=[('./_assets/icon/default.ico', '.'), ('./_assets/icon/connecting.ico', '.'), ('./_assets/icon/connected.ico', '.')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
@@ -47,6 +47,6 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=['favicon.ico'],
+    icon=['./_assets/icon/default.ico'],
     version='version.rc'
 )

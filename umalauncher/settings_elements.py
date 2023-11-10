@@ -11,6 +11,9 @@ class SettingType(enum.Enum):
     RADIOBUTTONS = "radiobuttons"
     FOLDERDIALOG = "folderdialog"
     FILEDIALOG = "filedialog"
+    MESSAGE = "message"
+    XYWHSPINBOXES = "xywhspinboxes"
+    LRTBSPINBOXES = "lrtbspinboxes"
 
 
 class Settings():
@@ -19,7 +22,7 @@ class Settings():
 
     def to_dict(self):
         settings = self.get_settings_keys()
-        return {setting: getattr(self, setting).value for setting in settings} if settings else {}
+        return {setting: getattr(self, setting).value for setting in settings if getattr(self, setting).type != SettingType.MESSAGE} if settings else {}
 
     def import_dict(self, settings_dict, keep_undefined=False):
         for key, value in settings_dict.items():
@@ -52,7 +55,7 @@ class Setting():
     max_value: int = None
     choices: list = None
 
-    def __init__(self, name, description, value, type, priority=0, min_value=0, max_value=100, choices=None):
+    def __init__(self, name, description, value, type, priority=0, min_value=0, max_value=100, choices=None, tab=" General"):
         self.name = name
         self.description = description
         self.value = value
@@ -61,3 +64,4 @@ class Setting():
         self.min_value = min_value
         self.max_value = max_value
         self.choices = choices if choices else []
+        self.tab = tab

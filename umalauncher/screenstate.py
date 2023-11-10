@@ -24,6 +24,7 @@ class Location(Enum):
     EVENT = 4
     LEAGUE_OF_HEROES = 5
     SCOUTING_EVENT = 6
+    CLAW_MACHINE = 7
 
 class ScreenState:
     location = None
@@ -232,7 +233,7 @@ class ScreenStateHandler():
     def run(self):
         # Enable VPN if needed
         if not self.test_mode and self.threader.settings["s_vpn_enabled"] and not self.threader.settings["s_vpn_dmm_only"]:
-            self.vpn = vpn.create_client(self.threader)
+            self.vpn = vpn.create_client(self.threader, cygames=True)
             self.vpn.connect()
 
         # If DMM is not seen AND Game is not seen: Start DMM

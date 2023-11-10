@@ -87,6 +87,8 @@ if is_script:
 else:
     log_set_info()
 
+
+# Import the rest of the modules after logging is set up.
 import win32api
 import win32gui
 import win32con

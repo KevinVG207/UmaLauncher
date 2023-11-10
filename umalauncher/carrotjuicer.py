@@ -284,6 +284,11 @@ class CarrotJuicer():
                     self.screen_state_handler.carrotjuicer_state = tmp2
                     return
             
+            # Claw Machine
+            if 'collected_plushies' in data:
+                if self.screen_state_handler:
+                    self.screen_state_handler.carrotjuicer_state = screenstate_utils.make_claw_machine_state(data, self.threader.screenstate)
+            
             # Race starts.
             if self.training_tracker and 'race_scenario' in data and 'race_start_info' in data and data['race_scenario']:
                 self.previous_race_program_id = data['race_start_info']['program_id']
@@ -359,7 +364,7 @@ class CarrotJuicer():
                 # Training event.
                 logger.debug("Training event detected")
                 event_data = data['unchecked_event_array'][0]
-                event_title = mdb.get_event_title(event_data['story_id'])
+                event_title = mdb.get_event_title(event_data['story_id'], data['chara_info']['card_id'])
                 logger.debug(f"Event title: {event_title}")
 
                 if len(data['unchecked_event_array']) > 1:
