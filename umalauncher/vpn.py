@@ -93,7 +93,7 @@ class VPNClient:
 
             if not success:
                 self._disconnect()
-                continue
+                break
 
             inner_check_start_time = time.time()
             while time.time() - inner_check_start_time < self.timeout:
