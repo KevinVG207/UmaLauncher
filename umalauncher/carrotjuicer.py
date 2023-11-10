@@ -355,7 +355,7 @@ class CarrotJuicer():
                 # Training event.
                 logger.debug("Training event detected")
                 event_data = data['unchecked_event_array'][0]
-                event_title = mdb.get_event_title(event_data['story_id'])
+                event_title = mdb.get_event_title(event_data['story_id'], data['chara_info']['card_id'])
                 logger.debug(f"Event title: {event_title}")
 
                 if len(data['unchecked_event_array']) > 1:
