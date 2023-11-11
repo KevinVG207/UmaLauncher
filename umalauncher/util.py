@@ -403,7 +403,7 @@ def get_gm_fragment_dict(force=False):
                 continue
 
             img = Image.open(asset_path)
-            img.thumbnail((36, 36), Image.ANTIALIAS)
+            img.thumbnail((36, 36))
 
             # Save the image in memory in PNG format
             buffer = io.BytesIO()
@@ -436,7 +436,7 @@ def get_gl_token_dict(force=False):
             token_name = token_file[:-4]
 
             img = Image.open(os.path.join(token_folder, token_file))
-            img.thumbnail((36, 36), Image.ANTIALIAS)
+            img.thumbnail((36, 36))
 
             # Save the image in memory in PNG format
             buffer = io.BytesIO()
