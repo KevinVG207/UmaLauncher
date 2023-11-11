@@ -108,7 +108,7 @@ def _get_event_titles_default(story_id):
         )
         row = cursor.fetchone()
         if row is None:
-            return None
+            return [None]
         
         return [row[0]]
 
