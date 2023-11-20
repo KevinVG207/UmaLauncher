@@ -318,6 +318,10 @@ def get_support_card_string_dict(force=False):
     global SUPPORT_CARD_STRING_DICT
     if force or not SUPPORT_CARD_STRING_DICT:
         support_card_dict = get_support_card_dict()
+
+        # Forcefully clear the character name dict cache if needed.
+        util.get_character_name_dict(force=force)
+
         SUPPORT_CARD_STRING_DICT.update({id: create_support_card_string(*data) for id, data in support_card_dict.items()})
     
     return SUPPORT_CARD_STRING_DICT
@@ -498,6 +502,7 @@ def get_total_minigame_plushies(force=False):
     return 3 * (total_plushies + len(total_charas))
 
 UPDATE_FUNCS = [
+    get_chara_name_dict,
     get_event_title_dict,
     get_race_program_name_dict,
     get_skill_name_dict,
@@ -506,7 +511,6 @@ UPDATE_FUNCS = [
     get_outfit_name_dict,
     get_support_card_dict,
     get_support_card_string_dict,
-    get_chara_name_dict,
     get_mant_item_string_dict,
     get_gl_lesson_dict,
     get_group_card_effect_ids,
