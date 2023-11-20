@@ -111,8 +111,23 @@ def _get_event_titles_default(story_id):
             return [None]
         
         return [row[0]]
+    
+def convert_short_story_id(story_id):
+    with Connection() as (_, cursor):
+        cursor.execute(
+            """SELECT story_id FROM single_mode_story_data WHERE short_story_id = ? LIMIT 1""",
+            (story_id,)
+        )
+        row = cursor.fetchone()
+
+        if row is None:
+            return story_id
+        
+        return row[0]
 
 def get_event_titles(story_id, card_id):
+    story_id = convert_short_story_id(story_id)
+
     str_event_title = str(story_id)
 
     if str_event_title.startswith("40"):
