@@ -14,25 +14,43 @@ from selenium.common.exceptions import WebDriverException
 from selenium import webdriver
 from selenium.webdriver.remote.webdriver import WebDriver as RemoteWebDriver
 from selenium.webdriver.firefox.service import Service as FirefoxService
+from selenium.webdriver.firefox.service import DEFAULT_EXECUTABLE_PATH as ff_exec_path
 from selenium.webdriver.edge.service import Service as EdgeService
 from selenium.webdriver.chrome.service import Service as ChromeService
+from selenium.webdriver.chrome.service import DEFAULT_EXECUTABLE_PATH as chrome_exec_path
 from selenium.common.exceptions import NoSuchWindowException
 import util
 
 OLD_DRIVERS = []
 
-def firefox_setup(helper_url):
-    firefox_service = FirefoxService()
+def firefox_setup(helper_url, settings):
+    driver_path = ff_exec_path
+    if settings['s_enable_browser_override']:
+        new_path = settings['s_browser_custom_driver']
+        if new_path:
+            driver_path = new_path
+
+    firefox_service = FirefoxService(executable_path=driver_path)
     firefox_service.creation_flags = CREATE_NO_WINDOW
     profile = webdriver.FirefoxProfile(util.get_asset("ff_profile"))
     options = webdriver.FirefoxOptions()
+
+    if settings['s_enable_browser_override']:
+        binary_path = settings['s_browser_custom_binary']
+        if binary_path:
+            options.binary_location = binary_path
+    
     browser = webdriver.Firefox(service=firefox_service, firefox_profile=profile, options=options)
     browser.get(helper_url)
     return browser
 
-def chromium_setup(service, options_class, driver_class, profile, helper_url):
+def chromium_setup(service, options_class, driver_class, profile, helper_url, binary_path=None):
     service.creation_flags = CREATE_NO_WINDOW
     options = options_class()
+
+    if binary_path:
+        options.binary_location = binary_path
+
     options.add_argument("--user-data-dir=" + str(util.get_asset(profile)))
     options.add_argument("--app=" + helper_url)
     options.add_argument("--remote-debugging-port=9222")
@@ -40,16 +58,27 @@ def chromium_setup(service, options_class, driver_class, profile, helper_url):
     browser = driver_class(service=service, options=options)
     return browser
 
-def chrome_setup(helper_url):
+def chrome_setup(helper_url, settings):
+    driver_path = chrome_exec_path
+    if settings['s_enable_browser_override']:
+        new_path = settings['s_browser_custom_driver']
+        if new_path:
+            driver_path = new_path
+    
+    binary_path = None
+    if settings['s_enable_browser_override']:
+        binary_path = settings['s_browser_custom_binary']
+
     return chromium_setup(
-        service=ChromeService(),
+        service=ChromeService(executable_path=driver_path),
         options_class=webdriver.ChromeOptions,
         driver_class=webdriver.Chrome,
         profile="chr_profile",
-        helper_url=helper_url
+        helper_url=helper_url,
+        binary_path=binary_path
     )
 
-def edge_setup(helper_url):
+def edge_setup(helper_url, settings):
     return chromium_setup(
         service=EdgeService(),
         options_class=webdriver.EdgeOptions,
@@ -77,6 +106,7 @@ class BrowserWindow:
     def __init__(self, url, threader, rect=None, run_at_launch=None):
         self.url = url
         self.threader = threader
+        self.settings = threader.settings
         self.driver: RemoteWebDriver = None
         self.active_tab_handle = None
         self.last_window_rect = {'x': rect[0], 'y': rect[1], 'width': rect[2], 'height': rect[3]} if rect else None
@@ -88,12 +118,19 @@ class BrowserWindow:
     def init_browser(self) -> RemoteWebDriver:
         driver = None
 
+        if self.settings['s_enable_browser_override']:
+            selection = self.settings['s_custom_browser_type']
+        else:
+            selection = self.settings['s_selected_browser']
         browser_name = [
                     browser
-                    for browser, selected in self.threader.settings['s_selected_browser'].items()
+                    for browser, selected in selection.items()
                     if selected
                 ][0]
         self.browser_name = browser_name
+
+        if browser_name == 'Chromium':
+            browser_name = 'Chrome'
 
         browser_list = []
         if browser_name == "Auto":

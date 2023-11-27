@@ -15,6 +15,7 @@ class SettingType(enum.Enum):
     MESSAGE = "message"
     XYWHSPINBOXES = "xywhspinboxes"
     LRTBSPINBOXES = "lrtbspinboxes"
+    DIVIDER = "divider"
 
 
 class Settings():
@@ -23,7 +24,7 @@ class Settings():
 
     def to_dict(self):
         settings = self.get_settings_keys()
-        return {setting: getattr(self, setting).value for setting in settings if getattr(self, setting).type != SettingType.MESSAGE} if settings else {}
+        return {setting: getattr(self, setting).value for setting in settings if getattr(self, setting).type not in (SettingType.MESSAGE, SettingType.DIVIDER)} if settings else {}
 
     def import_dict(self, settings_dict, keep_undefined=False):
         for key, value in settings_dict.items():
