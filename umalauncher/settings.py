@@ -145,8 +145,16 @@ class DefaultSettings(se.Settings):
             priority=50,
             tab="Position"
         )
+        self.s_enable_browser = se.Setting(
+            "Enable browser",
+            "Enable the Automatic Training Event helper browser.",
+            True,
+            se.SettingType.BOOL,
+            priority=100,
+            tab="Event Helper"
+        )
         self.s_selected_browser = se.Setting(
-            "Selected browser",
+            "Browser type",
             "Browser to use for the Automatic Training Event Helper.",
             {
                 "Auto": True,
@@ -155,14 +163,16 @@ class DefaultSettings(se.Settings):
                 "Edge": False
             },
             se.SettingType.RADIOBUTTONS,
-            priority=98
+            priority=98,
+            tab="Event Helper"
         )
         self.s_gametora_dark_mode = se.Setting(
             "GameTora dark mode",
             "Enable dark mode for GameTora.",
             True,
             se.SettingType.BOOL,
-            priority=97
+            priority=97,
+            tab="Event Helper"
         )
         self.s_training_helper_table_preset = se.Setting(
             "Training helper table preset",

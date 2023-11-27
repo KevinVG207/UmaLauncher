@@ -638,7 +638,11 @@ class CarrotJuicer():
             while not self.should_stop:
                 time.sleep(0.25)
 
-                if not self.threader.settings["s_enable_carrotjuicer"]:
+                if not self.threader.settings["s_enable_carrotjuicer"] or not self.threader.settings['s_enable_browser']:
+                    if self.browser and self.browser.alive():
+                        self.browser.quit()
+                    if self.skill_browser and self.skill_browser.alive():
+                        self.skill_browser.quit()
                     continue
 
                 if self.browser and self.browser.alive():

@@ -586,6 +586,9 @@ class UmaSettingsDialog(UmaMainDialog):
 
         self.load_settings()
 
+        self.verticalSpacer = qtw.QSpacerItem(0, 0, qtw.QSizePolicy.Minimum, qtw.QSizePolicy.Expanding)
+        self.verticalLayout.addItem(self.verticalSpacer)
+
         self.scrollArea.setWidget(self.scrollAreaWidgetContents)
 
         self.btn_restore = qtw.QPushButton(self)

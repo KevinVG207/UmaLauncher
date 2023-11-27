@@ -116,7 +116,7 @@ def do_get_request(url, error_title=None, error_message=None, ignore_timeout=Fal
             else:
                 return None
         logger.debug(f"GET request to {url}")
-        response = requests.get(url)
+        response = requests.get(url, timeout=10)
         response.raise_for_status()
         return response
     except:
