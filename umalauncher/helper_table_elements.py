@@ -112,6 +112,20 @@ class PresetSettings(se.Settings):
             "Displays energy in the event helper.",
             True,
             se.SettingType.BOOL,
+            priority=12
+        )
+        self.s_support_bonds_enabled = se.Setting(
+            "Show support bonds",
+            "Displays support bond levels in the event helper.",
+            False,
+            se.SettingType.BOOL,
+            priority=11
+        )
+        self.s_support_bonds_bar_enabled = se.Setting(
+            "Show support bond bars",
+            "Display bond as bars like in the game instead of a number.",
+            True,
+            se.SettingType.BOOL,
             priority=10
         )
         self.s_skillpt_enabled = se.Setting(
@@ -200,6 +214,9 @@ class Preset():
             html_elements.append(self.generate_gm_table(main_info))
             html_elements.append(self.generate_gl_table(main_info))
             html_elements.append(self.generate_arc(main_info))
+        
+        if self.settings.s_support_bonds_enabled.value:
+            html_elements.append(self.generate_bonds(main_info, bars=self.settings.s_support_bonds_bar_enabled.value))
 
         html_elements.append(self.generate_table(command_info))
 
@@ -230,6 +247,13 @@ class Preset():
         thead = f"<thead>{table[0]}</thead>"
         tbody = f"<tbody>{''.join(table[1:])}</tbody>"
         return f"<table id=\"training-table\">{thead}{tbody}</table>"
+
+    def generate_bonds(main_info, bars=True):
+        eval_dict = main_info['eval_dict']
+        ids = sorted(list(eval_dict.keys()))
+
+        for id in ids:
+            partner = eval_dict[id]
 
     def generate_gm_table(self, main_info):
         if main_info['scenario_id'] != 5:

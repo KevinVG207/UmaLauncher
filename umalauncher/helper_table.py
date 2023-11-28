@@ -120,15 +120,15 @@ class HelperTable():
                     row.disabled = arc_beginning_or_overseas
                     break
 
+        # Support Dict
+        eval_dict = {
+            eval_data['training_partner_id']: TrainingPartner(eval_data['training_partner_id'], eval_data['evaluation'])
+            for eval_data in data['chara_info']['evaluation_info_array']
+        }
 
         for command in all_commands.values():
             if command['command_id'] not in constants.COMMAND_ID_TO_KEY:
                 continue
-
-            eval_dict = {
-                eval_data['training_partner_id']: TrainingPartner(eval_data['training_partner_id'], eval_data['evaluation'])
-                for eval_data in data['chara_info']['evaluation_info_array']
-            }
             level = command.get('level', 0)
             failure_rate = command.get('failure_rate', 0)
             gained_stats = {stat_type: 0 for stat_type in set(constants.COMMAND_ID_TO_KEY.values())}
@@ -432,6 +432,7 @@ class HelperTable():
             "arc_aptitude_points": arc_aptitude_points,
             "arc_expectation_gauge": arc_expectation_gauge,
             "arc_supporter_points": arc_supporter_points,
+            "eval_dict": eval_dict
         }
 
         # Update preset if needed.
