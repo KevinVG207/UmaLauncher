@@ -192,7 +192,7 @@ class DefaultSettings(se.Settings):
         )
         self.s_enable_browser_override = se.Setting(
             "Enable browser override",
-            "Enable overriding of the browser binary and driver.",
+            "Enable overriding of the browser binary and driver. This also disables app mode for Chromium-based browsers, so you can reach settings in case things don't work.",
             False,
             se.SettingType.BOOL,
             priority=95,
@@ -203,7 +203,7 @@ class DefaultSettings(se.Settings):
             "Browser to use for the Automatic Training Event Helper. If browser override is enabled, this <b>will</b> override the browser type setting above.",
             {
                 "Firefox": True,
-                "Chromium": False
+                "Other (Chromium)": False
             },
             se.SettingType.RADIOBUTTONS,
             priority=94,
@@ -211,7 +211,7 @@ class DefaultSettings(se.Settings):
         )
         self.s_browser_custom_binary = se.Setting(
             "Browser custom binary",
-            "Path to a custom browser executable. Leave empty to let Selenium decide.",
+            "Path to a custom browser executable.<br>Leave empty to let Selenium decide.",
             None,
             se.SettingType.FILEDIALOG,
             priority=93,
@@ -219,7 +219,7 @@ class DefaultSettings(se.Settings):
         )
         self.s_browser_custom_driver = se.Setting(
             "Browser custom driver",
-            "Path to a custom browser driver. Leave empty to let Selenium decide.",
+            "Path to a custom browser driver.<br>Leave empty to let Selenium decide.",
             None,
             se.SettingType.FILEDIALOG,
             priority=92,
