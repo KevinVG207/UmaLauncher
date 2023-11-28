@@ -174,6 +174,57 @@ class DefaultSettings(se.Settings):
             priority=97,
             tab="Event Helper"
         )
+        self.s_custom_browser_divider = se.Setting(
+            "Custom browser divider",
+            None,
+            None,
+            se.SettingType.DIVIDER,
+            priority=96,
+            tab="Event Helper"
+        )
+        self.s_custom_browser_message = se.Setting(
+            "Custom browser",
+            "<p>The following settings allow overriding of the browser binary and driver given to Selenium to control. You should only enable this if the browser fails to start, or you want to use a different Chromium-based browser.</p>",
+            None,
+            se.SettingType.MESSAGE,
+            priority=96,
+            tab="Event Helper"
+        )
+        self.s_enable_browser_override = se.Setting(
+            "Enable browser override",
+            "Enable overriding of the browser binary and driver. This also disables app mode for Chromium-based browsers, so you can reach settings in case things don't work.",
+            False,
+            se.SettingType.BOOL,
+            priority=95,
+            tab="Event Helper"
+        )
+        self.s_custom_browser_type = se.Setting(
+            "Browser override type",
+            "Browser to use for the Automatic Training Event Helper. If browser override is enabled, this <b>will</b> override the browser type setting above.",
+            {
+                "Firefox": True,
+                "Other (Chromium)": False
+            },
+            se.SettingType.RADIOBUTTONS,
+            priority=94,
+            tab="Event Helper"
+        )
+        self.s_browser_custom_binary = se.Setting(
+            "Browser custom binary",
+            "Path to a custom browser executable.<br>Leave empty to let Selenium decide.",
+            None,
+            se.SettingType.FILEDIALOG,
+            priority=93,
+            tab="Event Helper"
+        )
+        self.s_browser_custom_driver = se.Setting(
+            "Browser custom driver",
+            "Path to a custom browser driver.<br>Leave empty to let Selenium decide.",
+            None,
+            se.SettingType.FILEDIALOG,
+            priority=92,
+            tab="Event Helper"
+        )
         self.s_training_helper_table_preset = se.Setting(
             "Training helper table preset",
             "Preset to use for the Automatic Training Event Helper.",
