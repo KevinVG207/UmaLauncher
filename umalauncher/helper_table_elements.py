@@ -114,19 +114,35 @@ class PresetSettings(se.Settings):
             se.SettingType.BOOL,
             priority=12
         )
-        self.s_support_bonds_enabled = se.Setting(
+        # self.s_support_bonds_enabled = se.Setting(
+        #     "Show support bonds",
+        #     "Displays support bond levels in the event helper.",
+        #     False,
+        #     se.SettingType.BOOL,
+        #     priority=11
+        # )
+        # self.s_support_bonds_bar_enabled = se.Setting(
+        #     "Show support bond bars",
+        #     "Display bond as bars like in the game instead of a number.",
+        #     True,
+        #     se.SettingType.BOOL,
+        #     priority=10
+        # )
+        self.s_support_bonds = se.Setting(
             "Show support bonds",
-            "Displays support bond levels in the event helper.",
-            False,
-            se.SettingType.BOOL,
+            "Choose how to display support bonds.",
+            0,
+            se.SettingType.COMBOBOX,
+            choices=["Off", "Number", "Bar", "Both"],
             priority=11
         )
-        self.s_support_bonds_bar_enabled = se.Setting(
-            "Show support bond bars",
-            "Display bond as bars like in the game instead of a number.",
-            True,
-            se.SettingType.BOOL,
-            priority=10
+        self.s_displayed_value = se.Setting(
+            "Displayed value(s)",
+            "Which value(s) to display.",
+            0,
+            se.SettingType.COMBOBOX,
+            choices=["Raw gained stats", "Overcap-compensated gained stats", "Both"],
+            priority=9
         )
         self.s_skillpt_enabled = se.Setting(
             "Show skill points",
@@ -215,8 +231,8 @@ class Preset():
             html_elements.append(self.generate_gl_table(main_info))
             html_elements.append(self.generate_arc(main_info))
         
-        if self.settings.s_support_bonds_enabled.value:
-            html_elements.append(self.generate_bonds(main_info, bars=self.settings.s_support_bonds_bar_enabled.value))
+        if self.settings.s_support_bonds.value:
+            html_elements.append(self.generate_bonds(main_info, display_type=self.settings.s_support_bonds.value))
 
         html_elements.append(self.generate_table(command_info))
 
@@ -248,12 +264,42 @@ class Preset():
         tbody = f"<tbody>{''.join(table[1:])}</tbody>"
         return f"<table id=\"training-table\">{thead}{tbody}</table>"
 
-    def generate_bonds(main_info, bars=True):
+    def generate_bonds(self, main_info, display_type):
         eval_dict = main_info['eval_dict']
-        ids = sorted(list(eval_dict.keys()))
+        ids = []
+        for key in eval_dict.keys():
+            if key < 100:
+                ids.append(key)
+            elif key == 102 and main_info['scenario_id'] not in (6,):  # Filter out non-cards except Akikawa
+                ids.append(key)
+    
+        ids = sorted(ids)
+
+        partners = []
 
         for id in ids:
             partner = eval_dict[id]
+            logger.debug(f"{partner.img} {partner.starting_bond}")
+
+            img = f"<img src=\"{partner.img}\" width=\"48\" height=\"48\" style=\"display:inline-block;\"/>"
+            bond_ele = ""
+            if display_type in (2, 3):
+                bond_ele += "<p>WIP</p>"
+            if display_type in (1, 3):
+                text_color = ""
+                for cutoff, color in constants.BOND_COLOR_DICT.items():
+                    if partner.starting_bond < cutoff:
+                        break
+                    text_color = color
+
+                bond_ele += f"<p style=\"margin:0;padding:0;color:{text_color};font-weight:bold;\">{partner.starting_bond}</p>"
+            
+            ele = f"<div style=\"display:flex;flex-direction:column;align-items:center;\">{img}{bond_ele}</div>"
+            partners.append(ele)
+        
+        inner = ''.join(partners)
+
+        return f"<div style=\"max-width: 100vw; display: flex; flex-direction: row; flex-wrap: nowrap; overflow-x: auto; gap:0.2rem;\">{inner}</div>"
 
     def generate_gm_table(self, main_info):
         if main_info['scenario_id'] != 5:

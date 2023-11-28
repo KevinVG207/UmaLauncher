@@ -7,11 +7,26 @@ from helper_table_defaults import RowTypes
 
 
 class TrainingPartner():
-    def __init__(self, partner_id, starting_bond):
+    def __init__(self, partner_id, starting_bond, chara_info):
         self.partner_id = partner_id
         self.starting_bond = starting_bond
         self.training_bond = 0
         self.tip_bond = 0
+
+        if partner_id < 100:
+            support_id = chara_info['support_card_array'][partner_id - 1]['support_card_id']
+            support_data = mdb.get_support_card_dict()[support_id]
+            chara_id = support_data[3]
+            self.img = f"https://gametora.com/images/umamusume/characters/icons/chr_icon_{chara_id}.png"
+        elif partner_id > 1000:
+            self.img = f"https://gametora.com/images/umamusume/characters/icons/chr_icon_{partner_id}.png"
+        else:
+            try:
+                chara_id = mdb.get_single_mode_unique_chara_dict()[chara_info['scenario_id']][partner_id]
+                self.img = f"https://gametora.com/images/umamusume/characters/icons/chr_icon_{chara_id}.png"
+            except KeyError:
+                self.img = "https://umapyoi.net/missing_chara.png"
+                logger.error(f"Could not find unique chara_id for partner_id {partner_id} in scenario {chara_info['scenario_id']}")
 
 
 class HelperTable():
@@ -122,7 +137,7 @@ class HelperTable():
 
         # Support Dict
         eval_dict = {
-            eval_data['training_partner_id']: TrainingPartner(eval_data['training_partner_id'], eval_data['evaluation'])
+            eval_data['training_partner_id']: TrainingPartner(eval_data['training_partner_id'], eval_data['evaluation'], data['chara_info'])
             for eval_data in data['chara_info']['evaluation_info_array']
         }
 
@@ -199,7 +214,7 @@ class HelperTable():
                 if partner_id <= 6:
                     support_card_id = data['chara_info']['support_card_array'][partner_id - 1]['support_card_id']
 
-                    if support_card_id == 30160 and scenario_id in (6,):
+                    if support_card_id in (10094, 30160) and scenario_id in (6,):  # Only count Mei in Project L'Arc
                         usefulness_cutoff = 60
                     else:
                         support_card_data = mdb.get_support_card_dict()[support_card_id]
