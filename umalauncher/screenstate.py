@@ -112,6 +112,7 @@ class ScreenStateHandler():
     game_handle = None
 
     carrotjuicer_closed = False
+    carrotjuicer_handle = None
 
     should_stop = False
 
@@ -271,16 +272,29 @@ class ScreenStateHandler():
                     self.vpn = None
 
             if not self.carrotjuicer_closed and self.threader.settings["s_hide_carrotjuicer"]:
-                carrotjuicer_handle = util.get_window_handle("Umapyoi", type=util.EXACT)
-                if carrotjuicer_handle:
+                self.carrotjuicer_handle = util.get_window_handle("Umapyoi", type=util.EXACT)
+                if self.carrotjuicer_handle:
                     logger.info("Attempting to minimize CarrotJuicer.")
-                    success1 = util.show_window(carrotjuicer_handle, win32con.SW_MINIMIZE)
-                    success2 = util.hide_window_from_taskbar(carrotjuicer_handle)
+                    success1 = util.show_window(self.carrotjuicer_handle, win32con.SW_MINIMIZE)
+                    success2 = util.hide_window_from_taskbar(self.carrotjuicer_handle)
                     success = success1 and success2
                     if not success:
                         logger.error("Failed to minimize CarrotJuicer")
                     else:
                         self.carrotjuicer_closed = True
+                        time.sleep(0.25)
+            
+            if self.carrotjuicer_closed and not self.threader.settings["s_hide_carrotjuicer"]:
+                logger.debug(f"CarrotJuicer handle: {self.carrotjuicer_handle}")
+                if self.carrotjuicer_handle:
+                    logger.info("Attempting to restore CarrotJuicer.")
+                    success1 = util.show_window(self.carrotjuicer_handle, win32con.SW_RESTORE)
+                    success2 = util.unhide_window_from_taskbar(self.carrotjuicer_handle)
+                    success = success1 and success2
+                    if not success:
+                        logger.error("Failed to restore CarrotJuicer")
+                    else:
+                        self.carrotjuicer_closed = False
                         time.sleep(0.25)
 
             self.sleep_time = 2.0

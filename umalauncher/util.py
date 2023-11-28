@@ -321,6 +321,16 @@ def hide_window_from_taskbar(window_handle):
     except pywinerror:
         return False
 
+def unhide_window_from_taskbar(window_handle):
+    try:
+        style = win32gui.GetWindowLong(window_handle, win32con.GWL_EXSTYLE)
+        style &= ~win32con.WS_EX_TOOLWINDOW
+        win32gui.ShowWindow(window_handle, win32con.SW_SHOW)
+        win32gui.SetWindowLong(window_handle, win32con.GWL_EXSTYLE, style)
+        return True
+    except pywinerror:
+        return False
+
 
 def is_minimized(handle):
     try:
