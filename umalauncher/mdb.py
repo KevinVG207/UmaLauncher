@@ -433,6 +433,28 @@ def get_skill_id_dict(force=False):
     
     return SKILL_ID_DICT
 
+SCOUTING_SCORE_TO_RANK_DICT = {}
+def get_scouting_score_to_rank_dict(force=False):
+    global SCOUTING_SCORE_TO_RANK_DICT
+    if force or not SCOUTING_SCORE_TO_RANK_DICT:
+        with Connection() as (_, cursor):
+            cursor.execute(
+                """SELECT team_min_value FROM team_building_rank"""
+            )
+            rows = cursor.fetchall()
+
+        tmp_dict = {}
+        for i, row in enumerate(rows):
+            min_score = row[0]
+            try:
+                rank = constants.SCOUTING_RANK_LIST[i]
+            except IndexError:
+                rank = constants.SCOUTING_RANK_LIST[-1]
+            tmp_dict[min_score] = rank
+        
+        SCOUTING_SCORE_TO_RANK_DICT.update(tmp_dict)
+
+    return SCOUTING_SCORE_TO_RANK_DICT
 
 def get_card_inherent_skills(card_id, level=99):
     skills = []
@@ -515,4 +537,5 @@ UPDATE_FUNCS = [
     get_gl_lesson_dict,
     get_group_card_effect_ids,
     get_skill_id_dict,
+    get_scouting_score_to_rank_dict
 ]

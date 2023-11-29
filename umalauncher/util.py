@@ -483,8 +483,8 @@ def heroes_score_to_league_string(score):
     return current_league
 
 def scouting_score_to_rank_string(score):
-    current_rank = list(constants.SCOUTING_SCORE_TO_RANK_DICT.keys())[0]
-    for score_threshold, rank in constants.SCOUTING_SCORE_TO_RANK_DICT.items():
+    current_rank = list(mdb.get_scouting_score_to_rank_dict().keys())[0]
+    for score_threshold, rank in mdb.get_scouting_score_to_rank_dict().items():
         if score >= score_threshold:
             current_rank = rank
         else:
