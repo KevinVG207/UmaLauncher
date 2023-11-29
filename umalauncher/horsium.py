@@ -146,7 +146,8 @@ class BrowserWindow:
                 ][0]
         self.browser_name = browser_name
 
-        if browser_name == 'Chromium':
+        # Hack to convert override Chromium to Chrome
+        if browser_name == 'Other (Chromium)':
             browser_name = 'Chrome'
 
         browser_list = []
