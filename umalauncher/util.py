@@ -116,7 +116,7 @@ def do_get_request(url, error_title=None, error_message=None, ignore_timeout=Fal
             else:
                 return None
         logger.debug(f"GET request to {url}")
-        response = requests.get(url)
+        response = requests.get(url, timeout=10)
         response.raise_for_status()
         return response
     except:
@@ -321,6 +321,16 @@ def hide_window_from_taskbar(window_handle):
     except pywinerror:
         return False
 
+def unhide_window_from_taskbar(window_handle):
+    try:
+        style = win32gui.GetWindowLong(window_handle, win32con.GWL_EXSTYLE)
+        style &= ~win32con.WS_EX_TOOLWINDOW
+        win32gui.ShowWindow(window_handle, win32con.SW_SHOW)
+        win32gui.SetWindowLong(window_handle, win32con.GWL_EXSTYLE, style)
+        return True
+    except pywinerror:
+        return False
+
 
 def is_minimized(handle):
     try:
@@ -473,8 +483,8 @@ def heroes_score_to_league_string(score):
     return current_league
 
 def scouting_score_to_rank_string(score):
-    current_rank = list(constants.SCOUTING_SCORE_TO_RANK_DICT.keys())[0]
-    for score_threshold, rank in constants.SCOUTING_SCORE_TO_RANK_DICT.items():
+    current_rank = list(mdb.get_scouting_score_to_rank_dict().keys())[0]
+    for score_threshold, rank in mdb.get_scouting_score_to_rank_dict().items():
         if score >= score_threshold:
             current_rank = rank
         else:

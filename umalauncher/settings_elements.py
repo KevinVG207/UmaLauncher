@@ -1,4 +1,5 @@
 import enum
+from loguru import logger
 
 class SettingType(enum.Enum):
     UNDEFINED = "undefined"
@@ -15,6 +16,7 @@ class SettingType(enum.Enum):
     MESSAGE = "message"
     XYWHSPINBOXES = "xywhspinboxes"
     LRTBSPINBOXES = "lrtbspinboxes"
+    DIVIDER = "divider"
 
 
 class Settings():
@@ -23,7 +25,7 @@ class Settings():
 
     def to_dict(self):
         settings = self.get_settings_keys()
-        return {setting: getattr(self, setting).value for setting in settings if getattr(self, setting).type != SettingType.MESSAGE} if settings else {}
+        return {setting: getattr(self, setting).value for setting in settings if getattr(self, setting).type not in (SettingType.MESSAGE, SettingType.DIVIDER)} if settings else {}
 
     def import_dict(self, settings_dict, keep_undefined=False):
         for key, value in settings_dict.items():
@@ -40,7 +42,20 @@ class Settings():
                         priority=-2
                     ))
                 continue
-            getattr(self, key).value = value
+
+            attribute = getattr(self, key)
+
+            if isinstance(attribute.value, dict):
+                true_keys = set(attribute.value.keys())
+                new_keys = set(value.keys())
+
+                if true_keys != new_keys:
+                    logger.warning(f"Setting {key} has different keys in the new settings dict. Reverting to default.")
+                    logger.warning(f"True keys: {true_keys}")
+                    logger.warning(f"New keys: {new_keys}")
+                    continue
+
+            attribute.value = value
 
     def __repr__(self):
         return str(self.to_dict())

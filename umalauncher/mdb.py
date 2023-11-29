@@ -111,8 +111,23 @@ def _get_event_titles_default(story_id):
             return [None]
         
         return [row[0]]
+    
+def convert_short_story_id(story_id):
+    with Connection() as (_, cursor):
+        cursor.execute(
+            """SELECT story_id FROM single_mode_story_data WHERE short_story_id = ? LIMIT 1""",
+            (story_id,)
+        )
+        row = cursor.fetchone()
+
+        if row is None:
+            return story_id
+        
+        return row[0]
 
 def get_event_titles(story_id, card_id):
+    story_id = convert_short_story_id(story_id)
+
     str_event_title = str(story_id)
 
     if str_event_title.startswith("40"):
@@ -303,6 +318,10 @@ def get_support_card_string_dict(force=False):
     global SUPPORT_CARD_STRING_DICT
     if force or not SUPPORT_CARD_STRING_DICT:
         support_card_dict = get_support_card_dict()
+
+        # Forcefully clear the character name dict cache if needed.
+        util.get_character_name_dict(force=force)
+
         SUPPORT_CARD_STRING_DICT.update({id: create_support_card_string(*data) for id, data in support_card_dict.items()})
     
     return SUPPORT_CARD_STRING_DICT
@@ -414,6 +433,28 @@ def get_skill_id_dict(force=False):
     
     return SKILL_ID_DICT
 
+SCOUTING_SCORE_TO_RANK_DICT = {}
+def get_scouting_score_to_rank_dict(force=False):
+    global SCOUTING_SCORE_TO_RANK_DICT
+    if force or not SCOUTING_SCORE_TO_RANK_DICT:
+        with Connection() as (_, cursor):
+            cursor.execute(
+                """SELECT team_min_value FROM team_building_rank"""
+            )
+            rows = cursor.fetchall()
+
+        tmp_dict = {}
+        for i, row in enumerate(rows):
+            min_score = row[0]
+            try:
+                rank = constants.SCOUTING_RANK_LIST[i]
+            except IndexError:
+                rank = constants.SCOUTING_RANK_LIST[-1]
+            tmp_dict[min_score] = rank
+        
+        SCOUTING_SCORE_TO_RANK_DICT.update(tmp_dict)
+
+    return SCOUTING_SCORE_TO_RANK_DICT
 
 def get_card_inherent_skills(card_id, level=99):
     skills = []
@@ -483,6 +524,7 @@ def get_total_minigame_plushies(force=False):
     return 3 * (total_plushies + len(total_charas))
 
 UPDATE_FUNCS = [
+    get_chara_name_dict,
     get_event_title_dict,
     get_race_program_name_dict,
     get_skill_name_dict,
@@ -491,9 +533,9 @@ UPDATE_FUNCS = [
     get_outfit_name_dict,
     get_support_card_dict,
     get_support_card_string_dict,
-    get_chara_name_dict,
     get_mant_item_string_dict,
     get_gl_lesson_dict,
     get_group_card_effect_ids,
     get_skill_id_dict,
+    get_scouting_score_to_rank_dict
 ]

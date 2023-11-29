@@ -21,41 +21,86 @@ import util
 
 OLD_DRIVERS = []
 
-def firefox_setup(helper_url):
-    firefox_service = FirefoxService()
+def firefox_setup(helper_url, settings):
+    driver_path = None
+    if settings['s_enable_browser_override']:
+        new_path = settings['s_browser_custom_driver']
+        if new_path:
+            driver_path = new_path
+
+    firefox_service = FirefoxService(executable_path=driver_path)
     firefox_service.creation_flags = CREATE_NO_WINDOW
     profile = webdriver.FirefoxProfile(util.get_asset("ff_profile"))
     options = webdriver.FirefoxOptions()
-    browser = webdriver.Firefox(service=firefox_service, firefox_profile=profile, options=options)
+    options.profile = profile
+
+    binary_path = None
+
+    if settings['s_enable_browser_override']:
+        binary_path = settings['s_browser_custom_binary']
+        if binary_path:
+            options.binary_location = binary_path
+    
+    logger.debug(f"Firefox driver path: {driver_path}")
+    logger.debug(f"Firefox binary path: {binary_path}")
+    
+    browser = webdriver.Firefox(service=firefox_service, options=options)
     browser.get(helper_url)
     return browser
 
-def chromium_setup(service, options_class, driver_class, profile, helper_url):
+def chromium_setup(service, options_class, driver_class, profile, helper_url, settings, binary_path=None):
     service.creation_flags = CREATE_NO_WINDOW
     options = options_class()
+
+    if binary_path:
+        options.binary_location = binary_path
+
     options.add_argument("--user-data-dir=" + str(util.get_asset(profile)))
-    options.add_argument("--app=" + helper_url)
     options.add_argument("--remote-debugging-port=9222")
     options.add_argument("--new-window")
+    
+    if not settings['s_enable_browser_override']:
+        options.add_argument("--app=" + helper_url)
+
     browser = driver_class(service=service, options=options)
+    
+    if settings['s_enable_browser_override']:
+        browser.get(helper_url)
+
     return browser
 
-def chrome_setup(helper_url):
+def chrome_setup(helper_url, settings):
+    driver_path = None
+    if settings['s_enable_browser_override']:
+        new_path = settings['s_browser_custom_driver']
+        if new_path:
+            driver_path = new_path
+    
+    binary_path = None
+    if settings['s_enable_browser_override']:
+        binary_path = settings['s_browser_custom_binary']
+
+    logger.debug(f"Chrome driver path: {driver_path}")
+    logger.debug(f"Chrome binary path: {binary_path}")
+
     return chromium_setup(
-        service=ChromeService(),
+        service=ChromeService(executable_path=driver_path) if driver_path else ChromeService(),
         options_class=webdriver.ChromeOptions,
         driver_class=webdriver.Chrome,
         profile="chr_profile",
-        helper_url=helper_url
+        helper_url=helper_url,
+        settings=settings,
+        binary_path=binary_path
     )
 
-def edge_setup(helper_url):
+def edge_setup(helper_url, settings):
     return chromium_setup(
         service=EdgeService(),
         options_class=webdriver.EdgeOptions,
         driver_class=webdriver.Edge,
         profile="edg_profile",
-        helper_url=helper_url
+        helper_url=helper_url,
+        settings=settings
     )
 
 BROWSER_LIST = {
@@ -77,23 +122,33 @@ class BrowserWindow:
     def __init__(self, url, threader, rect=None, run_at_launch=None):
         self.url = url
         self.threader = threader
+        self.settings = threader.settings
         self.driver: RemoteWebDriver = None
         self.active_tab_handle = None
         self.last_window_rect = {'x': rect[0], 'y': rect[1], 'width': rect[2], 'height': rect[3]} if rect else None
         self.run_at_launch = run_at_launch
         self.browser_name = "Auto"
+        self.latest_error = ""
         
         self.ensure_tab_open()
 
     def init_browser(self) -> RemoteWebDriver:
         driver = None
 
+        if self.settings['s_enable_browser_override']:
+            selection = self.settings['s_custom_browser_type']
+        else:
+            selection = self.settings['s_selected_browser']
         browser_name = [
                     browser
-                    for browser, selected in self.threader.settings['s_selected_browser'].items()
+                    for browser, selected in selection.items()
                     if selected
                 ][0]
         self.browser_name = browser_name
+
+        # Hack to convert override Chromium to Chrome
+        if browser_name == 'Other (Chromium)':
+            browser_name = 'Chrome'
 
         browser_list = []
         if browser_name == "Auto":
@@ -105,14 +160,15 @@ class BrowserWindow:
             browser_name, browser_setup = browser_data
             try:
                 logger.info("Attempting " + str(browser_setup.__name__))
-                driver = browser_setup(self.url)
+                driver = browser_setup(self.url, self.settings)
                 self.browser_name = browser_name
                 break
-            except Exception:
+            except Exception as e:
                 logger.error("Failed to start browser")
                 logger.error(traceback.format_exc())
-        if not driver:
-            util.show_warning_box("Uma Launcher: Unable to start browser.", "Selected webbrowser cannot be started.")
+                self.latest_error = traceback.format_exception_only(type(e), e)[-1]
+        # if not driver:
+        #     util.show_warning_box("Uma Launcher: Unable to start browser.", "Selected webbrowser cannot be started.")
         return driver
 
     def alive(self):
@@ -189,7 +245,7 @@ class BrowserWindow:
                 if self.driver:
                     return func(self, *args, **kwargs)
 
-            util.show_warning_box("Uma Launcher: Unable to reach browser.", "Webbrowser is unable to open.<br><br>If this problem persists, try restarting your computer<br>or selecting a different browser in the preferences.")
+            util.show_warning_box("Uma Launcher: Unable to reach browser.", f"Webbrowser is unable to open.<br><br>If this problem persists, try restarting your computer<br>or selecting a different browser in the preferences.<br><br>Extra info:<br>{self.latest_error}")
         return wrapper
 
     @ensure_focus

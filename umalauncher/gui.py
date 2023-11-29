@@ -586,6 +586,9 @@ class UmaSettingsDialog(UmaMainDialog):
 
         self.load_settings()
 
+        self.verticalSpacer = qtw.QSpacerItem(0, 0, qtw.QSizePolicy.Minimum, qtw.QSizePolicy.Expanding)
+        self.verticalLayout.addItem(self.verticalSpacer)
+
         self.scrollArea.setWidget(self.scrollAreaWidgetContents)
 
         self.btn_restore = qtw.QPushButton(self)
@@ -662,6 +665,18 @@ class UmaSettingsDialog(UmaMainDialog):
         return True
 
     def add_group_box(self, setting):
+        # If the setting is a divider, add a horizontal line.
+        if setting.type == se.SettingType.DIVIDER:
+            line = qtw.QFrame(self.scrollAreaWidgetContents)
+            line.setObjectName(f"line_{setting.name}")
+            line.setMinimumHeight(16)
+            line.setLineWidth(0)
+            line.setMidLineWidth(2)
+            line.setFrameShape(qtw.QFrame.HLine)
+            line.setFrameShadow(qtw.QFrame.Sunken)
+            return line, None
+
+
         grp_setting = qtw.QGroupBox(self.scrollAreaWidgetContents)
         grp_setting.setObjectName(f"grp_setting_{setting.name}")
         sizePolicy = qtw.QSizePolicy(qtw.QSizePolicy.Preferred, qtw.QSizePolicy.Fixed)
@@ -691,30 +706,30 @@ class UmaSettingsDialog(UmaMainDialog):
 
         horizontalLayout.addWidget(lbl_setting_description)
 
-        input_widgets = []
+        input_widgets = [None]
         value_func = None
-        if setting.type == se.SettingType.MESSAGE:
-            input_widgets = [None]
-        elif setting.type == se.SettingType.BOOL:
-            input_widgets, value_func = self.add_checkbox(setting, grp_setting)
-        elif setting.type == se.SettingType.INT:
-            input_widgets, value_func = self.add_spinbox(setting, grp_setting)
-        elif setting.type == se.SettingType.STRING:
-            input_widgets, value_func = self.add_lineedit(setting, grp_setting)
-        elif setting.type == se.SettingType.COMBOBOX:
-            input_widgets, value_func = self.add_combobox(setting, grp_setting)
-        elif setting.type == se.SettingType.COLOR:
-            input_widgets, value_func = self.add_colorpicker(setting, grp_setting)
-        elif setting.type == se.SettingType.RADIOBUTTONS:
-            input_widgets, value_func = self.add_radiobuttons(setting, grp_setting)
-        elif setting.type == se.SettingType.FILEDIALOG:
-            input_widgets, value_func = self.add_filedialog(setting, grp_setting)
-        elif setting.type == se.SettingType.FOLDERDIALOG:
-            input_widgets, value_func = self.add_folderdialog(setting, grp_setting)
-        elif setting.type == se.SettingType.XYWHSPINBOXES:
-            input_widgets, value_func = self.add_multi_spinboxes(setting, grp_setting, ['Left', 'Top', 'Width', 'Height'])
-        elif setting.type == se.SettingType.LRTBSPINBOXES:
-            input_widgets, value_func = self.add_multi_spinboxes(setting, grp_setting, ['Left', 'Right', 'Top', 'Bottom'])
+
+        match setting.type:
+            case se.SettingType.BOOL:
+                input_widgets, value_func = self.add_checkbox(setting, grp_setting)
+            case se.SettingType.INT:
+                input_widgets, value_func = self.add_spinbox(setting, grp_setting)
+            case se.SettingType.STRING:
+                input_widgets, value_func = self.add_lineedit(setting, grp_setting)
+            case se.SettingType.COMBOBOX:
+                input_widgets, value_func = self.add_combobox(setting, grp_setting)
+            case se.SettingType.COLOR:
+                input_widgets, value_func = self.add_colorpicker(setting, grp_setting)
+            case se.SettingType.RADIOBUTTONS:
+                input_widgets, value_func = self.add_radiobuttons(setting, grp_setting)
+            case se.SettingType.FILEDIALOG:
+                input_widgets, value_func = self.add_filedialog(setting, grp_setting)
+            case se.SettingType.FOLDERDIALOG:
+                input_widgets, value_func = self.add_folderdialog(setting, grp_setting)
+            case se.SettingType.XYWHSPINBOXES:
+                input_widgets, value_func = self.add_multi_spinboxes(setting, grp_setting, ['Left', 'Top', 'Width', 'Height'])
+            case se.SettingType.LRTBSPINBOXES:
+                input_widgets, value_func = self.add_multi_spinboxes(setting, grp_setting, ['Left', 'Right', 'Top', 'Bottom'])
         
         if not input_widgets:
             logger.debug(f"{setting.type} not implemented for {setting.name}")
