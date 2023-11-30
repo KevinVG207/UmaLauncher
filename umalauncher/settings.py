@@ -249,7 +249,7 @@ class DefaultSettings(se.Settings):
         self.s_training_helper_table_scenario_presets = se.Setting(
             "Training helper table scenario presets",
             "Scenario-specific selected preset.",
-            {key: "Default" for key in constants.SCENARIO_DICT},
+            {str(key): "Default" for key in constants.SCENARIO_DICT},
             se.SettingType.DICT,
             priority=-1
         )
