@@ -559,6 +559,6 @@ UPDATE_FUNCS = [
     get_gl_lesson_dict,
     get_group_card_effect_ids,
     get_skill_id_dict,
-    get_scouting_score_to_rank_dict
+    get_scouting_score_to_rank_dict,
     get_single_mode_unique_chara_dict
 ]

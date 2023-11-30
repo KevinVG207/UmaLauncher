@@ -11,6 +11,7 @@ class TrainingPartner():
         self.partner_id = partner_id
         self.starting_bond = starting_bond
         self.training_bond = 0
+        self.final_bond = starting_bond
         self.tip_bond = 0
 
         if partner_id < 100:
@@ -271,20 +272,21 @@ class HelperTable():
                 true_training_gain = new_bond - training_partner.starting_bond
                 total_bond += true_training_gain
                 useful_bond += calc_bond_gain(training_partner.partner_id, true_training_gain)
-                training_partner.starting_bond = new_bond
+                # training_partner.starting_bond = new_bond
+                tmp_bond = new_bond
 
                 # Cap bond at 100 again
-                new_bond = min(training_partner.starting_bond + training_partner.tip_bond, 100)
-                true_tip_gain = new_bond - training_partner.starting_bond
+                new_bond = min(tmp_bond + training_partner.tip_bond, 100)
+                true_tip_gain = new_bond - tmp_bond
                 tip_gains_total.append(true_tip_gain)
 
-                new_tip_total = training_partner.starting_bond + true_tip_gain
+                new_tip_total = tmp_bond + true_tip_gain
                 if new_tip_total < 80:
                     tip_gains_useful.append(true_tip_gain)
                 else:
-                    tip_gains_useful.append(max(0, 80 - training_partner.starting_bond))
+                    tip_gains_useful.append(max(0, 80 - tmp_bond))
 
-                training_partner.starting_bond = new_bond
+                training_partner.final_bond = new_bond
             
             if not venus_blue_active:
                 total_bond += max(tip_gains_total)

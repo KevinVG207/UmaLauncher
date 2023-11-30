@@ -225,14 +225,14 @@ class Preset():
         
         if self.settings.s_schedule_enabled.value:
             html_elements.append(self.generate_schedule(main_info))
+        
+        if self.settings.s_support_bonds.value:
+            html_elements.append(self.generate_bonds(main_info, display_type=self.settings.s_support_bonds.value))
 
         if self.settings.s_scenario_specific_enabled.value:
             html_elements.append(self.generate_gm_table(main_info))
             html_elements.append(self.generate_gl_table(main_info))
             html_elements.append(self.generate_arc(main_info))
-        
-        if self.settings.s_support_bonds.value:
-            html_elements.append(self.generate_bonds(main_info, display_type=self.settings.s_support_bonds.value))
 
         html_elements.append(self.generate_table(command_info))
 
@@ -281,25 +281,39 @@ class Preset():
             partner = eval_dict[id]
             logger.debug(f"{partner.img} {partner.starting_bond}")
 
-            img = f"<img src=\"{partner.img}\" width=\"48\" height=\"48\" style=\"display:inline-block;\"/>"
+            bond_color = ""
+            for cutoff, color in constants.BOND_COLOR_DICT.items():
+                if partner.starting_bond < cutoff:
+                    break
+                bond_color = color
+
+            img = f"<img src=\"{partner.img}\" width=\"56\" height=\"56\" style=\"display:inline-block;\"/>"
             bond_ele = ""
             if display_type in (2, 3):
-                bond_ele += "<p>WIP</p>"
+                # Bars
+                bond_ele += f"""
+<div style="width: 100%;height: 0.75rem;position: relative;background-color: #4A494B;border-radius: 0.5rem;">
+    <div style="position: absolute;width:calc(100% - 4px);height:calc(100% - 4px);top:2px;left:50%;transform: translateX(-50%);">
+        <div style="position: absolute;width:100%;height:100%;background-color:#6E6B79;border-radius: 1rem;"></div>
+        <!-- <div style="position: absolute;width:{partner.final_bond}%;height:100%;background-color:lightgray;"></div> -->
+        <div style="position: absolute;width:{partner.starting_bond}%;height:100%;background-color:{bond_color};"></div>
+        <div style="position: absolute;width:2px;height:100%;background-color:#4A494B;top:0px;left:20%;transform: translateX(-50%);"></div>
+        <div style="position: absolute;width:2px;height:100%;background-color:#4A494B;top:0px;left:40%;transform: translateX(-50%);"></div>
+        <div style="position: absolute;width:2px;height:100%;background-color:#4A494B;top:0px;left:60%;transform: translateX(-50%);"></div>
+        <div style="position: absolute;width:2px;height:100%;background-color:#4A494B;top:0px;left:80%;transform: translateX(-50%);"></div>
+        <div style="position: absolute;width:100%;height:100%;border: 2px solid #4A494B;box-sizing: content-box;left: -2px;top: -2px;border-radius: 1rem;"></div>
+    </div>
+</div>""".replace("\n", "").replace("    ", "")
             if display_type in (1, 3):
-                text_color = ""
-                for cutoff, color in constants.BOND_COLOR_DICT.items():
-                    if partner.starting_bond < cutoff:
-                        break
-                    text_color = color
-
-                bond_ele += f"<p style=\"margin:0;padding:0;color:{text_color};font-weight:bold;\">{partner.starting_bond}</p>"
+                # Numbers
+                bond_ele += f"<p style=\"margin:0;padding:0;color:{bond_color};font-weight:bold;\">{partner.starting_bond}</p>"
             
-            ele = f"<div style=\"display:flex;flex-direction:column;align-items:center;\">{img}{bond_ele}</div>"
+            ele = f"<div style=\"display:flex;flex-direction:column;align-items:center;gap:0.2rem;\">{img}{bond_ele}</div>"
             partners.append(ele)
         
         inner = ''.join(partners)
 
-        return f"<div style=\"max-width: 100vw; display: flex; flex-direction: row; flex-wrap: nowrap; overflow-x: auto; gap:0.2rem;\">{inner}</div>"
+        return f"<div style=\"max-width: 100vw; display: flex; flex-direction: row; flex-wrap: nowrap; overflow-x: auto; gap:0.3rem;\">{inner}</div>"
 
     def generate_gm_table(self, main_info):
         if main_info['scenario_id'] != 5:
