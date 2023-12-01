@@ -67,7 +67,7 @@ If you understand json files, you can manually add `"carrotjuicer.dll"` to the c
 - With the 'Track trainings' setting enabled, your training runs will be saved as a gzip file in the `training_logs` folder. This folder will be automatically created next to the exe.
 - Use the 'Export Training CSV' option in the tray icon menu to export the training logs to a CSV file.
 - CSVs can be generated without launching the exe by dragging and dropping logs from the `training_logs` folder onto the exe.
-- (Documentation for the CSV format will be added later.)
+- [CSV format documentation](Training_Analyzer_Documentation.md)
 ### Quality-of-life features
 ![An image showing the different settings in the tray icon.](assets/tray-icon.png)
 
