@@ -1,6 +1,6 @@
 # Uma Launcher - Training Analyzer CSV Documentation
 Many thanks to Kawaii Shadowii for writing this up.
-## <span style="text-decoration:underline;">Columns:</span>
+## Columns:
 
 * **Run:**
     * _Only exists when multiple runs get generated in one CSV._
@@ -39,51 +39,51 @@ Many thanks to Kawaii Shadowii for writing this up.
     * _If an action shows up as "Unknown", please let us know on the [Discord server](https://discord.gg/wvGHW65C6A) and provide us with your training run's gzip file._
 * **Text:**
     * Contains additional text-based info about the action type:
-        * <span style="text-decoration:underline;">Action Type "Start":</span>
+        * <ins>Action Type "Start":</ins>
             * [GameTora Training Event Helper](https://gametora.com/umamusume/training-event-helper) link with the pre-selected character and support cards
-        * <span style="text-decoration:underline;">Action Type "Training":</span>
+        * <ins>Action Type "Training":</ins>
             * Selected training facility
-        * <span style="text-decoration:underline;">Action Type "Event":</span>
+        * <ins>Action Type "Event":</ins>
             * Event name
-        * <span style="text-decoration:underline;">Action Type "Race":</span>
+        * <ins>Action Type "Race":</ins>
             * Race name
-        * <span style="text-decoration:underline;">Action Type "SkillHint":</span>
+        * <ins>Action Type "SkillHint":</ins>
             * Name of the character whose skill hint event triggered
-        * <span style="text-decoration:underline;">Action Type "Outing":</span>
+        * <ins>Action Type "Outing":</ins>
             * Name of the character/support card you went on an outing with
-        * <span style="text-decoration:underline;">Action Type "GoddessWisdom":</span>
+        * <ins>Action Type "GoddessWisdom":</ins>
             * Name of the goddess whose wisdom was activated
-        * <span style="text-decoration:underline;">Action Type "BuyItem":</span>
+        * <ins>Action Type "BuyItem":</ins>
             * Names of the bought items
             * Separated by | (pipe symbol)
-        * <span style="text-decoration:underline;">Action Type "UseItem":</span>
+        * <ins>Action Type "UseItem":</ins>
             * Names of the used items
             * Separated by | (pipe symbol)
-        * <span style="text-decoration:underline;">Action Type "AfterRace":</span>
+        * <ins>Action Type "AfterRace":</ins>
             * Race name
-        * <span style="text-decoration:underline;">Action Type "AoharuRaces":</span>
+        * <ins>Action Type "AoharuRaces":</ins>
             * Amount of wins, losses and draws
 * **Value:**
     * Contains additional value-based info about the action type:
-        * <span style="text-decoration:underline;">Action Type "Training":</span>
+        * <ins>Action Type "Training":</ins>
             * Fail percentage on the selected training facility
-        * <span style="text-decoration:underline;">Action Type "Event":</span>
+        * <ins>Action Type "Event":</ins>
             * _Only for event with multiple choices_
             * Shows which choice you picked
                 * 1 = first option
                 * 2 = second option
                 * etc.
-        * <span style="text-decoration:underline;">Action Type "Race":</span>
+        * <ins>Action Type "Race":</ins>
             * Position that you finished in
-        * <span style="text-decoration:underline;">Action Type "GoddessWisdom":</span>
+        * <ins>Action Type "GoddessWisdom":</ins>
             * Level of the selected goddess wisdom
-        * <span style="text-decoration:underline;">Action Type "AfterRace":</span>
+        * <ins>Action Type "AfterRace":</ins>
             * Final position that you finished in after continues
-        * <span style="text-decoration:underline;">Action Type "Continue":</span>
+        * <ins>Action Type "Continue":</ins>
             * Type of continue
                 * 1 = daily free continue
                 * 2 = normal continue which uses a clock
-        * Action Type "SSMatch"
+        * <ins>Action Type "SSMatch"</ins>
             * Type of SS Match
                 * 1 = SS Match
                 * 2 = SSS Match
