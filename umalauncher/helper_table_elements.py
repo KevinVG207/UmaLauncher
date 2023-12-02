@@ -295,7 +295,6 @@ class Preset():
 <div style="width: 100%;height: 0.75rem;position: relative;background-color: #4A494B;border-radius: 0.5rem;">
     <div style="position: absolute;width:calc(100% - 4px);height:calc(100% - 4px);top:2px;left:50%;transform: translateX(-50%);">
         <div style="position: absolute;width:100%;height:100%;background-color:#6E6B79;border-radius: 1rem;"></div>
-        <!-- <div style="position: absolute;width:{partner.final_bond}%;height:100%;background-color:lightgray;"></div> -->
         <div style="position: absolute;width:{partner.starting_bond}%;height:100%;background-color:{bond_color};"></div>
         <div style="position: absolute;width:2px;height:100%;background-color:#4A494B;top:0px;left:20%;transform: translateX(-50%);"></div>
         <div style="position: absolute;width:2px;height:100%;background-color:#4A494B;top:0px;left:40%;transform: translateX(-50%);"></div>
