@@ -112,37 +112,30 @@ class PresetSettings(se.Settings):
             "Displays energy in the event helper.",
             True,
             se.SettingType.BOOL,
-            priority=12
+            priority=13
         )
-        # self.s_support_bonds_enabled = se.Setting(
-        #     "Show support bonds",
-        #     "Displays support bond levels in the event helper.",
-        #     False,
-        #     se.SettingType.BOOL,
-        #     priority=11
-        # )
-        # self.s_support_bonds_bar_enabled = se.Setting(
-        #     "Show support bond bars",
-        #     "Display bond as bars like in the game instead of a number.",
-        #     True,
-        #     se.SettingType.BOOL,
-        #     priority=10
-        # )
         self.s_support_bonds = se.Setting(
             "Show support bonds",
             "Choose how to display support bonds.",
             0,
             se.SettingType.COMBOBOX,
             choices=["Off", "Number", "Bar", "Both"],
+            priority=12
+        )
+        self.s_hide_support_bonds = se.Setting(
+            "Auto-hide maxed supports",
+            "When support bonds are enabled, automatically hide characters when they reach 100.",
+            True,
+            se.SettingType.BOOL,
             priority=11
         )
         self.s_displayed_value = se.Setting(
-            "Displayed value(s)",
-            "Which value(s) to display.",
+            "Displayed value(s) for stats",
+            "Which value(s) to display for stats rows.",
             0,
             se.SettingType.COMBOBOX,
             choices=["Raw gained stats", "Overcap-compensated gained stats", "Both"],
-            priority=9
+            priority=10
         )
         self.s_skillpt_enabled = se.Setting(
             "Show skill points",
@@ -268,10 +261,16 @@ class Preset():
         eval_dict = main_info['eval_dict']
         ids = []
         for key in eval_dict.keys():
+            if self.settings.s_hide_support_bonds.value and eval_dict[key].starting_bond == 100:
+                continue
+
             if key < 100:
                 ids.append(key)
             elif key == 102 and main_info['scenario_id'] not in (6,):  # Filter out non-cards except Akikawa
                 ids.append(key)
+        
+        if not ids:
+            return ""
     
         ids = sorted(ids)
 
@@ -279,7 +278,6 @@ class Preset():
 
         for id in ids:
             partner = eval_dict[id]
-            logger.debug(f"{partner.img} {partner.starting_bond}")
 
             bond_color = ""
             for cutoff, color in constants.BOND_COLOR_DICT.items():
@@ -312,7 +310,7 @@ class Preset():
         
         inner = ''.join(partners)
 
-        return f"<div style=\"max-width: 100vw; display: flex; flex-direction: row; flex-wrap: nowrap; overflow-x: auto; gap:0.3rem;\">{inner}</div>"
+        return f"<div id=\"support-bonds\" style=\"max-width: 100vw; display: flex; flex-direction: row; flex-wrap: nowrap; overflow-x: auto; gap:0.3rem;\">{inner}</div>"
 
     def generate_gm_table(self, main_info):
         if main_info['scenario_id'] != 5:

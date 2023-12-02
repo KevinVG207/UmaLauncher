@@ -44,11 +44,13 @@ class TrainingPartner():
         bond = 0
         max_possible = min(100, 100 - self.starting_bond)
         # Akikawa is 102
-        if self.partner_id <= 6 or self.partner_id == 102:
+        if self.partner_id < 1000:
             add = 7
             if self.partner_id <= 6:
                 support_card_id = self.chara_info['support_card_array'][self.partner_id - 1]['support_card_id']
-                if support_card_id in (10094, 30160) and self.chara_info['scenario_id'] in (6,):  # Special case for Mei in Project L'Arc
+                support_card_data = mdb.get_support_card_dict()[support_card_id]
+                support_card_type = constants.SUPPORT_CARD_TYPE_DICT[(support_card_data[1], support_card_data[2])]
+                if support_card_type in ("group", "friend"):
                     add = 4
             
             bond += add
@@ -72,10 +74,10 @@ class TrainingPartner():
 
         hint_bond -= bond
         
-        return bond, self.calc_useful_bond(bond), hint_bond, self.calc_useful_bond(hint_bond)
+        return max(bond, 0), max(self.calc_useful_bond(bond, self.starting_bond), 0), max(hint_bond, 0), max(self.calc_useful_bond(hint_bond, self.starting_bond + bond), 0)
 
 
-    def calc_useful_bond(self, amount):
+    def calc_useful_bond(self, amount, starting_bond):
         usefulness_cutoff = 80
         
         # Ignore group and friend type cards except Satake Mei in Project L'Arc
@@ -90,14 +92,18 @@ class TrainingPartner():
                 if support_card_type in ("group", "friend"):
                     return 0
 
-        cur_bond = amount + self.starting_bond
+        cur_bond = amount + starting_bond
         effective_bond = 0
-        
-        if self.partner_id == 102:
-            usefulness_cutoff = 60 if not self.chara_info['scenario_id'] in (6,) else 0  # Disable Akikawa usefulness in certain scenarios
+
+        if 6 < self.partner_id <= 1000:
+            if self.partner_id in (102,) and not self.chara_info['scenario_id'] in (6,):  # Disable Akikawa usefulness in certain scenarios
+                usefulness_cutoff = 60
+            else:
+                # Skip all non-Umas except Akikawa
+                return 0
 
         new_bond = min(cur_bond, usefulness_cutoff)
-        effective_bond = new_bond - self.starting_bond
+        effective_bond = new_bond - starting_bond
         return max(effective_bond, 0)
 
 
@@ -294,12 +300,10 @@ class HelperTable():
                     tip_gains_total.append(training_partner.hint_bond)
                     tip_gains_useful.append(training_partner.hint_useful_bond)
 
-
                 bond_gains_total.append(training_partner.bond)
                 bond_gains_useful.append(training_partner.useful_bond)
-
-                # training_partner.final_bond = new_bond
             
+
             total_bond = sum(bond_gains_total)
             useful_bond = sum(bond_gains_useful)
             
