@@ -38,7 +38,16 @@ class TrainingPartner():
         self.hint_bond = hint_bond
         self.hint_useful_bond = hint_useful_bond
     
+    def add_effect_bonus_bond(self, bond):
+        # Add 2 extra bond when charming is active and the partner is not Akikawa
+        if self.partner_id <= 6 and 8 in self.chara_info.get('chara_effect_id_array', []):
+            bond += 2
 
+        # Add 2 extra bond when rising star is active and the partner is Akikawa
+        elif self.partner_id == 102 and 9 in self.chara_info.get('chara_effect_id_array', []):
+            bond += 2
+        
+        return bond
     
     def calc_bonds(self):
         bond = 0
@@ -55,13 +64,7 @@ class TrainingPartner():
             
             bond += add
 
-            # Add 2 extra bond when charming is active and the partner is not Akikawa
-            if self.partner_id <= 6 and 8 in self.chara_info.get('chara_effect_id_array', []):
-                bond += 2
-
-            # Add 2 extra bond when rising star is active and the partner is Akikawa
-            elif self.partner_id == 102 and 9 in self.chara_info.get('chara_effect_id_array', []):
-                bond += 2
+            bond = self.add_effect_bonus_bond(bond)
 
         bond = min(bond, max_possible)
         
@@ -69,11 +72,13 @@ class TrainingPartner():
 
         if self.partner_id <= 6:
             hint_bond += 5
-        
+
+        hint_bond = self.add_effect_bonus_bond(hint_bond)
+
         hint_bond = min(hint_bond, max_possible)
 
         hint_bond -= bond
-        
+
         return max(bond, 0), max(self.calc_useful_bond(bond, self.starting_bond), 0), max(hint_bond, 0), max(self.calc_useful_bond(hint_bond, self.starting_bond + bond), 0)
 
 
