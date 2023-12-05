@@ -117,7 +117,7 @@ class PresetSettings(se.Settings):
         self.s_support_bonds = se.Setting(
             "Show support bonds",
             "Choose how to display support bonds.",
-            0,
+            2,
             se.SettingType.COMBOBOX,
             choices=["Off", "Number", "Bar", "Both"],
             priority=12
