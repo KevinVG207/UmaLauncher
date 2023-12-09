@@ -523,6 +523,28 @@ def get_total_minigame_plushies(force=False):
     
     return 3 * (total_plushies + len(total_charas))
 
+SINGLE_MODE_UNIQUE_CHARA_DICT = {}
+def get_single_mode_unique_chara_dict(force=False):
+    global SINGLE_MODE_UNIQUE_CHARA_DICT
+    if force or not SINGLE_MODE_UNIQUE_CHARA_DICT:
+        with Connection() as (_, cursor):
+            cursor.execute(
+                """SELECT scenario_id, partner_id, chara_id FROM single_mode_unique_chara;"""
+            )
+            rows = cursor.fetchall()
+
+        tmp_dict = {}
+        for row in rows:
+            if row[0] not in tmp_dict:
+                tmp_dict[row[0]] = {}
+            
+            tmp_dict[row[0]][row[1]] = row[2]
+        
+        SINGLE_MODE_UNIQUE_CHARA_DICT.update(tmp_dict)
+
+    return SINGLE_MODE_UNIQUE_CHARA_DICT
+
+
 UPDATE_FUNCS = [
     get_chara_name_dict,
     get_event_title_dict,
@@ -537,5 +559,6 @@ UPDATE_FUNCS = [
     get_gl_lesson_dict,
     get_group_card_effect_ids,
     get_skill_id_dict,
-    get_scouting_score_to_rank_dict
+    get_scouting_score_to_rank_dict,
+    get_single_mode_unique_chara_dict
 ]
