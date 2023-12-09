@@ -112,6 +112,29 @@ class PresetSettings(se.Settings):
             "Displays energy in the event helper.",
             True,
             se.SettingType.BOOL,
+            priority=13
+        )
+        self.s_support_bonds = se.Setting(
+            "Show support bonds",
+            "Choose how to display support bonds.",
+            2,
+            se.SettingType.COMBOBOX,
+            choices=["Off", "Number", "Bar", "Both"],
+            priority=12
+        )
+        self.s_hide_support_bonds = se.Setting(
+            "Auto-hide maxed supports",
+            "When support bonds are enabled, automatically hide characters when they reach 100.",
+            True,
+            se.SettingType.BOOL,
+            priority=11
+        )
+        self.s_displayed_value = se.Setting(
+            "Displayed value(s) for stats",
+            "Which value(s) to display for stats rows.",
+            0,
+            se.SettingType.COMBOBOX,
+            choices=["Raw gained stats", "Overcap-compensated gained stats", "Both"],
             priority=10
         )
         self.s_skillpt_enabled = se.Setting(
@@ -195,6 +218,9 @@ class Preset():
         
         if self.settings.s_schedule_enabled.value:
             html_elements.append(self.generate_schedule(main_info))
+        
+        if self.settings.s_support_bonds.value:
+            html_elements.append(self.generate_bonds(main_info, display_type=self.settings.s_support_bonds.value))
 
         if self.settings.s_scenario_specific_enabled.value:
             html_elements.append(self.generate_gm_table(main_info))
@@ -230,6 +256,61 @@ class Preset():
         thead = f"<thead>{table[0]}</thead>"
         tbody = f"<tbody>{''.join(table[1:])}</tbody>"
         return f"<table id=\"training-table\">{thead}{tbody}</table>"
+
+    def generate_bonds(self, main_info, display_type):
+        eval_dict = main_info['eval_dict']
+        ids = []
+        for key in eval_dict.keys():
+            if self.settings.s_hide_support_bonds.value and eval_dict[key].starting_bond == 100:
+                continue
+
+            if key < 100:
+                ids.append(key)
+            elif key == 102 and main_info['scenario_id'] not in (6,):  # Filter out non-cards except Akikawa
+                ids.append(key)
+        
+        if not ids:
+            return ""
+    
+        ids = sorted(ids)
+
+        partners = []
+
+        for id in ids:
+            partner = eval_dict[id]
+
+            bond_color = ""
+            for cutoff, color in constants.BOND_COLOR_DICT.items():
+                if partner.starting_bond < cutoff:
+                    break
+                bond_color = color
+
+            img = f"<img src=\"{partner.img}\" width=\"56\" height=\"56\" style=\"display:inline-block;\"/>"
+            bond_ele = ""
+            if display_type in (2, 3):
+                # Bars
+                bond_ele += f"""
+<div style="width: 100%;height: 0.75rem;position: relative;background-color: #4A494B;border-radius: 0.5rem;">
+    <div style="position: absolute;width:calc(100% - 4px);height:calc(100% - 4px);top:2px;left:50%;transform: translateX(-50%);">
+        <div style="position: absolute;width:100%;height:100%;background-color:#6E6B79;border-radius: 1rem;"></div>
+        <div style="position: absolute;width:{partner.starting_bond}%;height:100%;background-color:{bond_color};"></div>
+        <div style="position: absolute;width:2px;height:100%;background-color:#4A494B;top:0px;left:20%;transform: translateX(-50%);"></div>
+        <div style="position: absolute;width:2px;height:100%;background-color:#4A494B;top:0px;left:40%;transform: translateX(-50%);"></div>
+        <div style="position: absolute;width:2px;height:100%;background-color:#4A494B;top:0px;left:60%;transform: translateX(-50%);"></div>
+        <div style="position: absolute;width:2px;height:100%;background-color:#4A494B;top:0px;left:80%;transform: translateX(-50%);"></div>
+        <div style="position: absolute;width:100%;height:100%;border: 2px solid #4A494B;box-sizing: content-box;left: -2px;top: -2px;border-radius: 1rem;"></div>
+    </div>
+</div>""".replace("\n", "").replace("    ", "")
+            if display_type in (1, 3):
+                # Numbers
+                bond_ele += f"<p style=\"margin:0;padding:0;color:{bond_color};font-weight:bold;\">{partner.starting_bond}</p>"
+            
+            ele = f"<div style=\"display:flex;flex-direction:column;align-items:center;gap:0.2rem;\">{img}{bond_ele}</div>"
+            partners.append(ele)
+        
+        inner = ''.join(partners)
+
+        return f"<div id=\"support-bonds\" style=\"max-width: 100vw; display: flex; flex-direction: row; flex-wrap: nowrap; overflow-x: auto; gap:0.3rem;\">{inner}</div>"
 
     def generate_gm_table(self, main_info):
         if main_info['scenario_id'] != 5:

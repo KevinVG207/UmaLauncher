@@ -7,11 +7,109 @@ from helper_table_defaults import RowTypes
 
 
 class TrainingPartner():
-    def __init__(self, partner_id, starting_bond):
+    def __init__(self, partner_id, starting_bond, chara_info):
         self.partner_id = partner_id
         self.starting_bond = starting_bond
-        self.training_bond = 0
-        self.tip_bond = 0
+        self.chara_info = chara_info
+        self.chara_id = None
+
+        if partner_id < 100:
+            support_id = chara_info['support_card_array'][partner_id - 1]['support_card_id']
+            support_data = mdb.get_support_card_dict()[support_id]
+            chara_id = support_data[3]
+            self.chara_id = chara_id
+            self.img = f"https://gametora.com/images/umamusume/characters/icons/chr_icon_{chara_id}.png"
+        elif partner_id > 1000:
+            self.chara_id = partner_id
+            self.img = f"https://gametora.com/images/umamusume/characters/icons/chr_icon_{partner_id}.png"
+        else:
+            try:
+                chara_id = mdb.get_single_mode_unique_chara_dict()[chara_info['scenario_id']][partner_id]
+                self.chara_id = chara_id
+                self.img = f"https://gametora.com/images/umamusume/characters/icons/chr_icon_{chara_id}.png"
+            except KeyError:
+                self.img = "https://umapyoi.net/missing_chara.png"
+                logger.error(f"Could not find unique chara_id for partner_id {partner_id} in scenario {chara_info['scenario_id']}")
+        
+        # Precalc-bonds
+        bond, useful_bond, hint_bond, hint_useful_bond = self.calc_bonds()
+        self.bond = bond
+        self.useful_bond = useful_bond
+        self.hint_bond = hint_bond
+        self.hint_useful_bond = hint_useful_bond
+    
+    def add_effect_bonus_bond(self, bond):
+        # Add 2 extra bond when charming is active and the partner is not Akikawa
+        if self.partner_id <= 6 and 8 in self.chara_info.get('chara_effect_id_array', []):
+            bond += 2
+
+        # Add 2 extra bond when rising star is active and the partner is Akikawa
+        elif self.partner_id == 102 and 9 in self.chara_info.get('chara_effect_id_array', []):
+            bond += 2
+        
+        return bond
+    
+    def calc_bonds(self):
+        bond = 0
+        max_possible = min(100, 100 - self.starting_bond)
+        # Akikawa is 102
+        if self.partner_id < 1000:
+            add = 7
+            if self.partner_id <= 6:
+                support_card_id = self.chara_info['support_card_array'][self.partner_id - 1]['support_card_id']
+                support_card_data = mdb.get_support_card_dict()[support_card_id]
+                support_card_type = constants.SUPPORT_CARD_TYPE_DICT[(support_card_data[1], support_card_data[2])]
+                if support_card_type in ("group", "friend"):
+                    add = 4
+            
+            bond += add
+
+            bond = self.add_effect_bonus_bond(bond)
+
+        bond = min(bond, max_possible)
+        
+        hint_bond = bond
+
+        if self.partner_id <= 6:
+            hint_bond += 5
+
+        hint_bond = self.add_effect_bonus_bond(hint_bond)
+
+        hint_bond = min(hint_bond, max_possible)
+
+        hint_bond -= bond
+
+        return max(bond, 0), max(self.calc_useful_bond(bond, self.starting_bond), 0), max(hint_bond, 0), max(self.calc_useful_bond(hint_bond, self.starting_bond + bond), 0)
+
+
+    def calc_useful_bond(self, amount, starting_bond):
+        usefulness_cutoff = 80
+        
+        # Ignore group and friend type cards except Satake Mei in Project L'Arc
+        if self.partner_id <= 6:
+            support_card_id = self.chara_info['support_card_array'][self.partner_id - 1]['support_card_id']
+
+            if support_card_id in (10094, 30160) and self.chara_info['scenario_id'] in (6,):  # Only count Mei in Project L'Arc
+                usefulness_cutoff = 60
+            else:
+                support_card_data = mdb.get_support_card_dict()[support_card_id]
+                support_card_type = constants.SUPPORT_CARD_TYPE_DICT[(support_card_data[1], support_card_data[2])]
+                if support_card_type in ("group", "friend"):
+                    return 0
+
+        cur_bond = amount + starting_bond
+        effective_bond = 0
+
+        if 6 < self.partner_id <= 1000:
+            if self.partner_id in (102,) and not self.chara_info['scenario_id'] in (6,):  # Disable Akikawa usefulness in certain scenarios
+                usefulness_cutoff = 60
+            else:
+                # Skip all non-Umas except Akikawa
+                return 0
+
+        new_bond = min(cur_bond, usefulness_cutoff)
+        effective_bond = new_bond - starting_bond
+        return max(effective_bond, 0)
 
 
 class HelperTable():
@@ -120,15 +218,15 @@ class HelperTable():
                     row.disabled = arc_beginning_or_overseas
                     break
 
+        # Support Dict
+        eval_dict = {
+            eval_data['training_partner_id']: TrainingPartner(eval_data['training_partner_id'], eval_data['evaluation'], data['chara_info'])
+            for eval_data in data['chara_info']['evaluation_info_array']
+        }
 
         for command in all_commands.values():
             if command['command_id'] not in constants.COMMAND_ID_TO_KEY:
                 continue
-
-            eval_dict = {
-                eval_data['training_partner_id']: TrainingPartner(eval_data['training_partner_id'], eval_data['evaluation'])
-                for eval_data in data['chara_info']['evaluation_info_array']
-            }
             level = command.get('level', 0)
             failure_rate = command.get('failure_rate', 0)
             gained_stats = {stat_type: 0 for stat_type in set(constants.COMMAND_ID_TO_KEY.values())}
@@ -158,24 +256,6 @@ class HelperTable():
                     command['training_partner_array'].append(partner_id)
 
 
-            for training_partner_id in command.get('training_partner_array', []):
-                # Akikawa is 102
-                if training_partner_id <= 6 or training_partner_id == 102:
-                    initial_gain = 7
-                    # Add 2 extra bond when charming is active and the partner is not Akikawa
-                    if training_partner_id <= 6 and 8 in data['chara_info'].get('chara_effect_id_array', []):
-                        initial_gain += 2
-
-                    # Add 2 extra bond when rising star is active and the partner is Akikawa
-                    elif training_partner_id == 102 and 9 in data['chara_info'].get('chara_effect_id_array', []):
-                        initial_gain += 2
-
-                    eval_dict[training_partner_id].training_bond += initial_gain
-
-            for tips_partner_id in command.get('tips_event_partner_array', []):
-                if tips_partner_id <= 6:
-                    eval_dict[tips_partner_id].tip_bond += 5
-
             # For bond, first check if blue venus effect is active.
             spirit_id = 0
             spirit_boost = 0
@@ -188,40 +268,10 @@ class HelperTable():
                     venus_blue_active = True
 
 
-            def calc_bond_gain(partner_id, amount):
-                if not partner_id in eval_dict:
-                    logger.error(f"Training partner ID not found in eval dict: {partner_id}")
-                    return 0
-                
-                usefulness_cutoff = 80
-                
-                # Ignore group and friend type cards except Satake Mei in Project L'Arc
-                if partner_id <= 6:
-                    support_card_id = data['chara_info']['support_card_array'][partner_id - 1]['support_card_id']
-
-                    if support_card_id == 30160 and scenario_id in (6,):
-                        usefulness_cutoff = 60
-                    else:
-                        support_card_data = mdb.get_support_card_dict()[support_card_id]
-                        support_card_type = constants.SUPPORT_CARD_TYPE_DICT[(support_card_data[1], support_card_data[2])]
-                        if support_card_type in ("group", "friend"):
-                            return 0
-
-                cur_bond = eval_dict[partner_id].starting_bond
-                effective_bond = 0
-                
-                if partner_id == 102:
-                    usefulness_cutoff = 60 if not scenario_id in (6,) else 0  # Disable Akikawa usefulness in certain scenarios
-
-                if cur_bond < usefulness_cutoff:
-                    new_bond = cur_bond + amount
-                    new_bond = min(new_bond, usefulness_cutoff)
-                    effective_bond = new_bond - cur_bond
-                return effective_bond
-
-
             tip_gains_total = [0]
             tip_gains_useful = [0]
+            bond_gains_total = [0]
+            bond_gains_useful = [0]
             partner_count = 0
             useful_partner_count = 0
             for training_partner_id in command.get('training_partner_array', []):
@@ -251,25 +301,16 @@ class HelperTable():
                     useful_partner_count += 1
 
 
-                # Cap bond at 100
-                new_bond = min(training_partner.starting_bond + training_partner.training_bond, 100)
-                true_training_gain = new_bond - training_partner.starting_bond
-                total_bond += true_training_gain
-                useful_bond += calc_bond_gain(training_partner.partner_id, true_training_gain)
-                training_partner.starting_bond = new_bond
+                if training_partner_id in command.get('tips_event_partner_array', []):
+                    tip_gains_total.append(training_partner.hint_bond)
+                    tip_gains_useful.append(training_partner.hint_useful_bond)
 
-                # Cap bond at 100 again
-                new_bond = min(training_partner.starting_bond + training_partner.tip_bond, 100)
-                true_tip_gain = new_bond - training_partner.starting_bond
-                tip_gains_total.append(true_tip_gain)
+                bond_gains_total.append(training_partner.bond)
+                bond_gains_useful.append(training_partner.useful_bond)
+            
 
-                new_tip_total = training_partner.starting_bond + true_tip_gain
-                if new_tip_total < 80:
-                    tip_gains_useful.append(true_tip_gain)
-                else:
-                    tip_gains_useful.append(max(0, 80 - training_partner.starting_bond))
-
-                training_partner.starting_bond = new_bond
+            total_bond = sum(bond_gains_total)
+            useful_bond = sum(bond_gains_useful)
             
             if not venus_blue_active:
                 total_bond += max(tip_gains_total)
@@ -432,6 +473,7 @@ class HelperTable():
             "arc_aptitude_points": arc_aptitude_points,
             "arc_expectation_gauge": arc_expectation_gauge,
             "arc_supporter_points": arc_supporter_points,
+            "eval_dict": eval_dict
         }
 
         # Update preset if needed.

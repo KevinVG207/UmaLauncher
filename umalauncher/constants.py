@@ -175,3 +175,10 @@ SCOUTING_RANK_LIST = [
     "S5",
     "SS"
 ]
+
+BOND_COLOR_DICT = {
+    0: "#2AC0FF",
+    60: "#A2E61E",
+    80: "#FFAD1E",
+    100: "#FFEB78"
+}
