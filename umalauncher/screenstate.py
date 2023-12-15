@@ -2,6 +2,7 @@ import time
 import asyncio
 from enum import Enum
 from io import BytesIO
+import os
 import win32gui
 import win32con
 import pypresence
@@ -213,6 +214,10 @@ class ScreenStateHandler():
         if game_handle:
             self.game_handle = game_handle
             self.game_seen = True
+            process_path = util.get_process_path(game_handle)
+            if process_path:
+                game_install_dir = os.path.dirname(process_path)
+                self.threader.settings['s_game_install_path'] = game_install_dir
 
     def stop(self):
         self.should_stop = True

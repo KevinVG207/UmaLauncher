@@ -105,7 +105,7 @@ class DefaultSettings(se.Settings):
             "Path to the game's installation folder. (Where DMM installed the game and umamusume.exe is located.)",
             "%userprofile%/Umamusume",
             se.SettingType.FOLDERDIALOG,
-            priority=96
+            priority=-1
         )
         self.s_game_position_portrait = se.Setting(
             "Game position (portrait)",
@@ -371,11 +371,11 @@ class SettingsHandler():
             util.log_set_info()
             logger.debug("Debug mode disabled. Logging less.")
 
-        # Check if the game install path is correct.
-        for folder_tuple in [
-            ('s_game_install_path', "umamusume.exe", "Please choose the game's installation folder.\n(Where umamusume.exe is located.)", "Selected folder does not include umamusume.exe.\nPlease try again.")
-        ]:
-            self.make_user_choose_folder(*folder_tuple)
+        # # Check if the game install path is correct.
+        # for folder_tuple in [
+        #     ('s_game_install_path', "umamusume.exe", "Please choose the game's installation folder.\n(Where umamusume.exe is located.)", "Selected folder does not include umamusume.exe.\nPlease try again.")
+        # ]:
+        #     self.make_user_choose_folder(*folder_tuple)
 
         self.save_settings()
 

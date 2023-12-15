@@ -625,18 +625,18 @@ class CarrotJuicer():
 
 
     def run(self):
-        msg_path = self.threader.settings["s_game_install_path"]
-
-        if not msg_path:
-            logger.error("Packet intercept enabled but no carrotjuicer path found")
-            util.show_error_box("Uma Launcher: No game install path found.", "This should not happen. Please add the game install path to umasettings.json")
-            return
-
-        msg_path = os.path.join(msg_path, "CarrotJuicer")
-
         try:
             while not self.should_stop:
                 time.sleep(0.25)
+
+                msg_path = self.threader.settings["s_game_install_path"]
+
+                if not msg_path:
+                    logger.error("Packet intercept enabled but no carrotjuicer path found")
+                    util.show_error_box("Uma Launcher: No game install path found.", "This should not happen. Please add the game install path to umasettings.json")
+                    return
+
+                msg_path = os.path.join(msg_path, "CarrotJuicer")
 
                 if not self.threader.settings["s_enable_carrotjuicer"] or not self.threader.settings['s_enable_browser']:
                     if self.browser and self.browser.alive():

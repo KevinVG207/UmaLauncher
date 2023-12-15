@@ -193,6 +193,13 @@ def show_info_box(error, message):
     logger.info(f"{message}")
     _show_alert_box(error, message, gui.ICONS.Information)
 
+def get_process_path(hwnd: int) -> str:
+    # Get the process ID of the window
+    pid = win32process.GetWindowThreadProcessId(hwnd)[1]
+    # Open the process, and get the executable path
+    proc_path = win32process.GetModuleFileNameEx(win32api.OpenProcess(win32con.PROCESS_QUERY_LIMITED_INFORMATION, False, pid), 0)
+    return os.path.abspath(proc_path)
+
 
 def _get_window_exact(hwnd: int, query: str):
     global window_handle
@@ -220,10 +227,7 @@ def _get_window_startswith(hwnd: int, query: str):
 def _get_window_by_executable(hwnd: int, query: str):
     global window_handle
     if win32gui.IsWindowVisible(hwnd):
-        # Get the process ID of the window
-        pid = win32process.GetWindowThreadProcessId(hwnd)[1]
-        # Open the process, and get the executable path
-        proc_path = win32process.GetModuleFileNameEx(win32api.OpenProcess(win32con.PROCESS_QUERY_LIMITED_INFORMATION, False, pid), 0)
+        proc_path = get_process_path(hwnd)
         executable = os.path.basename(proc_path)
         if executable == query:
             logger.debug(f"Found window {query}!")
