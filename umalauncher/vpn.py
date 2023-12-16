@@ -30,7 +30,7 @@ class VPNClient:
 
             vpn_type = 'cygames' if cygames else 'dmm'
 
-            vpn_type = 'cygames'  # TODO: This is only to test if it becomes more reliable
+            # vpn_type = 'cygames'  # TODO: This is only to test if it becomes more reliable
 
             logger.info(f"Type: {vpn_type}")
 
