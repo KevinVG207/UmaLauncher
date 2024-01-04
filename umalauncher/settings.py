@@ -100,13 +100,13 @@ class DefaultSettings(se.Settings):
             se.SettingType.BOOL,
             priority=95
         )
-        self.s_game_install_path = se.Setting(
-            "Game install path",
-            "Path to the game's installation folder. (Where DMM installed the game and umamusume.exe is located.)",
-            "%userprofile%/Umamusume",
-            se.SettingType.FOLDERDIALOG,
-            priority=-1
-        )
+        # self.s_game_install_path = se.Setting(
+        #     "Game install path",
+        #     "Path to the game's installation folder. (Where DMM installed the game and umamusume.exe is located.)",
+        #     "%userprofile%/Umamusume",
+        #     se.SettingType.FOLDERDIALOG,
+        #     priority=-1
+        # )
         self.s_game_position_portrait = se.Setting(
             "Game position (portrait)",
             "Position of the game window in portrait mode.",

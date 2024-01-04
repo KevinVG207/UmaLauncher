@@ -10,6 +10,7 @@ import win32con
 import win32process
 from PIL import Image
 from loguru import logger
+import json
 import constants
 
 ignore_errors = False
@@ -133,6 +134,21 @@ def do_get_request(url, error_title=None, error_message=None, ignore_timeout=Fal
             last_failed_request = time.perf_counter()
         return None
 
+
+def get_game_folder():
+    with open(os.path.expandvars("%AppData%\dmmgameplayer5\dmmgame.cnf"), "r", encoding='utf-8') as f:
+        game_data = json.loads(f.read())
+    
+    if not game_data or not game_data.get('contents'):
+        return None
+    
+    path = None
+    for game in game_data['contents']:
+        if game.get('productId') == 'umamusume':
+            path = game.get('detail', {}).get('path', None)
+            break
+    
+    return path
 
 
 window_handle = None
