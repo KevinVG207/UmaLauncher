@@ -170,7 +170,8 @@ class HelperTable():
             'free_data_set', # MANT
             'team_data_set',  # Aoharu
             'ura_data_set',  # URA
-            'arc_data_set'  # Project L'Arc
+            'arc_data_set',  # Project L'Arc
+            'sport_data_set'  # UAF Ready Go!
         ]
         for key in scenario_keys:
             if key in data and 'command_info_array' in data[key]:
@@ -378,6 +379,12 @@ class HelperTable():
 
             gained_energy = min(gained_energy, max_energy - energy)
 
+            # UAF Ready Go!
+            if 'sport_data_set' in data:
+                pass
+
+
+
             command_info[command['command_id']] = {
                 'scenario_id': scenario_id,
                 'current_stats': current_stats,
@@ -473,7 +480,8 @@ class HelperTable():
             "arc_aptitude_points": arc_aptitude_points,
             "arc_expectation_gauge": arc_expectation_gauge,
             "arc_supporter_points": arc_supporter_points,
-            "eval_dict": eval_dict
+            "eval_dict": eval_dict,
+            "all_commands": all_commands
         }
 
         # Update preset if needed.

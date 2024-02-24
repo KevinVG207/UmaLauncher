@@ -449,6 +449,44 @@ def get_gm_fragment_dict(force=False):
         gm_fragment_dict.update(tmp_gm_fragment_dict)
     return gm_fragment_dict
 
+def assets_folder_images_to_dict(folder, size=None):
+    img_dict = {}
+
+    assets_folder = get_asset(folder)
+    for image_path in os.listdir(assets_folder):
+        if not image_path.endswith(".png"):
+            continue
+
+        img_key = image_path[:-4]
+
+        img = Image.open(os.path.join(assets_folder, image_path))
+
+        if size is not None:
+            img.thumbnail(size)
+
+        # Save the image in memory in PNG format
+        buffer = io.BytesIO()
+        img.save(buffer, format="PNG")
+        img.close()
+
+        # Encode PNG image to base64 string
+        b64 = "data:image/png;base64," + base64.b64encode(buffer.getvalue()).decode("utf-8")
+        img_dict[img_key] = b64
+
+        buffer.close()
+
+    return img_dict
+
+
+uaf_image_dict = {}
+def get_uaf_image_dict(force=False):
+    global uaf_image_dict
+
+    if force or not uaf_image_dict:
+        logger.debug("Loading Uma Ability Fragment images...")
+        uaf_image_dict.update(assets_folder_images_to_dict("_assets/uaf/sports"))
+    return uaf_image_dict
+
 
 gl_token_dict = {}
 def get_gl_token_dict(force=False):
@@ -456,30 +494,7 @@ def get_gl_token_dict(force=False):
 
     if force or not gl_token_dict:
         logger.debug("Loading Grand Live token images...")
-        tmp_gl_token_dict = {}
-
-        token_folder = get_asset("_assets/gl/tokens")
-        for token_file in os.listdir(token_folder):
-            if not token_file.endswith(".png"):
-                continue
-
-            token_name = token_file[:-4]
-
-            img = Image.open(os.path.join(token_folder, token_file))
-            img.thumbnail((36, 36))
-
-            # Save the image in memory in PNG format
-            buffer = io.BytesIO()
-            img.save(buffer, format="PNG")
-            img.close()
-
-            # Encode PNG image to base64 string
-            b64 = "data:image/png;base64," + base64.b64encode(buffer.getvalue()).decode("utf-8")
-            tmp_gl_token_dict[token_name] = b64
-
-            buffer.close()
-        
-        gl_token_dict.update(tmp_gl_token_dict)
+        gl_token_dict.update(assets_folder_images_to_dict("_assets/gl/tokens", (36, 36)))
 
     return gl_token_dict
 
@@ -516,6 +531,7 @@ UPDATE_FUNCS = [
     get_outfit_name_dict,
     get_race_name_dict,
     get_gm_fragment_dict,
+    get_uaf_image_dict,
     get_gl_token_dict,
     get_group_support_id_to_passion_zone_effect_id_dict,
 ]
