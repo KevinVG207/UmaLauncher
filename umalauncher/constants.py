@@ -4,7 +4,8 @@ SCENARIO_DICT = {
     3: "Grand Live",
     4: "Make a New Track",
     5: "Grand Masters",
-    6: "Project L'Arc"
+    6: "Project L'Arc",
+    7: "U.A.F. Ready Go!"
 }
 
 MOTIVATION_DICT = {
@@ -42,11 +43,11 @@ SUPPORT_CARD_TYPE_DISPLAY_DICT = {
 }
 
 SUPPORT_TYPE_TO_COMMAND_IDS = {
-    "speed": [101, 601, 1101],
-    "stamina": [105, 602, 1102],
-    "power": [102, 603, 1103],
-    "guts": [103, 604, 1104],
-    "wiz": [106, 605, 1105],
+    "speed": [101, 601, 1101, 2101, 2201, 2301],
+    "stamina": [105, 602, 1102, 2102, 2202, 2302],
+    "power": [102, 603, 1103, 2103, 2203, 2303],
+    "guts": [103, 604, 1104, 2104, 2204, 2304],
+    "wiz": [106, 605, 1105, 2105, 2205, 2305],
     "friend": [],
     "group": []
 }
@@ -67,6 +68,21 @@ COMMAND_ID_TO_KEY = {
     1103: "power",
     1104: "guts",
     1105: "wiz",
+    2101: "speed",
+    2102: "stamina",
+    2103: "power",
+    2104: "guts",
+    2105: "wiz",
+    2201: "speed",
+    2202: "stamina",
+    2203: "power",
+    2204: "guts",
+    2205: "wiz",
+    2301: "speed",
+    2302: "stamina",
+    2303: "power",
+    2304: "guts",
+    2305: "wiz",
     "ss_match": "ss_match"
 }
 

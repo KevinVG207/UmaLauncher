@@ -10,6 +10,7 @@ import win32con
 import win32process
 from PIL import Image
 from loguru import logger
+import json
 import constants
 
 ignore_errors = False
@@ -134,6 +135,21 @@ def do_get_request(url, error_title=None, error_message=None, ignore_timeout=Fal
         return None
 
 
+def get_game_folder():
+    with open(os.path.expandvars("%AppData%\dmmgameplayer5\dmmgame.cnf"), "r", encoding='utf-8') as f:
+        game_data = json.loads(f.read())
+    
+    if not game_data or not game_data.get('contents'):
+        return None
+    
+    path = None
+    for game in game_data['contents']:
+        if game.get('productId') == 'umamusume':
+            path = game.get('detail', {}).get('path', None)
+            break
+    
+    return path
+
 
 window_handle = None
 
@@ -193,6 +209,13 @@ def show_info_box(error, message):
     logger.info(f"{message}")
     _show_alert_box(error, message, gui.ICONS.Information)
 
+def get_process_path(hwnd: int) -> str:
+    # Get the process ID of the window
+    pid = win32process.GetWindowThreadProcessId(hwnd)[1]
+    # Open the process, and get the executable path
+    proc_path = win32process.GetModuleFileNameEx(win32api.OpenProcess(win32con.PROCESS_QUERY_LIMITED_INFORMATION, False, pid), 0)
+    return os.path.abspath(proc_path)
+
 
 def _get_window_exact(hwnd: int, query: str):
     global window_handle
@@ -220,10 +243,7 @@ def _get_window_startswith(hwnd: int, query: str):
 def _get_window_by_executable(hwnd: int, query: str):
     global window_handle
     if win32gui.IsWindowVisible(hwnd):
-        # Get the process ID of the window
-        pid = win32process.GetWindowThreadProcessId(hwnd)[1]
-        # Open the process, and get the executable path
-        proc_path = win32process.GetModuleFileNameEx(win32api.OpenProcess(win32con.PROCESS_QUERY_LIMITED_INFORMATION, False, pid), 0)
+        proc_path = get_process_path(hwnd)
         executable = os.path.basename(proc_path)
         if executable == query:
             logger.debug(f"Found window {query}!")
@@ -429,6 +449,44 @@ def get_gm_fragment_dict(force=False):
         gm_fragment_dict.update(tmp_gm_fragment_dict)
     return gm_fragment_dict
 
+def assets_folder_images_to_dict(folder, size=None):
+    img_dict = {}
+
+    assets_folder = get_asset(folder)
+    for image_path in os.listdir(assets_folder):
+        if not image_path.endswith(".png"):
+            continue
+
+        img_key = image_path[:-4]
+
+        img = Image.open(os.path.join(assets_folder, image_path))
+
+        if size is not None:
+            img.thumbnail(size)
+
+        # Save the image in memory in PNG format
+        buffer = io.BytesIO()
+        img.save(buffer, format="PNG")
+        img.close()
+
+        # Encode PNG image to base64 string
+        b64 = "data:image/png;base64," + base64.b64encode(buffer.getvalue()).decode("utf-8")
+        img_dict[img_key] = b64
+
+        buffer.close()
+
+    return img_dict
+
+
+uaf_image_dict = {}
+def get_uaf_image_dict(force=False):
+    global uaf_image_dict
+
+    if force or not uaf_image_dict:
+        logger.debug("Loading Uma Ability Fragment images...")
+        uaf_image_dict.update(assets_folder_images_to_dict("_assets/uaf/sports"))
+    return uaf_image_dict
+
 
 gl_token_dict = {}
 def get_gl_token_dict(force=False):
@@ -436,30 +494,7 @@ def get_gl_token_dict(force=False):
 
     if force or not gl_token_dict:
         logger.debug("Loading Grand Live token images...")
-        tmp_gl_token_dict = {}
-
-        token_folder = get_asset("_assets/gl/tokens")
-        for token_file in os.listdir(token_folder):
-            if not token_file.endswith(".png"):
-                continue
-
-            token_name = token_file[:-4]
-
-            img = Image.open(os.path.join(token_folder, token_file))
-            img.thumbnail((36, 36))
-
-            # Save the image in memory in PNG format
-            buffer = io.BytesIO()
-            img.save(buffer, format="PNG")
-            img.close()
-
-            # Encode PNG image to base64 string
-            b64 = "data:image/png;base64," + base64.b64encode(buffer.getvalue()).decode("utf-8")
-            tmp_gl_token_dict[token_name] = b64
-
-            buffer.close()
-        
-        gl_token_dict.update(tmp_gl_token_dict)
+        gl_token_dict.update(assets_folder_images_to_dict("_assets/gl/tokens", (36, 36)))
 
     return gl_token_dict
 
@@ -496,6 +531,7 @@ UPDATE_FUNCS = [
     get_outfit_name_dict,
     get_race_name_dict,
     get_gm_fragment_dict,
+    get_uaf_image_dict,
     get_gl_token_dict,
     get_group_support_id_to_passion_zone_effect_id_dict,
 ]

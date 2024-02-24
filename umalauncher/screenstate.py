@@ -2,6 +2,7 @@ import time
 import asyncio
 from enum import Enum
 from io import BytesIO
+import os
 import win32gui
 import win32con
 import pypresence

@@ -227,7 +227,7 @@ class Preset():
             html_elements.append(self.generate_gl_table(main_info))
             html_elements.append(self.generate_arc(main_info))
 
-        html_elements.append(self.generate_table(command_info))
+        html_elements.append(self.generate_table(command_info, main_info))
 
         # html_elements.append("""<button id="btn-skill-window" onclick="window.await_skill_window();">Open Skills Window</button>""")
 
@@ -242,11 +242,34 @@ class Preset():
     def generate_fans(self, main_info):
         return f"<div id=\"fans\"><b>Fans:</b> {main_info['fans']:,}</div>"
     
-    def generate_table(self, command_info):
+    def generate_table(self, command_info, main_info):
         if not command_info:
             return ""
+        
+        headers = [TABLE_HEADERS['fac']]
+        if main_info['scenario_id'] == 7:
+            headers = [f"""<th style="text-overflow: clip;white-space: nowrap;overflow: hidden;">{header}</th>""" for header in headers]
 
-        table_header = ''.join(f"""<th style="text-overflow: clip;white-space: nowrap;overflow: hidden;">{TABLE_HEADERS[header]}</th>""" for header in ["fac"] + [command for command in command_info])
+            color_dict = {
+                "1": "rgba(0, 0, 255, 0.1)",
+                "2": "rgba(255, 0, 0, 0.1)",
+                "3": "rgba(255, 255, 0, 0.1)",
+            }
+
+            # Use icons as headers
+            for command_id in list(main_info['all_commands'].keys())[:5]:
+                color_block_part = f"<div style=\"width: 100%;height: 100%;background-color: {color_dict[str(command_id)[1]]};position: absolute;top: 0;left: 0;z-index: -1\"></div>"
+                img_part = f"<img src=\"{util.get_uaf_image_dict()[str(command_id)]}\" width=\"32\" height=\"32\" style=\"display:inline-block; width: auto; height: 1.5rem;\"/>"
+                text_part = f"<br>{TABLE_HEADERS[constants.COMMAND_ID_TO_KEY[command_id]]}"
+                header = f"""<th style="position: relative; text-overflow: clip;white-space: nowrap;overflow: hidden; z-index: 0; font-size: 0.8rem;">{color_block_part}{img_part}{text_part}</th>"""
+                headers.append(header)
+
+        else:
+            headers += [TABLE_HEADERS[header] for header in + [TABLE_HEADERS[command] for command in command_info]]
+            headers = [f"""<th style="text-overflow: clip;white-space: nowrap;overflow: hidden;">{header}</th>""" for header in headers]
+
+
+        table_header = ''.join(headers)
         table = [f"<tr>{table_header}</tr>"]
 
         for row in self.initialized_rows:

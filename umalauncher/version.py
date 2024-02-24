@@ -10,7 +10,7 @@ from loguru import logger
 import util
 import gui
 
-VERSION = "1.9.3"
+VERSION = "1.10.0"
 
 def parse_version(version_string: str):
     """Convert version string to tuple."""
@@ -99,7 +99,7 @@ def auto_update(umasettings, force=False):
         os.remove("update.tmp")
         util.show_info_box("Update complete!", f"Uma Launcher updated successfully to v{vstr(script_version)}.<br>To see what's new, <a href=\"https://github.com/KevinVG207/UmaLauncher/releases/tag/v{vstr(script_version)}\">click here</a>.")
 
-    response = util.do_get_request("https://api.github.com/repos/KevinVG207/UmaLauncher/releases", error_message="Could not check for updates on Github. Please check your internet connection.", ignore_timeout=True)
+    response = util.do_get_request("https://umapyoi.net/api/v1/github/KevinVG207/UmaLauncher/releases", error_message="Could not check for updates. Please check your internet connection.", ignore_timeout=True)
     if not response:
         return True
     response_json = response.json()
