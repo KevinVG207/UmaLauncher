@@ -259,13 +259,13 @@ class Preset():
             # Use icons as headers
             for command_id in list(main_info['all_commands'].keys())[:5]:
                 color_block_part = f"<div style=\"width: 100%;height: 100%;background-color: {color_dict[str(command_id)[1]]};position: absolute;top: 0;left: 0;z-index: -1\"></div>"
-                img_part = f"<img src=\"{util.get_uaf_image_dict()[str(command_id)]}\" width=\"32\" height=\"32\" style=\"display:inline-block; width: auto; height: 1.5rem;\"/>"
+                img_part = f"<img src=\"{util.get_uaf_image_dict()[str(command_id)]}\" width=\"32\" height=\"32\" style=\"display:inline-block; width: auto; height: 1.5rem; margin-top: 1px;\"/>"
                 text_part = f"<br>{TABLE_HEADERS[constants.COMMAND_ID_TO_KEY[command_id]]}"
                 header = f"""<th style="position: relative; text-overflow: clip;white-space: nowrap;overflow: hidden; z-index: 0; font-size: 0.8rem;">{color_block_part}{img_part}{text_part}</th>"""
                 headers.append(header)
 
         else:
-            headers += [TABLE_HEADERS[header] for header in + [TABLE_HEADERS[command] for command in command_info]]
+            headers += [TABLE_HEADERS[command] for command in command_info]
             headers = [f"""<th style="text-overflow: clip;white-space: nowrap;overflow: hidden;">{header}</th>""" for header in headers]
 
 
