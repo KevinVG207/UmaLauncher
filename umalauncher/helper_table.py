@@ -380,8 +380,19 @@ class HelperTable():
             gained_energy = min(gained_energy, max_energy - energy)
 
             # UAF Ready Go!
+            uaf_sport_rank = {}
+            uaf_sport_gain = {}
             if 'sport_data_set' in data:
-                pass
+                sport_levels = data['sport_data_set'].get('training_array', [])
+                uaf_sport_rank = {item['command_id']: item['sport_rank'] for item in sport_levels}
+                
+                command_info_array = data['sport_data_set']['command_info_array']
+                
+                for command_info in command_info_array:
+                    for gain_info in command_info['gain_sport_rank_array']:
+                             command_id = gain_info['command_id']
+                             gain_rank = gain_info['gain_rank']
+                             uaf_sport_gain[command_id] = gain_rank
 
 
 
@@ -480,6 +491,8 @@ class HelperTable():
             "arc_aptitude_points": arc_aptitude_points,
             "arc_expectation_gauge": arc_expectation_gauge,
             "arc_supporter_points": arc_supporter_points,
+            "uaf_sport_ranks": uaf_sport_rank,
+            "uaf_sport_gain": uaf_sport_gain,
             "eval_dict": eval_dict,
             "all_commands": all_commands
         }

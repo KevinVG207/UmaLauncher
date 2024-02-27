@@ -226,6 +226,7 @@ class Preset():
             html_elements.append(self.generate_gm_table(main_info))
             html_elements.append(self.generate_gl_table(main_info))
             html_elements.append(self.generate_arc(main_info))
+            html_elements.append(self.generate_uaf(main_info))
 
         html_elements.append(self.generate_table(command_info, main_info))
 
@@ -259,7 +260,7 @@ class Preset():
             # Use icons as headers
             for command_id in list(main_info['all_commands'].keys())[:5]:
                 color_block_part = f"<div style=\"width: 100%;height: 100%;background-color: {color_dict[str(command_id)[1]]};position: absolute;top: 0;left: 0;z-index: -1\"></div>"
-                img_part = f"<img src=\"{util.get_uaf_image_dict()[str(command_id)]}\" width=\"32\" height=\"32\" style=\"display:inline-block; width: auto; height: 1.5rem; margin-top: 1px;\"/>"
+                img_part = f"<img src=\"{util.get_uaf_sport_image_dict()[str(command_id)]}\" width=\"32\" height=\"32\" style=\"display:inline-block; width: auto; height: 1.5rem; margin-top: 1px;\"/>"
                 text_part = f"<br>{TABLE_HEADERS[constants.COMMAND_ID_TO_KEY[command_id]]}"
                 header = f"""<th style="position: relative; text-overflow: clip;white-space: nowrap;overflow: hidden; z-index: 0; font-size: 0.8rem;">{color_block_part}{img_part}{text_part}</th>"""
                 headers.append(header)
@@ -396,6 +397,40 @@ class Preset():
         gauge_str2 = str(main_info['arc_expectation_gauge'] % 10)
         return f"<div id=\"arc\"><b>Aptitude Points:</b> {main_info['arc_aptitude_points']:,} - <b>Supporter Points:</b> {main_info['arc_supporter_points']:,} - <b>Expectation Gauge:</b> {gauge_str}.{gauge_str2}%</div>"
 
+    def generate_uaf(self, main_info):
+        if main_info['scenario_id'] != 7:
+            return ""
+        
+        uaf_sport_rank = main_info['uaf_sport_ranks']
+        uaf_sport_gain = main_info['uaf_sport_gain']
+
+        html_output = "<div id='uaf'><table><thead><tr><th style='position: relative; text-overflow: clip;white-space: nowrap;overflow: hidden; z-index: 0; font-size: 0.8rem;'>Genres</th>"
+        
+        for command_id in list(main_info['all_commands'].keys())[:5]:
+            text_part = f"{TABLE_HEADERS[constants.COMMAND_ID_TO_KEY[command_id]]}"
+            header = f"""<th style="position: relative; text-overflow: clip;white-space: nowrap;overflow: hidden; z-index: 0; font-size: 0.8rem;">{text_part}</th>"""
+            html_output += header
+            
+        html_output += "</tr></thead><tbody>"
+
+        # Loop through the IDs
+        for base in [2100, 2200, 2300]:
+            total_row = 0
+            row = f"<tr><td style='display: flex; align-items: center; justify-content: center;'><img src=\"{util.get_uaf_genre_image_dict()[str(base)]}\" width=\"32\" height=\"32\" style=\"display:inline-block; width: auto; height: 1.5rem; margin-top: 1px;\"/></td>"
+            for i in range(1, 6):
+                id = base + i
+                if id in uaf_sport_rank:
+                    rank = uaf_sport_rank.get(id, 0)
+                    total_row += rank
+                    row += f"""<td>{rank}</td>"""
+                    
+            row += "</tr>"
+            html_output += row
+
+        html_output += "</tbody></table></div>"
+
+        return html_output
+        
     def to_dict(self):
         return {
             "name": self.name,
