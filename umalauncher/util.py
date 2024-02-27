@@ -243,7 +243,10 @@ def _get_window_startswith(hwnd: int, query: str):
 def _get_window_by_executable(hwnd: int, query: str):
     global window_handle
     if win32gui.IsWindowVisible(hwnd):
-        proc_path = get_process_path(hwnd)
+        try:
+            proc_path = get_process_path(hwnd)
+        except pywinerror:
+            return
         executable = os.path.basename(proc_path)
         if executable == query:
             logger.debug(f"Found window {query}!")
