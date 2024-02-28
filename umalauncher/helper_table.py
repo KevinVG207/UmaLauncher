@@ -386,7 +386,7 @@ class HelperTable():
             uaf_current_active_effects = {}
             uaf_sport_rank_total = {2100: 0, 2200: 0, 2300: 0}
             uaf_required_rank_for_turn = {}
-            uaf_current_required_rank = 0
+            uaf_current_required_rank = 60
             
             if 'sport_data_set' in data:
                 sport_levels = data['sport_data_set'].get('training_array', [])
@@ -403,7 +403,7 @@ class HelperTable():
                         uaf_current_active_effects[key] = value
                 
                 uaf_required_rank_for_turn = mdb.get_uaf_required_rank_for_turn()
-                uaf_required_rank_for_turn.sort(key=lambda x: x[0])
+                uaf_required_rank_for_turn.sort(key=lambda x: x[0], reverse=1)
                 
                 for row in uaf_required_rank_for_turn:
                     if turn <= row[0]:

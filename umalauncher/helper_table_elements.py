@@ -399,12 +399,13 @@ class Preset():
             return ""
         
         required_rank_to_effect = {
-            0: 17,
-            10: 1,
-            20: 3,
-            30: 7,
-            40: 12,
-            50: 17
+            0: 0,
+            10: 0,
+            20: 1,
+            30: 3,
+            40: 7,
+            50: 12,
+            60: 17
         }
         
         uaf_sport_rank = main_info['uaf_sport_ranks']
