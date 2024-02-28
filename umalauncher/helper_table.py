@@ -388,7 +388,7 @@ class HelperTable():
             uaf_sport_competition = {}
             uaf_sport_rank_total = {2100: 0, 2200: 0, 2300: 0}
             uaf_required_rank_for_turn = {}
-            uaf_current_required_rank = 60
+            uaf_current_required_rank = -1
             
             if 'sport_data_set' in data:
                 sport_levels = data['sport_data_set'].get('training_array', [])
