@@ -379,22 +379,34 @@ class HelperTable():
 
             gained_energy = min(gained_energy, max_energy - energy)
 
+
             # UAF Ready Go!
             uaf_sport_rank = {}
             uaf_sport_gain = {}
+            uaf_sport_rank_total = {2100: 0, 2200: 0, 2300: 0}  # Assuming these are the only bases
+            
             if 'sport_data_set' in data:
                 sport_levels = data['sport_data_set'].get('training_array', [])
                 uaf_sport_rank = {item['command_id']: item['sport_rank'] for item in sport_levels}
                 
+                # Calculate totals for each base
+                for command_id, rank in uaf_sport_rank.items():
+                    base = command_id - (command_id % 100)  # Get the base (2100, 2200, 2300, etc.)
+                    uaf_sport_rank_total[base] += rank
+                        
                 command_info_array = data['sport_data_set']['command_info_array']
                 
+                # Extract and sort gain information
+                gain_info_list = []
                 for command_info in command_info_array:
                     for gain_info in command_info['gain_sport_rank_array']:
-                             command_id = gain_info['command_id']
-                             gain_rank = gain_info['gain_rank']
-                             uaf_sport_gain[command_id] = gain_rank
-
-
+                        command_id = gain_info['command_id']
+                        gain_rank = gain_info['gain_rank']
+                        gain_info_list.append((command_id, gain_rank))
+                        
+                # Sort the list by the last digit of command_id and convert it back to dictionary
+                gain_info_list.sort(key=lambda x: x[0] % 10)
+                uaf_sport_gain = {command_id: gain_rank for command_id, gain_rank in gain_info_list}
 
             command_info[command['command_id']] = {
                 'scenario_id': scenario_id,
@@ -413,7 +425,8 @@ class HelperTable():
                 'gm_fragment_double': spirit_boost,
                 'gl_tokens': gl_tokens,
                 'arc_gauge_gain': arc_gauge_gain,
-                'arc_aptitude_gain': arc_aptitude_gain
+                'arc_aptitude_gain': arc_aptitude_gain,
+                'uaf_sport_gain': uaf_sport_gain,
             }
 
         # Simplify everything down to a dict with only the keys we care about.
@@ -492,7 +505,7 @@ class HelperTable():
             "arc_expectation_gauge": arc_expectation_gauge,
             "arc_supporter_points": arc_supporter_points,
             "uaf_sport_ranks": uaf_sport_rank,
-            "uaf_sport_gain": uaf_sport_gain,
+            "uaf_sport_rank_total": uaf_sport_rank_total,
             "eval_dict": eval_dict,
             "all_commands": all_commands
         }
