@@ -383,11 +383,31 @@ class HelperTable():
             # UAF Ready Go!
             uaf_sport_rank = {}
             uaf_sport_gain = {}
-            uaf_sport_rank_total = {2100: 0, 2200: 0, 2300: 0}  # Assuming these are the only bases
+            uaf_current_active_effects = {}
+            uaf_sport_rank_total = {2100: 0, 2200: 0, 2300: 0}
+            uaf_required_rank_for_turn = {}
+            uaf_current_required_rank = 10
             
             if 'sport_data_set' in data:
                 sport_levels = data['sport_data_set'].get('training_array', [])
                 uaf_sport_rank = {item['command_id']: item['sport_rank'] for item in sport_levels}
+                
+                uaf_active_effects = data['sport_data_set'].get('compe_effect_id_array', [])
+                uaf_effects = mdb.get_uaf_training_effects()
+                
+                for effect_id in uaf_active_effects:
+                    key = str(effect_id)[0]
+                    value = uaf_effects.get(effect_id)
+
+                    if value is not None:
+                        uaf_current_active_effects[key] = value
+                
+                uaf_required_rank_for_turn = mdb.get_uaf_required_rank_for_turn()
+                uaf_required_rank_for_turn.sort(key=lambda x: x[0])
+                
+                for row in uaf_required_rank_for_turn:
+                    if turn <= row[0]:
+                        uaf_current_required_rank = row[1]
                 
                 # Calculate totals for each base
                 for command_id, rank in uaf_sport_rank.items():
@@ -506,6 +526,8 @@ class HelperTable():
             "arc_supporter_points": arc_supporter_points,
             "uaf_sport_ranks": uaf_sport_rank,
             "uaf_sport_rank_total": uaf_sport_rank_total,
+            "uaf_current_required_rank": uaf_current_required_rank,
+            "uaf_current_active_effects": uaf_current_active_effects,
             "eval_dict": eval_dict,
             "all_commands": all_commands
         }

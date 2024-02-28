@@ -398,30 +398,59 @@ class Preset():
         if main_info['scenario_id'] != 7:
             return ""
         
+        required_rank_to_effect = {
+            10: 1,
+            20: 3,
+            30: 7,
+            40: 12,
+            50: 17
+        }
+        
         uaf_sport_rank = main_info['uaf_sport_ranks']
         uaf_sport_rank_total = main_info['uaf_sport_rank_total']
+        uaf_current_required_rank = main_info['uaf_current_required_rank']
+        uaf_current_active_effects = main_info['uaf_current_active_effects']
 
-        html_output = "<div id='uaf'><table><thead><tr><th style='position: relative; text-overflow: clip;white-space: nowrap;overflow: hidden; z-index: 0; font-size: 0.8rem;'>Genres</th>"
+        html_output = f"""<div id='uaf'><div style='display:flex; justify-content:center'><b>Training Target:</b>  {uaf_current_required_rank}</div><table><thead><tr><th style='position: relative; text-overflow: clip;white-space: nowrap;overflow: hidden; z-index: 0; font-size: 0.8rem;'>Genres</th>"""
         
         for command_id in list(main_info['all_commands'].keys())[:5]:
             text_part = f"{TABLE_HEADERS[constants.COMMAND_ID_TO_KEY[command_id]]}"
             header = f"""<th style="position: relative; text-overflow: clip;white-space: nowrap;overflow: hidden; z-index: 0; font-size: 0.8rem;">{text_part}</th>"""
             html_output += header
             
-        html_output += "</tr></thead><tbody>"
+        html_output += "<th style='position: relative; text-overflow: clip;white-space: nowrap;overflow: hidden; z-index: 0; font-size: 0.8rem;'>Bonus</th></tr></thead><tbody>"
 
         # Loop through the IDs
         for base in [2100, 2200, 2300]:
             total_row = 0
-            row = f"<tr style='background-color:{util.UAF_COLOR_DICT[str(base)[1]]}'><td style='display: flex; align-items: center; justify-content: center; flex-direction: row; gap: 5px'><img src=\"{util.get_uaf_genre_image_dict()[str(base)]}\" width=\"32\" height=\"32\" style=\"display:inline-block; width: auto; height: 1.5rem; margin-top: 1px;\"/><div>{uaf_sport_rank_total[base]}</div></td>"
+            row = f"<tr><td style='display: flex; align-items: center; justify-content: center; flex-direction: row; gap: 5px'><img src=\"{util.get_uaf_genre_image_dict()[str(base)]}\" width=\"32\" height=\"32\" style=\"display:inline-block; width: auto; height: 1.5rem; margin-top: 1px;\"/><div>{uaf_sport_rank_total[base]}</div></td>"
             for i in range(1, 6):
                 id = base + i
                 if id in uaf_sport_rank:
                     rank = uaf_sport_rank.get(id, 0)
                     total_row += rank
-                    row += f"""<td>{rank}</td>"""
                     
-            row += "</tr>"
+                    # Determine the color based on the rank
+                    if rank >= uaf_current_required_rank:
+                        style = f"color:{Colors.GOOD.value}; font-weight:600;"
+                    elif abs(uaf_current_required_rank - rank) <= 2:
+                        style = f"color:{Colors.WARNING.value};"
+                    else:
+                        style = f"color:{Colors.ALERT.value};"
+                    
+                    row += f"""<td style='{style}'>{rank}</td>"""
+                   
+            current_effect_value = uaf_current_active_effects.get(str(base)[1], 0)
+            expected_effect_value = required_rank_to_effect.get(uaf_current_required_rank, 0)
+
+            # Determine the color for the effect value
+            if current_effect_value == expected_effect_value:
+                effect_style = f"color:{Colors.GOOD.value}; font-weight:600;" 
+            else:
+                effect_style = f"color:{Colors.WARNING.value};"
+
+                
+            row += f"<td style='{effect_style}'>{current_effect_value}%</td>"
             html_output += row
 
         html_output += "</tbody></table></div>"
