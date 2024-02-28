@@ -384,6 +384,8 @@ class HelperTable():
             uaf_sport_rank = {}
             uaf_sport_gain = {}
             uaf_current_active_effects = {}
+            uaf_current_active_bonus = 0
+            uaf_sport_competition = {}
             uaf_sport_rank_total = {2100: 0, 2200: 0, 2300: 0}
             uaf_required_rank_for_turn = {}
             uaf_current_required_rank = 60
@@ -391,6 +393,7 @@ class HelperTable():
             if 'sport_data_set' in data:
                 sport_levels = data['sport_data_set'].get('training_array', [])
                 uaf_sport_rank = {item['command_id']: item['sport_rank'] for item in sport_levels}
+                uaf_sport_compeition_win = data['sport_data_set'].get('competition_result_array', [])
                 
                 uaf_active_effects = data['sport_data_set'].get('compe_effect_id_array', [])
                 uaf_effects = mdb.get_uaf_training_effects()
@@ -401,6 +404,18 @@ class HelperTable():
 
                     if value is not None:
                         uaf_current_active_effects[key] = value
+                        uaf_current_active_bonus += value
+                    
+                group_counts = {'1': 0, '2': 0, '3': 0} # Janky hacky
+                
+                for competition in uaf_sport_compeition_win:
+                    if competition.get("result_state") == 1:
+                        for win_command_id in competition.get("win_command_id_array", []):
+                            group = str(win_command_id)[1]
+                            if group in group_counts:
+                                group_counts[group] += 1
+                
+                uaf_sport_competition = f"{group_counts['1']}/{group_counts['2']}/{group_counts['3']}"
                 
                 uaf_required_rank_for_turn = mdb.get_uaf_required_rank_for_turn()
                 uaf_required_rank_for_turn.sort(key=lambda x: x[0], reverse=1)
@@ -528,6 +543,8 @@ class HelperTable():
             "uaf_sport_rank_total": uaf_sport_rank_total,
             "uaf_current_required_rank": uaf_current_required_rank,
             "uaf_current_active_effects": uaf_current_active_effects,
+            "uaf_current_active_bonus": uaf_current_active_bonus,
+            "uaf_sport_competition": uaf_sport_competition,
             "eval_dict": eval_dict,
             "all_commands": all_commands
         }

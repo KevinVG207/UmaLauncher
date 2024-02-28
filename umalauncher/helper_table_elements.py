@@ -401,22 +401,23 @@ class Preset():
         required_rank_to_effect = {
             0: 0,
             10: 0,
-            20: 1,
-            30: 3,
-            40: 7,
-            50: 12,
-            60: 17
+            20: 3,
+            30: 7,
+            40: 12,
+            50: 17
         }
         
         uaf_sport_rank = main_info['uaf_sport_ranks']
         uaf_sport_rank_total = main_info['uaf_sport_rank_total']
         uaf_current_required_rank = main_info['uaf_current_required_rank']
         uaf_current_active_effects = main_info['uaf_current_active_effects']
+        uaf_current_active_bonus = main_info['uaf_current_active_bonus']
+        uaf_sport_competition = main_info['uaf_sport_competition']
 
         html_output = "<div id='uaf'>"
         
         if uaf_current_required_rank > 0:
-            html_output += f"""<div style='display:flex; justify-content:center; gap: 5px;'><b>Training Target:</b>{uaf_current_required_rank}</div>"""
+            html_output += f"""<div style='display:flex; flex-flow: row; justify-content:center; gap: 5px;'><b>Training Target:</b>{uaf_current_required_rank}<b>Total Bonus:</b>{uaf_current_active_bonus}%<b>Wins:</b>{uaf_sport_competition}</div>"""
             
         html_output += "<table><thead><tr><th style='position: relative; text-overflow: clip;white-space: nowrap;overflow: hidden; z-index: 0; font-size: 0.8rem;'>Genres</th>"
         
@@ -456,7 +457,6 @@ class Preset():
             else:
                 effect_style = f"color:{Colors.WARNING.value};"
 
-                
             row += f"<td style='{effect_style}'>{current_effect_value}%</td>"
             html_output += row
 
