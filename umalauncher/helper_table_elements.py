@@ -404,7 +404,8 @@ class Preset():
             20: 3,
             30: 7,
             40: 12,
-            50: 17
+            50: 17,
+            60: 17
         }
         
         uaf_sport_rank = main_info['uaf_sport_ranks']
@@ -414,10 +415,12 @@ class Preset():
         uaf_current_active_bonus = main_info['uaf_current_active_bonus']
         uaf_sport_competition = main_info['uaf_sport_competition']
 
-        html_output = "<div id='uaf'>"
+        html_output = "<div id='uaf'><div style='display:flex; flex-flow: row; justify-content:center; gap: 5px;'>"
         
-        if uaf_current_required_rank > 0:
-            html_output += f"""<div style='display:flex; flex-flow: row; justify-content:center; gap: 5px;'><b>Training Target:</b>{uaf_current_required_rank}<b>Total Bonus:</b>{uaf_current_active_bonus}%<b>Wins:</b>{uaf_sport_competition}</div>"""
+        if uaf_current_required_rank > 60:
+            html_output += f"""<b>Training Target:</b>{uaf_current_required_rank}"""
+            
+        html_output += f"""<b>Total Bonus:</b>{uaf_current_active_bonus}%<b>Wins:</b>{uaf_sport_competition}</div>"""
             
         html_output += "<table><thead><tr><th style='position: relative; text-overflow: clip;white-space: nowrap;overflow: hidden; z-index: 0; font-size: 0.8rem;'>Genres</th>"
         
