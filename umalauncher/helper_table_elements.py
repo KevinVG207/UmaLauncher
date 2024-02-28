@@ -40,7 +40,7 @@ class Cell():
         if self.color:
             style += f"color:{self.color};"
         if self.background:
-            style += f"background-color:{self.background};"
+            style += f"background:{self.background};"
         if style:
             style = f" style=\"{style}\""
         
