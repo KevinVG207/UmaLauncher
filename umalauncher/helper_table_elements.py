@@ -399,6 +399,7 @@ class Preset():
             return ""
         
         required_rank_to_effect = {
+            0: 17,
             10: 1,
             20: 3,
             30: 7,
@@ -411,7 +412,12 @@ class Preset():
         uaf_current_required_rank = main_info['uaf_current_required_rank']
         uaf_current_active_effects = main_info['uaf_current_active_effects']
 
-        html_output = f"""<div id='uaf'><div style='display:flex; justify-content:center'><b>Training Target:</b>  {uaf_current_required_rank}</div><table><thead><tr><th style='position: relative; text-overflow: clip;white-space: nowrap;overflow: hidden; z-index: 0; font-size: 0.8rem;'>Genres</th>"""
+        html_output = "<div id='uaf'>"
+        
+        if uaf_current_required_rank > 0:
+            html_output += f"""<div style='display:flex; justify-content:center; gap: 5px;'><b>Training Target:</b>{uaf_current_required_rank}</div>"""
+            
+        html_output += "<table><thead><tr><th style='position: relative; text-overflow: clip;white-space: nowrap;overflow: hidden; z-index: 0; font-size: 0.8rem;'>Genres</th>"
         
         for command_id in list(main_info['all_commands'].keys())[:5]:
             text_part = f"{TABLE_HEADERS[constants.COMMAND_ID_TO_KEY[command_id]]}"
