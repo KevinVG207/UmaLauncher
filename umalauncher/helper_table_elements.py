@@ -15,12 +15,6 @@ TABLE_HEADERS = {
     "ss_match": "SS Match"
 }
 
-UAF_COLOR_DICT = {
-    "1": "rgba(0, 0, 255, 0.1)",
-    "2": "rgba(255, 0, 0, 0.1)",
-    "3": "rgba(255, 255, 0, 0.1)",
-}
-
 class Colors(enum.Enum):
     """Defines the colors used in the helper table.
     """
@@ -30,11 +24,12 @@ class Colors(enum.Enum):
 
 
 class Cell():
-    def __init__(self, value="", bold=False, color=None, percent=False, title="", style="text-overflow: clip;white-space: nowrap;overflow: hidden;"):
+    def __init__(self, value="", bold=False, color=None, background=None, percent=False, title="", style="text-overflow: clip;white-space: nowrap;overflow: hidden;"):
         self.value = value
         self.bold = bold
         self.color = color
         self.percent = percent
+        self.background = background
         self.style = style
         self.title = title
 
@@ -44,6 +39,8 @@ class Cell():
             style += "font-weight:bold;"
         if self.color:
             style += f"color:{self.color};"
+        if self.background:
+            style += f"background-color:{self.background};"
         if style:
             style = f" style=\"{style}\""
         
@@ -259,7 +256,7 @@ class Preset():
 
             # Use icons as headers
             for command_id in list(main_info['all_commands'].keys())[:5]:
-                color_block_part = f"<div style=\"width: 100%;height: 100%;background-color: {UAF_COLOR_DICT[str(command_id)[1]]};position: absolute;top: 0;left: 0;z-index: -1\"></div>"
+                color_block_part = f"<div style=\"width: 100%;height: 100%;background-color: {util.UAF_COLOR_DICT[str(command_id)[1]]};position: absolute;top: 0;left: 0;z-index: -1\"></div>"
                 img_part = f"<img src=\"{util.get_uaf_sport_image_dict()[str(command_id)]}\" width=\"32\" height=\"32\" style=\"display:inline-block; width: auto; height: 1.5rem; margin-top: 1px;\"/>"
                 text_part = f"<br>{TABLE_HEADERS[constants.COMMAND_ID_TO_KEY[command_id]]}"
                 header = f"""<th style="position: relative; text-overflow: clip;white-space: nowrap;overflow: hidden; z-index: 0; font-size: 0.8rem;">{color_block_part}{img_part}{text_part}</th>"""
@@ -416,7 +413,7 @@ class Preset():
         # Loop through the IDs
         for base in [2100, 2200, 2300]:
             total_row = 0
-            row = f"<tr><td style='display: flex; align-items: center; justify-content: center; flex-direction: column'><img src=\"{util.get_uaf_genre_image_dict()[str(base)]}\" width=\"32\" height=\"32\" style=\"display:inline-block; width: auto; height: 1.5rem; margin-top: 1px;\"/><div>{uaf_sport_rank_total[base]}</div></td>"
+            row = f"<tr style='background-color:{util.UAF_COLOR_DICT[str(base)[1]]}'><td style='display: flex; align-items: center; justify-content: center; flex-direction: row; gap: 5px'><img src=\"{util.get_uaf_genre_image_dict()[str(base)]}\" width=\"32\" height=\"32\" style=\"display:inline-block; width: auto; height: 1.5rem; margin-top: 1px;\"/><div>{uaf_sport_rank_total[base]}</div></td>"
             for i in range(1, 6):
                 id = base + i
                 if id in uaf_sport_rank:
