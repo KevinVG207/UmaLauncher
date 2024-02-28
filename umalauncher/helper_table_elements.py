@@ -402,7 +402,7 @@ class Preset():
             return ""
         
         uaf_sport_rank = main_info['uaf_sport_ranks']
-        uaf_sport_rank_total = main_info['uaf_sport_ranks']
+        uaf_sport_rank_total = main_info['uaf_sport_rank_total']
 
         html_output = "<div id='uaf'><table><thead><tr><th style='position: relative; text-overflow: clip;white-space: nowrap;overflow: hidden; z-index: 0; font-size: 0.8rem;'>Genres</th>"
         
@@ -416,7 +416,7 @@ class Preset():
         # Loop through the IDs
         for base in [2100, 2200, 2300]:
             total_row = 0
-            row = f"<tr><td style='display: flex; align-items: center; justify-content: center;'><img src=\"{util.get_uaf_genre_image_dict()[str(base)]}{uaf_sport_rank_total[base]}\" width=\"32\" height=\"32\" style=\"display:inline-block; width: auto; height: 1.5rem; margin-top: 1px;\"/></td>"
+            row = f"<tr><td style='display: flex; align-items: center; justify-content: center; flex-direction: column'><img src=\"{util.get_uaf_genre_image_dict()[str(base)]}\" width=\"32\" height=\"32\" style=\"display:inline-block; width: auto; height: 1.5rem; margin-top: 1px;\"/><div>{uaf_sport_rank_total[base]}</div></td>"
             for i in range(1, 6):
                 id = base + i
                 if id in uaf_sport_rank:
