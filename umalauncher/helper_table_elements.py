@@ -445,12 +445,21 @@ class Preset():
                     if rank >= uaf_current_required_rank:
                         style = f"color:{Colors.GOOD.value}; font-weight:600;"
                     elif abs(uaf_current_required_rank - rank) <= 2:
-                        style = f"color:{Colors.WARNING.value};"
+                        style = f"color:{Colors.WARNING.value}; font-weight:600;"
                     else:
-                        style = f"color:{Colors.ALERT.value};"
+                        style = f"color:{Colors.ALERT.value}; font-weight:600;"
+                    
+                    # Color bg if the sport is available
+                    if id in main_info['all_commands']:
+                        # 🤮
+                        bg_color = constants.UAF_COLOR_DICT[str(id)[1]]
+                        bg_color = bg_color.split(",")
+                        bg_color[-1] = "0.2)"
+                        bg_color = ",".join(bg_color)
+                        style += f"background-color: {bg_color};"
                     
                     row += f"""<td style='{style}'>{rank}</td>"""
-                   
+
             current_effect_value = uaf_current_active_effects.get(str(base)[1], 0)
             expected_effect_value = required_rank_to_effect.get(uaf_current_required_rank, 0)
 
