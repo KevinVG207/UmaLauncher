@@ -422,7 +422,7 @@ class Preset():
             
         html_output += f"""<b>Total Bonus:</b>{uaf_current_active_bonus}%<b>Wins:</b>{uaf_sport_competition}</div>"""
             
-        html_output += "<table stlye='margin-left: 52px;'><thead><tr><th style='position: relative; text-overflow: clip;white-space: nowrap;overflow: hidden; z-index: 0; font-size: 0.8rem; min-width:101px'>Genres</th>"
+        html_output += "<table style='margin-left: 52px;'><thead><tr><th style='position: relative; text-overflow: clip;white-space: nowrap;overflow: hidden; z-index: 0; font-size: 0.8rem; min-width:101px'>Genres</th>"
         
         for command_id in list(main_info['all_commands'].keys())[:5]:
             text_part = f"{TABLE_HEADERS[constants.COMMAND_ID_TO_KEY[command_id]]}"
