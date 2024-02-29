@@ -523,6 +523,32 @@ def get_total_minigame_plushies(force=False):
     
     return 3 * (total_plushies + len(total_charas))
 
+def get_uaf_required_rank_for_turn(force=False):
+    with Connection() as (_, cursor):
+        cursor.execute(
+            "SELECT turn,win_sport_rank FROM single_mode_sport_competition"
+        )
+        rows = cursor.fetchall()
+    
+    if not rows:
+        return None
+        
+    return rows
+
+def get_uaf_training_effects(force=False):
+    with Connection() as (_, cursor):
+        cursor.execute(
+            "SELECT id, effect_value_2 FROM single_mode_sport_compe_effect"
+        )
+        rows = cursor.fetchall()
+    
+    if not rows:
+        return None
+
+    # Convert rows to a dictionary
+    effects_map = {row[0]: row[1] for row in rows}
+    return effects_map
+
 SINGLE_MODE_UNIQUE_CHARA_DICT = {}
 def get_single_mode_unique_chara_dict(force=False):
     global SINGLE_MODE_UNIQUE_CHARA_DICT

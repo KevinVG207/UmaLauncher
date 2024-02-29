@@ -3,6 +3,7 @@ import copy
 import helper_table_elements as hte
 import util
 import settings_elements as se
+import constants
 
 def compensate_overcap(game_state, command):
     # Compensate for overcapped stats by doubling any gained stats that bring the current stats over 1200.
@@ -752,6 +753,56 @@ class LArcAptitudePointsRow(hte.Row):
                 cells.append(hte.Cell(aptitude_gain))
 
         return cells
+    
+class UAFSportPointGainRow(hte.Row):
+    long_name = "UAF Sports point gain"
+    short_name = "Sport Gain"
+    description = "[Scenario-specific] Displays the points that each genre will gain."
+
+    def __init__(self):
+        super().__init__()
+        self.settings = UAFSportPointGainSettings()
+
+    def _generate_cells(self, game_state) -> list[hte.Cell]:
+        if list(game_state.values())[0]['scenario_id'] != 7:
+            return []
+
+        cells = [hte.Cell(self.short_name, title=self.description)]
+        
+        uaf_sport_gains = {}
+        for command in game_state.values():
+            for command_id, gain in command['uaf_sport_gain'].items():
+                group = (command_id // 100) % 10
+                uaf_sport_gains[group] = uaf_sport_gains.get(group, 0) + gain
+        
+        # Find the sport group with the highest total gain
+        max_uaf_sport_gain = max(uaf_sport_gains, key=uaf_sport_gains.get)
+
+        uaf_sport_gain = command['uaf_sport_gain']
+        for command_id, gain in uaf_sport_gain.items():
+            group = (command_id // 100) % 10
+            if self.settings.s_highlight_max.value and group == max_uaf_sport_gain and uaf_sport_gains[group] > 0:
+                cells.append(hte.Cell(gain, bold=True, color=self.settings.s_highlight_max_color.value, background=constants.UAF_COLOR_DICT[str(command_id)[1]]))
+            else:
+                cells.append(hte.Cell(gain, background=constants.UAF_COLOR_DICT[str(command_id)[1]]))
+
+        return cells
+
+
+class UAFSportPointGainSettings(se.Settings):
+    def __init__(self):
+        self.s_highlight_max = se.Setting(
+            "Highlight max",
+            "Highlights the facility with the most aptitude points gained.",
+            True,
+            se.SettingType.BOOL
+        )
+        self.s_highlight_max_color = se.Setting(
+            "Highlight max color",
+            "The color to use to highlight the facility with the most aptitude points gained.",
+            "#90EE90",
+            se.SettingType.COLOR
+        )
 
 
 class RowTypes(Enum):
@@ -772,6 +823,7 @@ class RowTypes(Enum):
     GM_FRAGMENTS = GrandMastersFragmentsRow
     LARC_STAR_GAUGE_GAIN = LArcStarGaugeGainRow
     LARC_APTITUDE_POINTS = LArcAptitudePointsRow
+    UAF_SPORT_POINT_GAIN = UAFSportPointGainRow
 
 
 class DefaultPreset(hte.Preset):
@@ -781,6 +833,7 @@ class DefaultPreset(hte.Preset):
         RowTypes.GM_FRAGMENTS,
         RowTypes.LARC_APTITUDE_POINTS,
         RowTypes.LARC_STAR_GAUGE_GAIN,
+        RowTypes.UAF_SPORT_POINT_GAIN,
         RowTypes.CURRENT_STATS,
         RowTypes.GAINED_STATS,
         RowTypes.USEFUL_BOND,

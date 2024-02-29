@@ -379,11 +379,69 @@ class HelperTable():
 
             gained_energy = min(gained_energy, max_energy - energy)
 
+
             # UAF Ready Go!
+            uaf_sport_rank = {}
+            uaf_sport_gain = {}
+            uaf_current_active_effects = {}
+            uaf_current_active_bonus = 0
+            uaf_sport_competition = {}
+            uaf_sport_rank_total = {2100: 0, 2200: 0, 2300: 0}
+            uaf_required_rank_for_turn = {}
+            uaf_current_required_rank = -1
+            
             if 'sport_data_set' in data:
-                pass
+                sport_levels = data['sport_data_set'].get('training_array', [])
+                uaf_sport_rank = {item['command_id']: item['sport_rank'] for item in sport_levels}
+                uaf_sport_compeition_win = data['sport_data_set'].get('competition_result_array', [])
+                
+                uaf_active_effects = data['sport_data_set'].get('compe_effect_id_array', [])
+                uaf_effects = mdb.get_uaf_training_effects()
+                
+                for effect_id in uaf_active_effects:
+                    key = str(effect_id)[0]
+                    value = uaf_effects.get(effect_id)
 
-
+                    if value is not None:
+                        uaf_current_active_effects[key] = value
+                        uaf_current_active_bonus += value
+                    
+                group_counts = {'1': 0, '2': 0, '3': 0} # Janky hacky
+                
+                for competition in uaf_sport_compeition_win:
+                    if competition.get("result_state") == 1:
+                        for win_command_id in competition.get("win_command_id_array", []):
+                            group = str(win_command_id)[1]
+                            if group in group_counts:
+                                group_counts[group] += 1
+                
+                uaf_sport_competition = f"{group_counts['1']}/{group_counts['2']}/{group_counts['3']}"
+                
+                uaf_required_rank_for_turn = mdb.get_uaf_required_rank_for_turn()
+                uaf_required_rank_for_turn.sort(key=lambda x: x[0], reverse=1)
+                
+                for row in uaf_required_rank_for_turn:
+                    if turn <= row[0]:
+                        uaf_current_required_rank = row[1]
+                
+                # Calculate totals for each base
+                for command_id, rank in uaf_sport_rank.items():
+                    base = command_id - (command_id % 100)  # Get the base (2100, 2200, 2300, etc.)
+                    uaf_sport_rank_total[base] += rank
+                        
+                command_info_array = data['sport_data_set']['command_info_array']
+                
+                # Extract and sort gain information
+                gain_info_list = []
+                for command_info in command_info_array:
+                    for gain_info in command_info['gain_sport_rank_array']:
+                        command_id = gain_info['command_id']
+                        gain_rank = gain_info['gain_rank']
+                        gain_info_list.append((command_id, gain_rank))
+                        
+                # Sort the list by the last digit of command_id and convert it back to dictionary
+                gain_info_list.sort(key=lambda x: x[0] % 10)
+                uaf_sport_gain = {command_id: gain_rank for command_id, gain_rank in gain_info_list}
 
             command_info[command['command_id']] = {
                 'scenario_id': scenario_id,
@@ -402,7 +460,8 @@ class HelperTable():
                 'gm_fragment_double': spirit_boost,
                 'gl_tokens': gl_tokens,
                 'arc_gauge_gain': arc_gauge_gain,
-                'arc_aptitude_gain': arc_aptitude_gain
+                'arc_aptitude_gain': arc_aptitude_gain,
+                'uaf_sport_gain': uaf_sport_gain,
             }
 
         # Simplify everything down to a dict with only the keys we care about.
@@ -480,6 +539,12 @@ class HelperTable():
             "arc_aptitude_points": arc_aptitude_points,
             "arc_expectation_gauge": arc_expectation_gauge,
             "arc_supporter_points": arc_supporter_points,
+            "uaf_sport_ranks": uaf_sport_rank,
+            "uaf_sport_rank_total": uaf_sport_rank_total,
+            "uaf_current_required_rank": uaf_current_required_rank,
+            "uaf_current_active_effects": uaf_current_active_effects,
+            "uaf_current_active_bonus": uaf_current_active_bonus,
+            "uaf_sport_competition": uaf_sport_competition,
             "eval_dict": eval_dict,
             "all_commands": all_commands
         }

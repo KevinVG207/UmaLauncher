@@ -478,15 +478,23 @@ def assets_folder_images_to_dict(folder, size=None):
     return img_dict
 
 
-uaf_image_dict = {}
-def get_uaf_image_dict(force=False):
-    global uaf_image_dict
+uaf_sport_image_dict = {}
+def get_uaf_sport_image_dict(force=False):
+    global uaf_sport_image_dict
 
-    if force or not uaf_image_dict:
+    if force or not uaf_sport_image_dict:
         logger.debug("Loading Uma Ability Fragment images...")
-        uaf_image_dict.update(assets_folder_images_to_dict("_assets/uaf/sports"))
-    return uaf_image_dict
+        uaf_sport_image_dict.update(assets_folder_images_to_dict("_assets/uaf/sports"))
+    return uaf_sport_image_dict
 
+uaf_genre_image_dict = {}
+def get_uaf_genre_image_dict(force=False):
+    global uaf_genre_image_dict
+
+    if force or not uaf_genre_image_dict:
+        logger.debug("Loading Uma Ability Fragment images...")
+        uaf_genre_image_dict.update(assets_folder_images_to_dict("_assets/uaf/genres"))
+    return uaf_genre_image_dict
 
 gl_token_dict = {}
 def get_gl_token_dict(force=False):
@@ -531,7 +539,7 @@ UPDATE_FUNCS = [
     get_outfit_name_dict,
     get_race_name_dict,
     get_gm_fragment_dict,
-    get_uaf_image_dict,
+    get_uaf_sport_image_dict,
     get_gl_token_dict,
     get_group_support_id_to_passion_zone_effect_id_dict,
 ]

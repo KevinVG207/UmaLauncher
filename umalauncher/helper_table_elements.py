@@ -24,11 +24,12 @@ class Colors(enum.Enum):
 
 
 class Cell():
-    def __init__(self, value="", bold=False, color=None, percent=False, title="", style="text-overflow: clip;white-space: nowrap;overflow: hidden;"):
+    def __init__(self, value="", bold=False, color=None, background=None, percent=False, title="", style="text-overflow: clip;white-space: nowrap;overflow: hidden;"):
         self.value = value
         self.bold = bold
         self.color = color
         self.percent = percent
+        self.background = background
         self.style = style
         self.title = title
 
@@ -38,6 +39,8 @@ class Cell():
             style += "font-weight:bold;"
         if self.color:
             style += f"color:{self.color};"
+        if self.background:
+            style += f"background:{self.background};"
         if style:
             style = f" style=\"{style}\""
         
@@ -226,6 +229,7 @@ class Preset():
             html_elements.append(self.generate_gm_table(main_info))
             html_elements.append(self.generate_gl_table(main_info))
             html_elements.append(self.generate_arc(main_info))
+            html_elements.append(self.generate_uaf(main_info))
 
         html_elements.append(self.generate_table(command_info, main_info))
 
@@ -250,18 +254,12 @@ class Preset():
         if main_info['scenario_id'] == 7:
             headers = [f"""<th style="text-overflow: clip;white-space: nowrap;overflow: hidden;">{header}</th>""" for header in headers]
 
-            color_dict = {
-                "1": "rgba(0, 0, 255, 0.1)",
-                "2": "rgba(255, 0, 0, 0.1)",
-                "3": "rgba(255, 255, 0, 0.1)",
-            }
-
             # Use icons as headers
             for command_id in list(main_info['all_commands'].keys())[:5]:
-                color_block_part = f"<div style=\"width: 100%;height: 100%;background-color: {color_dict[str(command_id)[1]]};position: absolute;top: 0;left: 0;z-index: -1\"></div>"
-                img_part = f"<img src=\"{util.get_uaf_image_dict()[str(command_id)]}\" width=\"32\" height=\"32\" style=\"display:inline-block; width: auto; height: 1.5rem; margin-top: 1px;\"/>"
+                color_block_part = f"<div style=\"width: 100%;height: 100%;background-color: {constants.UAF_COLOR_DICT[str(command_id)[1]]};position: absolute;top: 0;left: 0;z-index: -1\"></div>"
+                img_part = f"<img src=\"{util.get_uaf_sport_image_dict()[str(command_id)]}\" width=\"32\" height=\"32\" style=\"display:inline-block; width: auto; height: 1.5rem; margin-top: 1px;\"/>"
                 text_part = f"<br>{TABLE_HEADERS[constants.COMMAND_ID_TO_KEY[command_id]]}"
-                header = f"""<th style="position: relative; text-overflow: clip;white-space: nowrap;overflow: hidden; z-index: 0; font-size: 0.8rem;">{color_block_part}{img_part}{text_part}</th>"""
+                header = f"""<th style="position: relative; text-overflow: clip;white-space: nowrap;overflow: hidden; z-index: 0; font-size: 0.8rem; min-width:50px">{color_block_part}{img_part}{text_part}</th>"""
                 headers.append(header)
 
         else:
@@ -396,6 +394,88 @@ class Preset():
         gauge_str2 = str(main_info['arc_expectation_gauge'] % 10)
         return f"<div id=\"arc\"><b>Aptitude Points:</b> {main_info['arc_aptitude_points']:,} - <b>Supporter Points:</b> {main_info['arc_supporter_points']:,} - <b>Expectation Gauge:</b> {gauge_str}.{gauge_str2}%</div>"
 
+    def generate_uaf(self, main_info):
+        if main_info['scenario_id'] != 7:
+            return ""
+        
+        required_rank_to_effect = {
+            -1: 17, # Janky hack for UAF end
+            0: 0,
+            10: 0,
+            20: 3,
+            30: 7,
+            40: 12,
+            50: 17,
+        }
+        
+        uaf_sport_rank = main_info['uaf_sport_ranks']
+        uaf_sport_rank_total = main_info['uaf_sport_rank_total']
+        uaf_current_required_rank = main_info['uaf_current_required_rank']
+        uaf_current_active_effects = main_info['uaf_current_active_effects']
+        uaf_current_active_bonus = main_info['uaf_current_active_bonus']
+        uaf_sport_competition = main_info['uaf_sport_competition']
+
+        html_output = "<div id='uaf'><div style='display:flex; flex-flow: row; justify-content:center; gap: 5px;'>"
+        
+        if uaf_current_required_rank >= 0:
+            html_output += f"""<b>Training Target:</b>{uaf_current_required_rank}"""
+            
+        html_output += f"""<b>Total Bonus:</b>{uaf_current_active_bonus}%<b>Wins:</b>{uaf_sport_competition}</div>"""
+            
+        html_output += "<table style='margin-left: 52px;'><thead><tr><th style='position: relative; text-overflow: clip;white-space: nowrap;overflow: hidden; z-index: 0; font-size: 0.8rem; min-width:101px'>Genres</th>"
+        
+        for command_id in list(main_info['all_commands'].keys())[:5]:
+            text_part = f"{TABLE_HEADERS[constants.COMMAND_ID_TO_KEY[command_id]]}"
+            header = f"""<th style="position: relative; text-overflow: clip;white-space: nowrap;overflow: hidden; z-index: 0; font-size: 0.8rem; min-width:50px">{text_part}</th>"""
+            html_output += header
+            
+        html_output += "<th style='position: relative; text-overflow: clip;white-space: nowrap;overflow: hidden; z-index: 0; font-size: 0.8rem;'>Bonus</th></tr></thead><tbody>"
+
+        # Loop through the IDs
+        for base in [2100, 2200, 2300]:
+            total_row = 0
+            row = f"<tr><td style='display: flex; align-items: center; justify-content: center; flex-direction: row; gap: 5px'><img src=\"{util.get_uaf_genre_image_dict()[str(base)]}\" width=\"32\" height=\"32\" style=\"display:inline-block; width: auto; height: 1.5rem; margin-top: 1px;\"/><div>{uaf_sport_rank_total[base]}</div></td>"
+            for i in range(1, 6):
+                id = base + i
+                if id in uaf_sport_rank:
+                    rank = uaf_sport_rank.get(id, 0)
+                    total_row += rank
+                    
+                    # Determine the color based on the rank
+                    if rank >= uaf_current_required_rank:
+                        style = f"color:{Colors.GOOD.value}; font-weight:600;"
+                    elif abs(uaf_current_required_rank - rank) <= 2:
+                        style = f"color:{Colors.WARNING.value}; font-weight:600;"
+                    else:
+                        style = f"color:{Colors.ALERT.value}; font-weight:600;"
+                    
+                    # Color bg if the sport is available
+                    if id in main_info['all_commands']:
+                        # 🤮
+                        bg_color = constants.UAF_COLOR_DICT[str(id)[1]]
+                        bg_color = bg_color.split(",")
+                        bg_color[-1] = "0.2)"
+                        bg_color = ",".join(bg_color)
+                        style += f"background-color: {bg_color};"
+                    
+                    row += f"""<td style='{style}'>{rank}</td>"""
+
+            current_effect_value = uaf_current_active_effects.get(str(base)[1], 0)
+            expected_effect_value = required_rank_to_effect.get(uaf_current_required_rank, 0)
+
+            # Determine the color for the effect value
+            if current_effect_value == expected_effect_value:
+                effect_style = f"color:{Colors.GOOD.value}; font-weight:600;" 
+            else:
+                effect_style = f"color:{Colors.WARNING.value};"
+
+            row += f"<td style='{effect_style}'>{current_effect_value}%</td>"
+            html_output += row
+
+        html_output += "</tbody></table></div>"
+
+        return html_output
+        
     def to_dict(self):
         return {
             "name": self.name,
