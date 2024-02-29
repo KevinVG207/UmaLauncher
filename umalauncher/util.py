@@ -496,12 +496,6 @@ def get_uaf_genre_image_dict(force=False):
         uaf_genre_image_dict.update(assets_folder_images_to_dict("_assets/uaf/genres"))
     return uaf_genre_image_dict
 
-UAF_COLOR_DICT = {
-    "1": "rgba(0, 0, 255, 0.1)",
-    "2": "rgba(255, 0, 0, 0.1)",
-    "3": "rgba(255, 255, 0, 0.1)",
-}
-
 gl_token_dict = {}
 def get_gl_token_dict(force=False):
     global gl_token_dict

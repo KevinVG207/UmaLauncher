@@ -3,7 +3,7 @@ import copy
 import helper_table_elements as hte
 import util
 import settings_elements as se
-from loguru import logger
+import constants
 
 def compensate_overcap(game_state, command):
     # Compensate for overcapped stats by doubling any gained stats that bring the current stats over 1200.
@@ -782,9 +782,9 @@ class UAFSportPointGainRow(hte.Row):
         for command_id, gain in uaf_sport_gain.items():
             group = (command_id // 100) % 10
             if self.settings.s_highlight_max.value and group == max_uaf_sport_gain and uaf_sport_gains[group] > 0:
-                cells.append(hte.Cell(gain, bold=True, color=self.settings.s_highlight_max_color.value, background=util.UAF_COLOR_DICT[str(command_id)[1]]))
+                cells.append(hte.Cell(gain, bold=True, color=self.settings.s_highlight_max_color.value, background=constants.UAF_COLOR_DICT[str(command_id)[1]]))
             else:
-                cells.append(hte.Cell(gain, background=util.UAF_COLOR_DICT[str(command_id)[1]]))
+                cells.append(hte.Cell(gain, background=constants.UAF_COLOR_DICT[str(command_id)[1]]))
 
         return cells
 
