@@ -588,3 +588,14 @@ UPDATE_FUNCS = [
     get_scouting_score_to_rank_dict,
     get_single_mode_unique_chara_dict
 ]
+
+def has_carotene_table():
+    with Connection() as (_, cursor):
+        cursor.execute(
+            """SELECT name FROM sqlite_master WHERE type='table' AND name='carotene';"""
+        )
+        row = cursor.fetchone()
+    
+    if row:
+        return True
+    return False

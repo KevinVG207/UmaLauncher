@@ -4,6 +4,9 @@ from loguru import logger
 import json
 import util
 
+domain = '127.0.0.1'
+port = 3150
+
 app = Flask(__name__)
 threader = None
 
@@ -45,11 +48,44 @@ def skills_window_rect():
 
     return '', 200
 
+
+# Patcher-related
+@app.route("/patcher-start", methods=['POST'])
+def patcher_start():
+    # Patcher has signaled that it has started.
+    global threader
+
+    if threader.umaserver:
+        threader.umaserver.en_patch_started = True
+    return '', 200
+
+@app.route("/patcher-finish", methods=['POST'])
+def patcher_finish():
+    # Patcher has signaled that it has finished.
+    global threader
+
+    json_data = json.loads(request.data.decode('utf-8'))
+    if threader.umaserver:
+        threader.umaserver.en_patch_success.append(json_data.get('success', False))
+        threader.umaserver.en_patch_error = json_data.get('error', "")
+
+    return '', 200
+
+
 class UmaServer():
+    en_patch_success = []
+
     def __init__(self, incoming_threader):
         global threader
         self.server = None
         threader = incoming_threader
+
+        self.reset_en_patch()
+    
+    def reset_en_patch(self):
+        self.en_patch_started = False
+        self.en_patch_success.clear()
+        self.en_patch_error = ""
 
     def run_with_catch(self):
         try:
@@ -59,7 +95,7 @@ class UmaServer():
 
     def run(self):
         logger.info("Starting server")
-        self.server = make_server('127.0.0.1', 3150, app)
+        self.server = make_server(domain, port, app)
         self.server.serve_forever()
 
     def stop(self):

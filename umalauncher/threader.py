@@ -18,6 +18,7 @@ import psutil
 import os
 import win32api
 from loguru import logger
+import requests
 import settings
 import carrotjuicer
 import umatray
@@ -61,13 +62,23 @@ class Threader():
         # Ping the server to track usage
         self.settings.notify_server()
 
-        self.screenstate = screenstate.ScreenStateHandler(self)
-        THREAD_OBJECTS.append(self.screenstate)
-        THREADS.append(threading.Thread(target=self.screenstate.run_with_catch, name="ScreenStateHandler"))
-
         self.umaserver = umaserver.UmaServer(self)
         THREAD_OBJECTS.append(self.umaserver)
         THREADS.append(threading.Thread(target=self.umaserver.run_with_catch, name="UmaServer"))
+        THREADS[-1].start()
+
+        timeout = time.time() + 10
+        while time.time() < timeout:
+            try:
+                r = requests.get(f"http://{umaserver.domain}:{umaserver.port}", timeout=1)
+                if r.status_code == 200:
+                    break
+            except:
+                pass
+
+        self.screenstate = screenstate.ScreenStateHandler(self)
+        THREAD_OBJECTS.append(self.screenstate)
+        THREADS.append(threading.Thread(target=self.screenstate.run_with_catch, name="ScreenStateHandler"))
 
         self.carrotjuicer = carrotjuicer.CarrotJuicer(self)
         THREAD_OBJECTS.append(self.carrotjuicer)
@@ -82,7 +93,8 @@ class Threader():
         THREADS.append(threading.Thread(target=self.tray.run_with_catch, name="UmaTray"))
 
         for thread in THREADS:
-            thread.start()
+            if not thread.is_alive():
+                thread.start()
 
         win32api.SetConsoleCtrlHandler(self.stop_signal, True)
 

@@ -14,6 +14,7 @@ import mdb
 import helper_table
 import training_tracker
 import horsium
+import umapatcher
 
 class CarrotJuicer():
     start_time = None
@@ -75,6 +76,9 @@ class CarrotJuicer():
             logger.warning("Could not load request because it is already in use!")
             time.sleep(0.1)
             return self.load_request(msg_path)
+        except FileNotFoundError:
+            logger.warning(f"Could not find request file: {msg_path}")
+            return None
 
 
     def load_response(self, msg_path):
@@ -85,6 +89,9 @@ class CarrotJuicer():
             logger.warning("Could not load response because it is already in use!")
             time.sleep(0.1)
             return self.load_response(msg_path)
+        except FileNotFoundError:
+            logger.warning(f"Could not find response file: {msg_path}")
+            return None
 
 
     def create_gametora_helper_url_from_start(self, packet_data):
@@ -134,6 +141,10 @@ class CarrotJuicer():
         if rect_var:
             if (rect_var['x'] == -32000 and rect_var['y'] == -32000):
                 logger.warning(f"Browser minimized, cannot save position for {setting}: {rect_var}")
+                rect_var = None
+                return
+            if rect_var['height'] < 0 or rect_var['width'] < 0:
+                logger.warning(f"Browser size is invalid for {setting}: {rect_var}")
                 rect_var = None
                 return
             rect_list = [rect_var['x'], rect_var['y'], rect_var['width'], rect_var['height']]
@@ -198,6 +209,9 @@ class CarrotJuicer():
             data = message
         else:
             data = self.load_response(message)
+        
+        if not data:
+            return
 
         if self.threader.settings["s_save_packets"]:
             logger.debug("Response:")
@@ -210,6 +224,11 @@ class CarrotJuicer():
                 return
 
             data = data['data']
+
+            # Detect leaving the initial loading screen
+            if data.get('common_define'):
+                # Game just started.
+                umapatcher.repatch(self.threader)
 
 
             # New loading behavior?
@@ -429,6 +448,9 @@ class CarrotJuicer():
 
     def handle_request(self, message):
         data = self.load_request(message)
+
+        if not data:
+            return
 
         if self.threader.settings["s_save_packets"]:
             logger.debug("Request:")
