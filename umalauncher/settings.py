@@ -308,7 +308,7 @@ class DefaultSettings(se.Settings):
         )
         self.s_english_patch_help = se.Setting(
             "English Patch Info",
-            """<a href=\"https://umapyoi.net/carotene-english-patch\">Carotene English Patch</a> is a community-driven translation project for Uma Musume.<br>Like CarrotJuicer, using it is against the Terms of Service of the game, so use at your own risk.<br>This feature is currently experimental, so please reach out on the <a href="https://discord.gg/wvGHW65C6A">Uma Launcher Discord Server</a> if you encounter any issues!""",
+            """<a href=\"https://umapyoi.net/carotene-english-patch\">Carotene English Patch</a> is a community-driven translation project for Umamusume (DMM Version).<br>Like CarrotJuicer, using it is against the Terms of Service of the game, so use at your own risk.<br>This feature is currently experimental, so please reach out on the <a href="https://discord.gg/wvGHW65C6A">Uma Launcher Discord Server</a> if you encounter any issues!""",
             None,
             se.SettingType.MESSAGE,
             priority=101,
