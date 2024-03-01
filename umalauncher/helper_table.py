@@ -91,6 +91,8 @@ class TrainingPartner():
 
             if support_card_id in (10094, 30160) and self.chara_info['scenario_id'] in (6,):  # Only count Mei in Project L'Arc
                 usefulness_cutoff = 60
+            elif support_card_id in (10104, 30188) and self.chara_info['scenario_id'] in (7,):  # Only count Ryoka in UAF
+                usefulness_cutoff = 60
             else:
                 support_card_data = mdb.get_support_card_dict()[support_card_id]
                 support_card_type = constants.SUPPORT_CARD_TYPE_DICT[(support_card_data[1], support_card_data[2])]
@@ -286,8 +288,9 @@ class HelperTable():
                     support_data = mdb.get_support_card_dict()[support_id]
                     support_card_type = mdb.get_support_card_type(support_data)
 
-                    # Don't count friend cards as useful except Mei Satake in Project L'Arc and Light Hello in Grand Live.
-                    if support_card_type != 'friend' or support_id == 30160 and scenario_id in (6,) or support_id == 30052 and scenario_id in (3,):
+                    # Don't count friend cards as useful except Mei Satake in Project L'Arc and Light Hello in Grand Live and Ryoka for UAF.
+                    # This should probably be moved to a setting rather then beeing predefined for the user to customize
+                    if support_card_type != 'friend' or support_id == 30160 and scenario_id in (6,) or support_id == 30052 and scenario_id in (3,) or support_id == 30188 and support_id in (7,):
                         useful_partner_count += 1
 
                     if support_card_type not in ("group", "friend") and training_partner.starting_bond >= 80 and command['command_id'] in constants.SUPPORT_TYPE_TO_COMMAND_IDS[support_card_type]:
