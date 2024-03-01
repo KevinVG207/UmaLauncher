@@ -12,6 +12,7 @@ from PIL import Image
 from loguru import logger
 import json
 import constants
+import shutil
 
 ignore_errors = False
 
@@ -189,11 +190,18 @@ def fetch_latest_github_release(username, repo, prerelease=False):
 
 
 def download_file(url, path):
+    tmp_path = path + ".tmp"
+
+    if os.path.exists(tmp_path):
+        os.remove(tmp_path)
+
     with requests.get(url, stream=True) as r:
         r.raise_for_status()
-        with open(path, "wb") as f:
+        with open(tmp_path, "wb") as f:
             for chunk in r.iter_content(chunk_size=8192):
                 f.write(chunk)
+    
+    shutil.move(tmp_path, path)
 
 
 

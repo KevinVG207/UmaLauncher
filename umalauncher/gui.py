@@ -557,24 +557,24 @@ class UmaNewPresetDialog(UmaMainDialog):
         self.close()
 
 class UmaSettingsDialog(UmaMainDialog):
-    def init_ui(self, settings_var, tab=" General", window_title="Change options", command_dict={}, *args, **kwargs):
+    def init_ui(self, settings_var, tab=" General", window_title="Change options", command_dict={}, width_delta=0, *args, **kwargs):
         self.setting_elements = {}
         self.settings_var = settings_var
         self.tab = tab
         self.command_dict = command_dict
 
-        self.resize(481, 401)
+        self.resize(481 + width_delta, 401)
         # Disable resizing
         self.setFixedSize(self.size())
         self.setWindowFlags(qtc.Qt.WindowCloseButtonHint)
         self.setWindowTitle(window_title)
         self.scrollArea = qtw.QScrollArea(self)
         self.scrollArea.setObjectName(u"scrollArea")
-        self.scrollArea.setGeometry(qtc.QRect(9, 9, 461, 351))
+        self.scrollArea.setGeometry(qtc.QRect(9, 9, 461 + width_delta, 351))
         self.scrollArea.setWidgetResizable(True)
         self.scrollAreaWidgetContents = qtw.QWidget()
         self.scrollAreaWidgetContents.setObjectName(u"scrollAreaWidgetContents")
-        self.scrollAreaWidgetContents.setGeometry(qtc.QRect(0, 0, 459, 349))
+        self.scrollAreaWidgetContents.setGeometry(qtc.QRect(0, 0, 459 + width_delta, 349))
         sizePolicy = qtw.QSizePolicy(qtw.QSizePolicy.Preferred, qtw.QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -600,12 +600,12 @@ class UmaSettingsDialog(UmaMainDialog):
 
         self.btn_cancel = qtw.QPushButton(self)
         self.btn_cancel.setObjectName(u"btn_cancel")
-        self.btn_cancel.setGeometry(qtc.QRect(400, 370, 71, 23))
+        self.btn_cancel.setGeometry(qtc.QRect(400 + width_delta, 370, 71, 23))
         self.btn_cancel.setText(u"Cancel")
         self.btn_cancel.setDefault(True)
         self.btn_save_close = qtw.QPushButton(self)
         self.btn_save_close.setObjectName(u"btn_save_close")
-        self.btn_save_close.setGeometry(qtc.QRect(300, 370, 91, 23))
+        self.btn_save_close.setGeometry(qtc.QRect(300 + width_delta, 370, 91, 23))
         self.btn_save_close.setText(u"Save && close")
 
     def load_settings(self):
@@ -694,6 +694,7 @@ class UmaSettingsDialog(UmaMainDialog):
         lbl_setting_description.setText(setting.description)
         lbl_setting_description.setWordWrap(True)
         lbl_setting_description.setAlignment(qtc.Qt.AlignTop)
+        lbl_setting_description.setOpenExternalLinks(True)
 
         # Make sure the label expands vertically to fit the text if it is very long.
         if setting.type == se.SettingType.MESSAGE:
@@ -931,8 +932,8 @@ class UmaSettingsDialog(UmaMainDialog):
     def add_filedialog(self, setting, parent):
         line_edit = qtw.QLineEdit(parent)
         line_edit.setObjectName(f"lineEdit_{setting.name}")
-        line_edit.setMinimumSize(qtc.QSize(150, 0))
-        line_edit.setMaximumSize(qtc.QSize(150, 16777215))
+        line_edit.setMinimumSize(qtc.QSize(300, 0))
+        line_edit.setMaximumSize(qtc.QSize(300, 16777215))
         line_edit.setText(setting.value)
 
         browse_button = qtw.QPushButton(parent)
@@ -959,8 +960,8 @@ class UmaSettingsDialog(UmaMainDialog):
     def add_folderdialog(self, setting, parent):
         line_edit = qtw.QLineEdit(parent)
         line_edit.setObjectName(f"lineEdit_{setting.name}")
-        line_edit.setMinimumSize(qtc.QSize(150, 0))
-        line_edit.setMaximumSize(qtc.QSize(150, 16777215))
+        line_edit.setMinimumSize(qtc.QSize(300, 0))
+        line_edit.setMaximumSize(qtc.QSize(300, 16777215))
         line_edit.setText(setting.value)
 
         browse_button = qtw.QPushButton(parent)
@@ -990,8 +991,8 @@ class UmaSettingsDialog(UmaMainDialog):
     def add_lineedit(self, setting, parent):
         line_edit = qtw.QLineEdit(parent)
         line_edit.setObjectName(f"lineEdit_{setting.name}")
-        line_edit.setMinimumSize(qtc.QSize(150, 0))
-        line_edit.setMaximumSize(qtc.QSize(150, 16777215))
+        line_edit.setMinimumSize(qtc.QSize(300, 0))
+        line_edit.setMaximumSize(qtc.QSize(300, 16777215))
         line_edit.setText(setting.value)
         return [line_edit], lambda: line_edit.text()
 
@@ -1027,9 +1028,18 @@ class UmaPresetSettingsDialog(UmaSettingsDialog):
 
 class UmaGeneralSettingsDialog(UmaSettingsDialog):
     def init_ui(self, *args, **kwargs):
-        super().init_ui(*args, **kwargs)
+        super().init_ui(*args, width_delta=210, **kwargs)
         self.btn_cancel.clicked.connect(self._parent.cancel)
         self.btn_save_close.clicked.connect(self._parent.save_and_close)
+
+        # self.resize(481, 401)
+        # delta = 210
+        # self.setFixedWidth(self.width() + delta)
+        # self.scrollArea.setFixedWidth(461 + delta)
+        # self.scrollAreaWidgetContents.setFixedWidth(459 + delta)
+
+
+
 
 
 class UmaPreferences(UmaMainWidget):
@@ -1051,7 +1061,7 @@ class UmaPreferences(UmaMainWidget):
         unique_tabs = sorted(list({getattr(general_var[0], key).tab for key in general_var[0].get_settings_keys()}))
 
         # Hack
-        unique_tabs.insert(-1, unique_tabs.pop(unique_tabs.index("English Patch")))
+        unique_tabs.append(unique_tabs.pop(unique_tabs.index("English Patch")))
 
         self.command_dicts = {
             "English Patch": {
@@ -1379,11 +1389,11 @@ class AboutDialog(UmaMainDialog):
 
         super().init_ui(*args, **kwargs)
 
-        self.resize(481, 401)
+        self.resize(481 + 210, 401)
         self.setFixedSize(self.size())
         self.verticalLayoutWidget = qtw.QWidget(self)
         self.verticalLayoutWidget.setObjectName(u"verticalLayoutWidget")
-        self.verticalLayoutWidget.setGeometry(qtc.QRect(0, 0, 481, 401))
+        self.verticalLayoutWidget.setGeometry(qtc.QRect(0, 0, 481 + 210, 401))
         self.verticalLayout = qtw.QVBoxLayout(self.verticalLayoutWidget)
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.verticalLayout.setContentsMargins(0, 0, 0, 0)
