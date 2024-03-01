@@ -11,6 +11,7 @@ import gui
 import settings_elements as se
 import helper_table_defaults as htd
 import helper_table_elements as hte
+import umapatcher
 
 
 class DefaultSettings(se.Settings):
@@ -325,6 +326,14 @@ class DefaultSettings(se.Settings):
             priority=90,
             tab="English Patch"
         )
+        self.s_english_patch_customize_btn = se.Setting(
+            "Customize Patch",
+            "Choose what parts of the game should be translated.",
+            "patch_customize",
+            se.SettingType.COMMANDBUTTON,
+            priority=95,
+            tab="English Patch"
+        )
 
 
 class SettingsHandler():
@@ -532,3 +541,6 @@ class SettingsHandler():
         self.save_settings()
         self.load_settings()
         self.threader.tray.icon_thread.update_menu()
+
+    def patch_customization(self, *args, **kwargs):
+        umapatcher.customize(self.threader)

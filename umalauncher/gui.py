@@ -557,10 +557,11 @@ class UmaNewPresetDialog(UmaMainDialog):
         self.close()
 
 class UmaSettingsDialog(UmaMainDialog):
-    def init_ui(self, settings_var, tab=" General", window_title="Change options", *args, **kwargs):
+    def init_ui(self, settings_var, tab=" General", window_title="Change options", command_dict={}, *args, **kwargs):
         self.setting_elements = {}
         self.settings_var = settings_var
         self.tab = tab
+        self.command_dict = command_dict
 
         self.resize(481, 401)
         # Disable resizing
@@ -730,6 +731,8 @@ class UmaSettingsDialog(UmaMainDialog):
                 input_widgets, value_func = self.add_multi_spinboxes(setting, grp_setting, ['Left', 'Top', 'Width', 'Height'])
             case se.SettingType.LRTBSPINBOXES:
                 input_widgets, value_func = self.add_multi_spinboxes(setting, grp_setting, ['Left', 'Right', 'Top', 'Bottom'])
+            case se.SettingType.COMMANDBUTTON:
+                input_widgets, _ = self.add_commandbutton(setting, grp_setting)
         
         if not input_widgets:
             logger.debug(f"{setting.type} not implemented for {setting.name}")
@@ -992,6 +995,17 @@ class UmaSettingsDialog(UmaMainDialog):
         line_edit.setText(setting.value)
         return [line_edit], lambda: line_edit.text()
 
+    def add_commandbutton(self, setting, parent):
+        btn_setting_button = qtw.QPushButton(parent)
+        btn_setting_button.setObjectName(f"btn_setting_{setting.name}")
+        btn_setting_button.setText(f" {setting.name} ")
+        # Make the width of the button as small as possible to fit the text.
+        size_policy = qtw.QSizePolicy(qtw.QSizePolicy.Maximum, qtw.QSizePolicy.Fixed)
+        btn_setting_button.setSizePolicy(size_policy)
+
+        btn_setting_button.clicked.connect(self.command_dict.get(setting.value, lambda: None))
+        return [btn_setting_button], None
+
 
 class UmaPresetSettingsDialog(UmaSettingsDialog):
     def init_ui(self, *args, **kwargs):
@@ -1030,10 +1044,16 @@ class UmaPreferences(UmaMainWidget):
 
         unique_tabs = {getattr(general_var[0], key).tab for key in general_var[0].get_settings_keys()}
 
+        self.command_dicts = {
+            "English Patch": {
+                "patch_customize": lambda: umasettings.patch_customization()
+            }
+        }
+
         self.settings_widgets = []
 
         for tab in sorted(list(unique_tabs)):
-            tab_widget = UmaGeneralSettingsDialog(self, general_var, tab=tab)
+            tab_widget = UmaGeneralSettingsDialog(self, general_var, tab=tab, command_dict=self.command_dicts.get(tab, {}))
             tab_widget.setObjectName(f"tab_{tab}")
             self.settings_widgets.append(tab_widget)
             self.tabWidget.addTab(tab_widget, tab.lstrip(" "))

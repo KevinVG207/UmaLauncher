@@ -4,14 +4,7 @@ import util
 import os
 from loguru import logger
 
-def patch_if_needed(threader):
-    settings = threader.settings
-    umaserver = threader.umaserver
-
-    logger.debug("In English Patch code")
-    if not settings["s_enable_english_patch"]:
-        return
-    
+def get_patcher_path(settings):
     # Check if exe already exists
     exe_path = util.get_appdata("CarotenePatcher.exe")
 
@@ -39,6 +32,17 @@ def patch_if_needed(threader):
         util.download_file(url, exe_path)
     
     logger.debug("Patcher exe exists.")
+    return exe_path
+
+def patch(threader):
+    settings = threader.settings
+    umaserver = threader.umaserver
+
+    logger.debug("In English Patch code")
+    if not settings["s_enable_english_patch"]:
+        return
+    
+    exe_path = get_patcher_path(settings)
     
     # Run the patcher
     dll_name = "version.dll"
@@ -60,3 +64,9 @@ def patch_if_needed(threader):
         logger.error("English patcher failed")
         util.show_error_box("Patch Error", "English patcher failed.", custom_traceback=umaserver.en_patch_error)
 
+def customize(threader):
+    exe_path = get_patcher_path(threader.settings)
+    command = f"\"{exe_path}\" -c"
+    logger.debug(f"Running patcher with command: {command}")
+    logger.info("Opening patcher customization")
+    os.system(command)

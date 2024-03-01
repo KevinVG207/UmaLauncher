@@ -250,7 +250,7 @@ class ScreenStateHandler():
                     # If DMM is not seen AND Game is not seen: Start DMM
                     if not self.game_seen:
                         # Handle English patch.
-                        umapatcher.patch_if_needed(self.threader)
+                        umapatcher.patch(self.threader)
                         
                         # Enable DMM-only VPN
                         if self.threader.settings["s_vpn_enabled"] and self.threader.settings["s_vpn_dmm_only"]:
