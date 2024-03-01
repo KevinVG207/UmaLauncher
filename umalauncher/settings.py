@@ -305,6 +305,26 @@ class DefaultSettings(se.Settings):
             priority=90,
             tab="VPN"
         )
+        self.s_enable_english_patch = se.Setting(
+            "Enable Carotene English patch on startup",
+            "Applies the latest Carotene English patch before the game is launched.",
+            False,
+            se.SettingType.BOOL,
+            priority=100,
+            tab="English Patch"
+        )
+        self.s_english_patch_dll = se.Setting(
+            "Mod DLL Name",
+            "Change if you encounter issues.",
+            {
+                "version.dll": True,
+                "umpdc.dll": False,
+                "xinput1_3.dll": False
+            },
+            se.SettingType.RADIOBUTTONS,
+            priority=90,
+            tab="English Patch"
+        )
 
 
 class SettingsHandler():
