@@ -45,6 +45,23 @@ def skills_window_rect():
 
     return '', 200
 
+
+# Patcher-related
+@app.route("/patcher-start", methods=['POST'])
+def patcher_start():
+    # Patcher has signaled that it has started.
+    print("Patcher has started.")
+    return '', 200
+
+@app.route("/patcher-finish", methods=['POST'])
+def patcher_finish():
+    # Patcher has signaled that it has finished.
+    print("Patcher has finished.")
+    json_data = json.loads(request.data.decode('utf-8'))
+    print(json_data)
+    return '', 200
+
+
 class UmaServer():
     def __init__(self, incoming_threader):
         global threader
