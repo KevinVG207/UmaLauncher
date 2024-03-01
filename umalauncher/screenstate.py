@@ -14,6 +14,7 @@ import util
 import dmm
 import mdb
 import vpn
+import umapatcher
 
 START_TIME = time.time()
 
@@ -231,13 +232,7 @@ class ScreenStateHandler():
             self.vpn = vpn.create_client(self.threader, cygames=True)
             self.vpn.connect()
 
-        # If DMM is not seen AND Game is not seen: Start DMM
-        if not self.game_seen:
-            if self.threader.settings["s_vpn_enabled"] and self.threader.settings["s_vpn_dmm_only"]:
-                self.vpn = vpn.create_client(self.threader)
-                self.vpn.connect()
-
-            dmm.start()
+        onetime = True
 
         while not self.should_stop:
             time.sleep(self.sleep_time)
@@ -249,6 +244,20 @@ class ScreenStateHandler():
             # Game was never seen before
             if not self.game_seen:
                 self.check_game()
+
+                if onetime:
+                    onetime = False
+                    # If DMM is not seen AND Game is not seen: Start DMM
+                    if not self.game_seen:
+                        # Handle English patch.
+                        umapatcher.patch(self.threader)
+                        
+                        # Enable DMM-only VPN
+                        if self.threader.settings["s_vpn_enabled"] and self.threader.settings["s_vpn_dmm_only"]:
+                            self.vpn = vpn.create_client(self.threader)
+                            self.vpn.connect()
+
+                        dmm.start()
                 continue
             # After this, the game was open at some point.
 

@@ -14,6 +14,7 @@ import mdb
 import helper_table
 import training_tracker
 import horsium
+import umapatcher
 
 class CarrotJuicer():
     start_time = None
@@ -219,6 +220,11 @@ class CarrotJuicer():
                 return
 
             data = data['data']
+
+            # Detect leaving the initial loading screen
+            if data.get('common_define'):
+                # Game just started.
+                umapatcher.repatch(self.threader)
 
 
             # New loading behavior?

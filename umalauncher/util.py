@@ -12,6 +12,7 @@ from PIL import Image
 from loguru import logger
 import json
 import constants
+import shutil
 
 ignore_errors = False
 
@@ -24,6 +25,14 @@ if hasattr(sys, "_MEIPASS"):
     relative_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
     os.chdir(relative_dir)
 is_debug = is_script
+
+appdata_dir = os.path.expandvars("%AppData%\\Uma-Launcher\\")
+os.makedirs(appdata_dir, exist_ok=True)
+
+def get_appdata(relative_path):
+    """Gets the absolute path of a file relative to the appdata directory.
+    """
+    return os.path.join(appdata_dir, relative_path)
 
 def get_relative(relative_path):
     """Gets the absolute path of a file relative to the executable's directory.
@@ -149,6 +158,51 @@ def get_game_folder():
             break
     
     return path
+
+
+def fetch_latest_github_release(username, repo, prerelease=False):
+    url = f'https://umapyoi.net/api/v1/github/{username}/{repo}/releases'
+    try:
+        r = requests.get(url)
+        r.raise_for_status()
+        if not (200 <= r.status_code < 300):
+            raise Exception("Umapyoi.net API request failed")
+        data = r.json()
+    except:
+        # Fallback to github api
+        url = f'https://api.github.com/repos/{username}/{repo}/releases'
+        r = requests.get(url)
+        r.raise_for_status()
+        if not (200 <= r.status_code < 300):
+            raise Exception("Github API request failed")
+        data = r.json()
+    cur_version = None
+    for version in data:
+        if version['prerelease'] and not prerelease:
+            continue
+        cur_version = version
+        break
+
+    if not cur_version:
+        raise Exception("No release found")
+    
+    return cur_version
+
+
+def download_file(url, path):
+    tmp_path = path + ".tmp"
+
+    if os.path.exists(tmp_path):
+        os.remove(tmp_path)
+
+    with requests.get(url, stream=True) as r:
+        r.raise_for_status()
+        with open(tmp_path, "wb") as f:
+            for chunk in r.iter_content(chunk_size=8192):
+                f.write(chunk)
+    
+    shutil.move(tmp_path, path)
+
 
 
 window_handle = None

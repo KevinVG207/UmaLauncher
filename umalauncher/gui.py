@@ -557,23 +557,24 @@ class UmaNewPresetDialog(UmaMainDialog):
         self.close()
 
 class UmaSettingsDialog(UmaMainDialog):
-    def init_ui(self, settings_var, tab=" General", window_title="Change options", *args, **kwargs):
+    def init_ui(self, settings_var, tab=" General", window_title="Change options", command_dict={}, width_delta=0, *args, **kwargs):
         self.setting_elements = {}
         self.settings_var = settings_var
         self.tab = tab
+        self.command_dict = command_dict
 
-        self.resize(481, 401)
+        self.resize(481 + width_delta, 401)
         # Disable resizing
         self.setFixedSize(self.size())
         self.setWindowFlags(qtc.Qt.WindowCloseButtonHint)
         self.setWindowTitle(window_title)
         self.scrollArea = qtw.QScrollArea(self)
         self.scrollArea.setObjectName(u"scrollArea")
-        self.scrollArea.setGeometry(qtc.QRect(9, 9, 461, 351))
+        self.scrollArea.setGeometry(qtc.QRect(9, 9, 461 + width_delta, 351))
         self.scrollArea.setWidgetResizable(True)
         self.scrollAreaWidgetContents = qtw.QWidget()
         self.scrollAreaWidgetContents.setObjectName(u"scrollAreaWidgetContents")
-        self.scrollAreaWidgetContents.setGeometry(qtc.QRect(0, 0, 459, 349))
+        self.scrollAreaWidgetContents.setGeometry(qtc.QRect(0, 0, 459 + width_delta, 349))
         sizePolicy = qtw.QSizePolicy(qtw.QSizePolicy.Preferred, qtw.QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -599,12 +600,12 @@ class UmaSettingsDialog(UmaMainDialog):
 
         self.btn_cancel = qtw.QPushButton(self)
         self.btn_cancel.setObjectName(u"btn_cancel")
-        self.btn_cancel.setGeometry(qtc.QRect(400, 370, 71, 23))
+        self.btn_cancel.setGeometry(qtc.QRect(400 + width_delta, 370, 71, 23))
         self.btn_cancel.setText(u"Cancel")
         self.btn_cancel.setDefault(True)
         self.btn_save_close = qtw.QPushButton(self)
         self.btn_save_close.setObjectName(u"btn_save_close")
-        self.btn_save_close.setGeometry(qtc.QRect(300, 370, 91, 23))
+        self.btn_save_close.setGeometry(qtc.QRect(300 + width_delta, 370, 91, 23))
         self.btn_save_close.setText(u"Save && close")
 
     def load_settings(self):
@@ -693,6 +694,7 @@ class UmaSettingsDialog(UmaMainDialog):
         lbl_setting_description.setText(setting.description)
         lbl_setting_description.setWordWrap(True)
         lbl_setting_description.setAlignment(qtc.Qt.AlignTop)
+        lbl_setting_description.setOpenExternalLinks(True)
 
         # Make sure the label expands vertically to fit the text if it is very long.
         if setting.type == se.SettingType.MESSAGE:
@@ -730,6 +732,8 @@ class UmaSettingsDialog(UmaMainDialog):
                 input_widgets, value_func = self.add_multi_spinboxes(setting, grp_setting, ['Left', 'Top', 'Width', 'Height'])
             case se.SettingType.LRTBSPINBOXES:
                 input_widgets, value_func = self.add_multi_spinboxes(setting, grp_setting, ['Left', 'Right', 'Top', 'Bottom'])
+            case se.SettingType.COMMANDBUTTON:
+                input_widgets, _ = self.add_commandbutton(setting, grp_setting)
         
         if not input_widgets:
             logger.debug(f"{setting.type} not implemented for {setting.name}")
@@ -928,8 +932,8 @@ class UmaSettingsDialog(UmaMainDialog):
     def add_filedialog(self, setting, parent):
         line_edit = qtw.QLineEdit(parent)
         line_edit.setObjectName(f"lineEdit_{setting.name}")
-        line_edit.setMinimumSize(qtc.QSize(150, 0))
-        line_edit.setMaximumSize(qtc.QSize(150, 16777215))
+        line_edit.setMinimumSize(qtc.QSize(300, 0))
+        line_edit.setMaximumSize(qtc.QSize(300, 16777215))
         line_edit.setText(setting.value)
 
         browse_button = qtw.QPushButton(parent)
@@ -956,8 +960,8 @@ class UmaSettingsDialog(UmaMainDialog):
     def add_folderdialog(self, setting, parent):
         line_edit = qtw.QLineEdit(parent)
         line_edit.setObjectName(f"lineEdit_{setting.name}")
-        line_edit.setMinimumSize(qtc.QSize(150, 0))
-        line_edit.setMaximumSize(qtc.QSize(150, 16777215))
+        line_edit.setMinimumSize(qtc.QSize(300, 0))
+        line_edit.setMaximumSize(qtc.QSize(300, 16777215))
         line_edit.setText(setting.value)
 
         browse_button = qtw.QPushButton(parent)
@@ -987,10 +991,27 @@ class UmaSettingsDialog(UmaMainDialog):
     def add_lineedit(self, setting, parent):
         line_edit = qtw.QLineEdit(parent)
         line_edit.setObjectName(f"lineEdit_{setting.name}")
-        line_edit.setMinimumSize(qtc.QSize(150, 0))
-        line_edit.setMaximumSize(qtc.QSize(150, 16777215))
+        line_edit.setMinimumSize(qtc.QSize(300, 0))
+        line_edit.setMaximumSize(qtc.QSize(300, 16777215))
         line_edit.setText(setting.value)
         return [line_edit], lambda: line_edit.text()
+
+    def add_commandbutton(self, setting, parent):
+        btn_setting_button = qtw.QPushButton(parent)
+        btn_setting_button.setObjectName(f"btn_setting_{setting.name}")
+        btn_setting_button.setText(f" {setting.name} ")
+        # Make the width of the button as small as possible to fit the text.
+        size_policy = qtw.QSizePolicy(qtw.QSizePolicy.Maximum, qtw.QSizePolicy.Fixed)
+        btn_setting_button.setSizePolicy(size_policy)
+
+        btn_setting_button.clicked.connect(lambda: self.execute_btn_command(setting.value))
+        return [btn_setting_button], None
+
+    def execute_btn_command(self, value):
+        if value in self.command_dict:
+            self.setEnabled(False)
+            self.command_dict[value]()
+            self.setEnabled(True)
 
 
 class UmaPresetSettingsDialog(UmaSettingsDialog):
@@ -1007,9 +1028,18 @@ class UmaPresetSettingsDialog(UmaSettingsDialog):
 
 class UmaGeneralSettingsDialog(UmaSettingsDialog):
     def init_ui(self, *args, **kwargs):
-        super().init_ui(*args, **kwargs)
+        super().init_ui(*args, width_delta=210, **kwargs)
         self.btn_cancel.clicked.connect(self._parent.cancel)
         self.btn_save_close.clicked.connect(self._parent.save_and_close)
+
+        # self.resize(481, 401)
+        # delta = 210
+        # self.setFixedWidth(self.width() + delta)
+        # self.scrollArea.setFixedWidth(461 + delta)
+        # self.scrollAreaWidgetContents.setFixedWidth(459 + delta)
+
+
+
 
 
 class UmaPreferences(UmaMainWidget):
@@ -1028,12 +1058,22 @@ class UmaPreferences(UmaMainWidget):
         self.tabWidget.setSizePolicy(qtw.QSizePolicy.Preferred, qtw.QSizePolicy.Preferred)
         self.tabWidget.currentChanged.connect(self.tab_changed)
 
-        unique_tabs = {getattr(general_var[0], key).tab for key in general_var[0].get_settings_keys()}
+        unique_tabs = sorted(list({getattr(general_var[0], key).tab for key in general_var[0].get_settings_keys()}))
+
+        # Hack
+        unique_tabs.append(unique_tabs.pop(unique_tabs.index("English Patch")))
+
+        self.command_dicts = {
+            "English Patch": {
+                "patch_customize": lambda: umasettings.patch_customization(),
+                "patch_unpatch": lambda: umasettings.patch_unpatch(),
+            }
+        }
 
         self.settings_widgets = []
 
-        for tab in sorted(list(unique_tabs)):
-            tab_widget = UmaGeneralSettingsDialog(self, general_var, tab=tab)
+        for tab in unique_tabs:
+            tab_widget = UmaGeneralSettingsDialog(self, general_var, tab=tab, command_dict=self.command_dicts.get(tab, {}))
             tab_widget.setObjectName(f"tab_{tab}")
             self.settings_widgets.append(tab_widget)
             self.tabWidget.addTab(tab_widget, tab.lstrip(" "))
@@ -1172,6 +1212,53 @@ class UmaUpdateConfirm(UmaMainWidget):
         self.choice.append(2)
         self.close()
 
+class UmaRestartConfirm(UmaMainWidget):
+    def init_ui(self, choice: list, *args, **kwargs):
+        self.choice = choice
+
+        self.setWindowTitle("Restart Required")
+        self.setWindowFlag(qtc.Qt.WindowType.WindowStaysOnTopHint, True)
+
+        self.layout = qtw.QVBoxLayout()
+        self.setLayout(self.layout)
+
+        self.label = qtw.QLabel("A game update was detected, and the game must be\nrestarted to reapply the English translations.\nWould you like Uma Launcher to restart the game right now?")
+        # Center label text
+        self.label.setAlignment(qtc.Qt.AlignmentFlag.AlignCenter)
+        self.layout.addWidget(self.label)
+
+        self.button_layout = qtw.QHBoxLayout()
+        self.layout.addLayout(self.button_layout)
+
+        self.left_horizontal_spacer = qtw.QSpacerItem(40, 20, qtw.QSizePolicy.Policy.Expanding, qtw.QSizePolicy.Policy.Minimum)
+        self.button_layout.addItem(self.left_horizontal_spacer)
+
+        self.yes_button = qtw.QPushButton("Yes")
+        self.yes_button.clicked.connect(self._yes)
+        self.yes_button.setDefault(True)
+        self.button_layout.addWidget(self.yes_button)
+
+        self.no_button = qtw.QPushButton("No")
+        self.no_button.clicked.connect(self._no)
+        self.button_layout.addWidget(self.no_button)
+
+        self.right_horizontal_spacer = qtw.QSpacerItem(40, 20, qtw.QSizePolicy.Policy.Expanding, qtw.QSizePolicy.Policy.Minimum)
+        self.button_layout.addItem(self.right_horizontal_spacer)
+
+        # Hide maxminize and minimize buttons
+        self.setWindowFlag(qtc.Qt.WindowType.WindowMaximizeButtonHint, False)
+        self.setWindowFlag(qtc.Qt.WindowType.WindowMinimizeButtonHint, False)
+
+    @qtc.pyqtSlot()
+    def _yes(self):
+        self.choice.append(True)
+        self.close()
+
+    @qtc.pyqtSlot()
+    def _no(self):
+        self.choice.append(False)
+        self.close()
+
 
 class UmaBorderlessPopup(UmaMainWidget):
     update_object = None
@@ -1302,11 +1389,11 @@ class AboutDialog(UmaMainDialog):
 
         super().init_ui(*args, **kwargs)
 
-        self.resize(481, 401)
+        self.resize(481 + 210, 401)
         self.setFixedSize(self.size())
         self.verticalLayoutWidget = qtw.QWidget(self)
         self.verticalLayoutWidget.setObjectName(u"verticalLayoutWidget")
-        self.verticalLayoutWidget.setGeometry(qtc.QRect(0, 0, 481, 401))
+        self.verticalLayoutWidget.setGeometry(qtc.QRect(0, 0, 481 + 210, 401))
         self.verticalLayout = qtw.QVBoxLayout(self.verticalLayoutWidget)
         self.verticalLayout.setObjectName(u"verticalLayout")
         self.verticalLayout.setContentsMargins(0, 0, 0, 0)

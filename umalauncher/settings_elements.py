@@ -17,6 +17,7 @@ class SettingType(enum.Enum):
     XYWHSPINBOXES = "xywhspinboxes"
     LRTBSPINBOXES = "lrtbspinboxes"
     DIVIDER = "divider"
+    COMMANDBUTTON = "commandbutton"
 
 
 class Settings():
