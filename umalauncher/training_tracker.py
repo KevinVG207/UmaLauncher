@@ -195,6 +195,21 @@ class CommandType(Enum):
     OverseasPower = 1103
     OverseasGuts = 1104
     OverseasWisdom = 1105
+    MachineGunReceive = 2101
+    HellSwimShoot = 2102
+    MountainDunk = 2103
+    UnlimitedLifting = 2104
+    SnipeBall = 2105
+    GodspeedKarate = 2201
+    PushTheRock = 2202
+    HaritePile = 2203
+    GiganticThrow = 2204
+    SonicFencing = 2205
+    HyperJump = 2301
+    HangClimb = 2302
+    DynamicHammer = 2303
+    LikeASubmarine = 2304
+    AcrobatArrow = 2305
 
 
 @dataclass
