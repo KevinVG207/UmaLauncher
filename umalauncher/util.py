@@ -164,7 +164,7 @@ def fetch_latest_github_release(username, repo, prerelease=False):
     try:
         r = requests.get(url)
         r.raise_for_status()
-        if 200 <= r.status_code < 300:
+        if not (200 <= r.status_code < 300):
             raise Exception("Umapyoi.net API request failed")
         data = r.json()
     except:
@@ -172,7 +172,7 @@ def fetch_latest_github_release(username, repo, prerelease=False):
         url = f'https://api.github.com/repos/{username}/{repo}/releases'
         r = requests.get(url)
         r.raise_for_status()
-        if not 200 <= r.status_code < 300:
+        if not (200 <= r.status_code < 300):
             raise Exception("Github API request failed")
         data = r.json()
     cur_version = None

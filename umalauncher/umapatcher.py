@@ -3,6 +3,10 @@
 import util
 import os
 from loguru import logger
+import win32gui
+import subprocess
+import gui
+import time
 
 def get_patcher_path(settings):
     # Check if exe already exists
@@ -34,6 +38,16 @@ def get_patcher_path(settings):
     logger.debug("Patcher exe exists.")
     return exe_path
 
+def run_patcher_and_wait(command, umaserver, message="", no_popup=False):
+    umaserver.reset_en_patch()
+    logger.debug(f"Running patcher with command: {command}")
+    logger.info(message)
+    subprocess.Popen(command, shell=True, creationflags=subprocess.CREATE_NO_WINDOW)
+    if not no_popup:
+        gui.show_widget(gui.UmaBorderlessPopup, "Carotene Patcher", f"{message}<br>Please wait...", None, umaserver.en_patch_success)
+    while len(umaserver.en_patch_success) == 0:
+        time.sleep(0.2)
+
 def patch(threader):
     settings = threader.settings
     umaserver = threader.umaserver
@@ -52,13 +66,9 @@ def patch(threader):
             break
     command = f"\"{exe_path}\" -U -p {dll_name}"
 
-    logger.debug(f"Running patcher with command: {command}")
-    logger.info("Starting English patcher")
+    run_patcher_and_wait(command, umaserver, "Applying English Patch.")
 
-    umaserver.reset_en_patch()
-    os.system(command)
-
-    if umaserver.en_patch_success:
+    if umaserver.en_patch_success[0]:
         logger.info("English patcher succeeded")
     else:
         logger.error("English patcher failed")
@@ -67,6 +77,15 @@ def patch(threader):
 def customize(threader):
     exe_path = get_patcher_path(threader.settings)
     command = f"\"{exe_path}\" -c"
-    logger.debug(f"Running patcher with command: {command}")
-    logger.info("Opening patcher customization")
-    os.system(command)
+
+    run_patcher_and_wait(command, threader.umaserver, no_popup=True)
+
+def unpatch(threader):
+    if threader.screenstate.game_seen and threader.screenstate.game_handle and win32gui.IsWindow(threader.screenstate.game_handle):
+        util.show_warning_box("Unpatch Error", "Please close the game before unpatching.")
+        return
+
+    exe_path = get_patcher_path(threader.settings)
+    command = f"\"{exe_path}\" -u"
+    
+    run_patcher_and_wait(command, threader.umaserver, "Removing English Patch.")

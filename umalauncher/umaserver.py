@@ -66,13 +66,15 @@ def patcher_finish():
 
     json_data = json.loads(request.data.decode('utf-8'))
     if threader.umaserver:
-        threader.umaserver.en_patch_success = json_data.get('success', False)
+        threader.umaserver.en_patch_success.append(json_data.get('success', False))
         threader.umaserver.en_patch_error = json_data.get('error', "")
 
     return '', 200
 
 
 class UmaServer():
+    en_patch_success = []
+
     def __init__(self, incoming_threader):
         global threader
         self.server = None
@@ -82,7 +84,7 @@ class UmaServer():
     
     def reset_en_patch(self):
         self.en_patch_started = False
-        self.en_patch_success = None
+        self.en_patch_success.clear()
         self.en_patch_error = ""
 
     def run_with_catch(self):

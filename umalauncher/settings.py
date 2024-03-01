@@ -334,6 +334,14 @@ class DefaultSettings(se.Settings):
             priority=95,
             tab="English Patch"
         )
+        self.s_english_patch_unpatch_btn = se.Setting(
+            "Unpatch",
+            "Undo the English patch.",
+            "patch_unpatch",
+            se.SettingType.COMMANDBUTTON,
+            priority=80,
+            tab="English Patch"
+        )
 
 
 class SettingsHandler():
@@ -544,3 +552,6 @@ class SettingsHandler():
 
     def patch_customization(self, *args, **kwargs):
         umapatcher.customize(self.threader)
+
+    def patch_unpatch(self, *args, **kwargs):
+        umapatcher.unpatch(self.threader)

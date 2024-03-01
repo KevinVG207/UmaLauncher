@@ -1003,8 +1003,14 @@ class UmaSettingsDialog(UmaMainDialog):
         size_policy = qtw.QSizePolicy(qtw.QSizePolicy.Maximum, qtw.QSizePolicy.Fixed)
         btn_setting_button.setSizePolicy(size_policy)
 
-        btn_setting_button.clicked.connect(self.command_dict.get(setting.value, lambda: None))
+        btn_setting_button.clicked.connect(lambda: self.execute_btn_command(setting.value))
         return [btn_setting_button], None
+
+    def execute_btn_command(self, value):
+        if value in self.command_dict:
+            self.setEnabled(False)
+            self.command_dict[value]()
+            self.setEnabled(True)
 
 
 class UmaPresetSettingsDialog(UmaSettingsDialog):
@@ -1046,7 +1052,8 @@ class UmaPreferences(UmaMainWidget):
 
         self.command_dicts = {
             "English Patch": {
-                "patch_customize": lambda: umasettings.patch_customization()
+                "patch_customize": lambda: umasettings.patch_customization(),
+                "patch_unpatch": lambda: umasettings.patch_unpatch(),
             }
         }
 
