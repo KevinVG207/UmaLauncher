@@ -75,6 +75,9 @@ class CarrotJuicer():
             logger.warning("Could not load request because it is already in use!")
             time.sleep(0.1)
             return self.load_request(msg_path)
+        except FileNotFoundError:
+            logger.warning(f"Could not find request file: {msg_path}")
+            return None
 
 
     def load_response(self, msg_path):
@@ -85,6 +88,9 @@ class CarrotJuicer():
             logger.warning("Could not load response because it is already in use!")
             time.sleep(0.1)
             return self.load_response(msg_path)
+        except FileNotFoundError:
+            logger.warning(f"Could not find response file: {msg_path}")
+            return None
 
 
     def create_gametora_helper_url_from_start(self, packet_data):
@@ -198,6 +204,9 @@ class CarrotJuicer():
             data = message
         else:
             data = self.load_response(message)
+        
+        if not data:
+            return
 
         if self.threader.settings["s_save_packets"]:
             logger.debug("Response:")
@@ -429,6 +438,9 @@ class CarrotJuicer():
 
     def handle_request(self, message):
         data = self.load_request(message)
+
+        if not data:
+            return
 
         if self.threader.settings["s_save_packets"]:
             logger.debug("Request:")
