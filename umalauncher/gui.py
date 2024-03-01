@@ -587,9 +587,6 @@ class UmaSettingsDialog(UmaMainDialog):
 
         self.load_settings()
 
-        self.verticalSpacer = qtw.QSpacerItem(0, 0, qtw.QSizePolicy.Minimum, qtw.QSizePolicy.Expanding)
-        self.verticalLayout.addItem(self.verticalSpacer)
-
         self.scrollArea.setWidget(self.scrollAreaWidgetContents)
 
         self.btn_restore = qtw.QPushButton(self)
@@ -614,6 +611,8 @@ class UmaSettingsDialog(UmaMainDialog):
             widget = self.verticalLayout.itemAt(i).widget()
             if widget:
                 widget.setParent(None)
+            else:
+                self.verticalLayout.removeItem(self.verticalLayout.itemAt(i))
 
         # Adding group boxes to the scroll area
         settings_keys = self.settings_var[0].get_settings_keys()
@@ -639,6 +638,9 @@ class UmaSettingsDialog(UmaMainDialog):
                 self.verticalLayout.addWidget(group_box, 0, qtc.Qt.AlignTop)
             else:
                 self.verticalLayout.addWidget(group_box)
+        
+        self.verticalSpacer = qtw.QSpacerItem(0, 0, qtw.QSizePolicy.Minimum, qtw.QSizePolicy.Expanding)
+        self.verticalLayout.addItem(self.verticalSpacer)
     
     def restore_defaults(self):
         default_settings_var = type(self.settings_var[0])()
