@@ -143,6 +143,10 @@ class CarrotJuicer():
                 logger.warning(f"Browser minimized, cannot save position for {setting}: {rect_var}")
                 rect_var = None
                 return
+            if rect_var['height'] < 0 or rect_var['width'] < 0:
+                logger.warning(f"Browser size is invalid for {setting}: {rect_var}")
+                rect_var = None
+                return
             rect_list = [rect_var['x'], rect_var['y'], rect_var['width'], rect_var['height']]
             if self.threader.settings[setting] != rect_list:
                 self.threader.settings[setting] = rect_list
