@@ -587,9 +587,6 @@ class UmaSettingsDialog(UmaMainDialog):
 
         self.load_settings()
 
-        self.verticalSpacer = qtw.QSpacerItem(0, 0, qtw.QSizePolicy.Minimum, qtw.QSizePolicy.Expanding)
-        self.verticalLayout.addItem(self.verticalSpacer)
-
         self.scrollArea.setWidget(self.scrollAreaWidgetContents)
 
         self.btn_restore = qtw.QPushButton(self)
@@ -611,7 +608,11 @@ class UmaSettingsDialog(UmaMainDialog):
     def load_settings(self):
         # Empty the verticalLayout.
         for i in reversed(range(self.verticalLayout.count())):
-            self.verticalLayout.itemAt(i).widget().setParent(None)
+            widget = self.verticalLayout.itemAt(i).widget()
+            if widget:
+                widget.setParent(None)
+            else:
+                self.verticalLayout.removeItem(self.verticalLayout.itemAt(i))
 
         # Adding group boxes to the scroll area
         settings_keys = self.settings_var[0].get_settings_keys()
@@ -637,6 +638,9 @@ class UmaSettingsDialog(UmaMainDialog):
                 self.verticalLayout.addWidget(group_box, 0, qtc.Qt.AlignTop)
             else:
                 self.verticalLayout.addWidget(group_box)
+        
+        self.verticalSpacer = qtw.QSpacerItem(0, 0, qtw.QSizePolicy.Minimum, qtw.QSizePolicy.Expanding)
+        self.verticalLayout.addItem(self.verticalSpacer)
     
     def restore_defaults(self):
         default_settings_var = type(self.settings_var[0])()
@@ -1425,7 +1429,7 @@ class AboutDialog(UmaMainDialog):
         sizePolicy.setHeightForWidth(self.lbl_about.sizePolicy().hasHeightForWidth())
         self.lbl_about.setSizePolicy(sizePolicy)
         self.lbl_about.setLayoutDirection(qtc.Qt.LeftToRight)
-        self.lbl_about.setText("""<html><head><meta name="qrichtext" content="1" /><style type="text/css">p, li { white-space: pre-wrap; }</style></head><body style=" font-family:'MS Shell Dlg 2'; font-size:8pt; font-weight:400; font-style:normal;"><p style=" margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;">Created by KevinVG207<br /><a href="https://github.com/KevinVG207/UmaLauncher"><span style=" text-decoration: underline; color:#0000ff;">Github</span></a> - <a href="https://umapyoi.net/uma-launcher"><span style=" text-decoration: underline; color:#0000ff;">Website</span></a> - <a href="https://twitter.com/kevinvg207"><span style=" text-decoration: underline; color:#0000ff;">Twitter</span></a></p><a href="https://github.com/KevinVG207/UmaLauncher/blob/main/FAQ.md">Frequently Asked Questions</a></p><p style=" margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;"><b>Special thanks to:</b><br /><a href="https://github.com/CNA-Bld"><span style=" text-decoration: underline; color:#0000ff;">CNA-Bld</span></a> for the race data parser and CarrotJuicer.<br /></p></body></html>""")
+        self.lbl_about.setText("""<html><head><meta name="qrichtext" content="1" /><style type="text/css">p, li { white-space: pre-wrap; }</style></head><body style=" font-family:'MS Shell Dlg 2'; font-size:8pt; font-weight:400; font-style:normal;"><p style=" margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;">Created by KevinVG207 and <a href="https://github.com/KevinVG207/UmaLauncher/graphs/contributors">Contributors</a><br /><a href="https://github.com/KevinVG207/UmaLauncher"><span style=" text-decoration: underline; color:#0000ff;">Github</span></a> - <a href="https://umapyoi.net/uma-launcher"><span style=" text-decoration: underline; color:#0000ff;">Website</span></a> - <a href="https://twitter.com/kevinvg207"><span style=" text-decoration: underline; color:#0000ff;">Twitter</span></a></p><a href="https://github.com/KevinVG207/UmaLauncher/blob/main/FAQ.md">Frequently Asked Questions</a></p><p style=" margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;"><b>Special thanks to:</b><br /><a href="https://github.com/CNA-Bld"><span style=" text-decoration: underline; color:#0000ff;">CNA-Bld</span></a> for the race data parser and CarrotJuicer.<br /></p></body></html>""")
         self.lbl_about.setOpenExternalLinks(True)
         self.lbl_about.setAlignment(qtc.Qt.AlignCenter)
 
