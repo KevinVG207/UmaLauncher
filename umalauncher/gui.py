@@ -1048,7 +1048,10 @@ class UmaPreferences(UmaMainWidget):
         self.tabWidget.setSizePolicy(qtw.QSizePolicy.Preferred, qtw.QSizePolicy.Preferred)
         self.tabWidget.currentChanged.connect(self.tab_changed)
 
-        unique_tabs = {getattr(general_var[0], key).tab for key in general_var[0].get_settings_keys()}
+        unique_tabs = sorted(list({getattr(general_var[0], key).tab for key in general_var[0].get_settings_keys()}))
+
+        # Hack
+        unique_tabs.insert(-1, unique_tabs.pop(unique_tabs.index("English Patch")))
 
         self.command_dicts = {
             "English Patch": {
@@ -1059,7 +1062,7 @@ class UmaPreferences(UmaMainWidget):
 
         self.settings_widgets = []
 
-        for tab in sorted(list(unique_tabs)):
+        for tab in unique_tabs:
             tab_widget = UmaGeneralSettingsDialog(self, general_var, tab=tab, command_dict=self.command_dicts.get(tab, {}))
             tab_widget.setObjectName(f"tab_{tab}")
             self.settings_widgets.append(tab_widget)
@@ -1197,6 +1200,53 @@ class UmaUpdateConfirm(UmaMainWidget):
     @qtc.pyqtSlot()
     def _skip(self):
         self.choice.append(2)
+        self.close()
+
+class UmaRestartConfirm(UmaMainWidget):
+    def init_ui(self, choice: list, *args, **kwargs):
+        self.choice = choice
+
+        self.setWindowTitle("Restart Required")
+        self.setWindowFlag(qtc.Qt.WindowType.WindowStaysOnTopHint, True)
+
+        self.layout = qtw.QVBoxLayout()
+        self.setLayout(self.layout)
+
+        self.label = qtw.QLabel("A game update was detected, and the game must be\nrestarted to reapply the English translations.\nWould you like Uma Launcher to restart the game right now?")
+        # Center label text
+        self.label.setAlignment(qtc.Qt.AlignmentFlag.AlignCenter)
+        self.layout.addWidget(self.label)
+
+        self.button_layout = qtw.QHBoxLayout()
+        self.layout.addLayout(self.button_layout)
+
+        self.left_horizontal_spacer = qtw.QSpacerItem(40, 20, qtw.QSizePolicy.Policy.Expanding, qtw.QSizePolicy.Policy.Minimum)
+        self.button_layout.addItem(self.left_horizontal_spacer)
+
+        self.yes_button = qtw.QPushButton("Yes")
+        self.yes_button.clicked.connect(self._yes)
+        self.yes_button.setDefault(True)
+        self.button_layout.addWidget(self.yes_button)
+
+        self.no_button = qtw.QPushButton("No")
+        self.no_button.clicked.connect(self._no)
+        self.button_layout.addWidget(self.no_button)
+
+        self.right_horizontal_spacer = qtw.QSpacerItem(40, 20, qtw.QSizePolicy.Policy.Expanding, qtw.QSizePolicy.Policy.Minimum)
+        self.button_layout.addItem(self.right_horizontal_spacer)
+
+        # Hide maxminize and minimize buttons
+        self.setWindowFlag(qtc.Qt.WindowType.WindowMaximizeButtonHint, False)
+        self.setWindowFlag(qtc.Qt.WindowType.WindowMinimizeButtonHint, False)
+
+    @qtc.pyqtSlot()
+    def _yes(self):
+        self.choice.append(True)
+        self.close()
+
+    @qtc.pyqtSlot()
+    def _no(self):
+        self.choice.append(False)
         self.close()
 
 

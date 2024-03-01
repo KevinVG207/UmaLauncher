@@ -7,6 +7,8 @@ import win32gui
 import subprocess
 import gui
 import time
+import mdb
+import sys
 
 def get_patcher_path(settings):
     # Check if exe already exists
@@ -89,3 +91,47 @@ def unpatch(threader):
     command = f"\"{exe_path}\" -u"
     
     run_patcher_and_wait(command, threader.umaserver, "Removing English Patch.")
+
+def should_repatch(threader):
+    if not threader.settings["s_enable_english_patch"]:
+        return False
+    
+    # Detect if Carotene is active in MDB.
+    return not mdb.has_carotene_table()
+
+def repatch(threader):
+    logger.info("Checking if restart is needed for repatching.")
+    if util.is_script:
+        logger.info("Repatching not supported in script mode.")
+        return
+
+    if not should_repatch(threader):
+        return
+    
+    choice = []  # Default yes
+    gui.show_widget(gui.UmaRestartConfirm, choice)
+
+    while len(choice) == 0:
+        time.sleep(0.2)
+
+    choice = choice[0]
+
+    if not choice:
+        return
+    
+    # Perform the restart.
+    path_to_exe = sys.argv[0]
+    exe_file = os.path.basename(path_to_exe)
+    logger.info("Restarting Uma Launcher to repatch.")
+    logger.debug(path_to_exe)
+    threader.tray.stop()  # Stop the tray icon
+    subprocess.Popen(f"taskkill /F /IM umamusume.exe && taskkill /F /IM \"{exe_file}\" && \"{path_to_exe}\"", shell=True)
+
+    timeout = time.time() + 15
+    while time.time() < timeout:
+        time.sleep(1)
+    
+    # We should never reach this point.
+    util.show_error_box_no_report("Restart Failed.", "Failed to restart Uma Launcher.<br>Uma Launcher will now close. Please restart it manually.")
+    threader.stop()
+    return
