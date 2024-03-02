@@ -157,12 +157,13 @@ class NordVPNClient(VPNClient):
         
         logger.info('Connecting to NordVPN')
         subprocess.Popen([self.exe_path, "-c", "-g", "Japan"], creationflags=subprocess.CREATE_NO_WINDOW)
-        time.sleep(5)
+        time.sleep(10)
         return True
 
     def _disconnect(self):
         logger.info('Disconnecting from NordVPN')
         subprocess.call([self.exe_path, "-d"], creationflags=subprocess.CREATE_NO_WINDOW)
+        time.sleep(5)
         return True
 
 

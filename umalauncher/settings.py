@@ -11,6 +11,7 @@ import gui
 import settings_elements as se
 import helper_table_defaults as htd
 import helper_table_elements as hte
+import umapatcher
 
 
 class DefaultSettings(se.Settings):
@@ -305,6 +306,50 @@ class DefaultSettings(se.Settings):
             priority=90,
             tab="VPN"
         )
+        self.s_english_patch_help = se.Setting(
+            "English Patch Info",
+            """<a href=\"https://umapyoi.net/carotene-english-patch\">Carotene English Patch</a> is a community-driven translation project for Umamusume (DMM Version).<br>Like CarrotJuicer, using it is against the Terms of Service of the game, so use at your own risk.<br>This feature is currently experimental, so please reach out on the <a href="https://discord.gg/wvGHW65C6A">Uma Launcher Discord Server</a> if you encounter any issues!""",
+            None,
+            se.SettingType.MESSAGE,
+            priority=101,
+            tab="English Patch"
+        )
+        self.s_enable_english_patch = se.Setting(
+            "Enable Carotene English patch on startup",
+            "Applies the latest version of the patch before the game is launched.",
+            False,
+            se.SettingType.BOOL,
+            priority=100,
+            tab="English Patch"
+        )
+        self.s_english_patch_dll = se.Setting(
+            "Mod DLL Name",
+            "Change if you encounter issues.",
+            {
+                "version.dll": True,
+                "umpdc.dll": False,
+                "xinput1_3.dll": False
+            },
+            se.SettingType.RADIOBUTTONS,
+            priority=90,
+            tab="English Patch"
+        )
+        self.s_english_patch_customize_btn = se.Setting(
+            "Customize Patch",
+            "Choose what parts of the game should be translated.",
+            "patch_customize",
+            se.SettingType.COMMANDBUTTON,
+            priority=95,
+            tab="English Patch"
+        )
+        self.s_english_patch_unpatch_btn = se.Setting(
+            "Unpatch",
+            "Undo the English patch.",
+            "patch_unpatch",
+            se.SettingType.COMMANDBUTTON,
+            priority=80,
+            tab="English Patch"
+        )
 
 
 class SettingsHandler():
@@ -512,3 +557,9 @@ class SettingsHandler():
         self.save_settings()
         self.load_settings()
         self.threader.tray.icon_thread.update_menu()
+
+    def patch_customization(self, *args, **kwargs):
+        umapatcher.customize(self.threader)
+
+    def patch_unpatch(self, *args, **kwargs):
+        umapatcher.unpatch(self.threader)
