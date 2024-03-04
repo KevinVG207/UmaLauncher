@@ -228,7 +228,7 @@ class CarrotJuicer():
             # Detect leaving the initial loading screen
             if data.get('common_define'):
                 # Game just started.
-                umapatcher.repatch(self.threader)
+                umapatcher.check_repatch(self.threader)
 
 
             # New loading behavior?

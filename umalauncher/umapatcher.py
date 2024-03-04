@@ -10,6 +10,9 @@ import time
 import mdb
 import sys
 
+SHOULD_REPATCH = False
+RESTART_NOW = False
+
 def get_patcher_path(settings):
     # Check if exe already exists
     exe_path = util.get_appdata("CarotenePatcher.exe")
@@ -92,21 +95,31 @@ def unpatch(threader):
     
     run_patcher_and_wait(command, threader.umaserver, "Removing English Patch.")
 
-def should_repatch(threader):
+def check_repatch(threader):
+    global SHOULD_REPATCH
+    SHOULD_REPATCH = False
+
+    logger.info("Checking if restart is needed for repatching.")
+    # if util.is_script:
+    #     logger.info("Repatching not supported in script mode.")
+    #     return
+
     if not threader.settings["s_enable_english_patch"]:
-        return False
+        return
     
     # Detect if Carotene is active in MDB.
-    return not mdb.has_carotene_table()
+    SHOULD_REPATCH = not mdb.has_carotene_table()
+    logger.debug(f"Should repatch: {SHOULD_REPATCH}")
+    return
 
-def repatch(threader):
-    logger.info("Checking if restart is needed for repatching.")
-    if util.is_script:
-        logger.info("Repatching not supported in script mode.")
-        return
+def ask_for_restart(threader):
+    global SHOULD_REPATCH
+    global RESTART_NOW
 
-    if not should_repatch(threader):
+    if not SHOULD_REPATCH:
         return
+    
+    SHOULD_REPATCH = False  # Avoid asking again if user cancels.
     
     choice = []  # Default yes
     gui.show_widget(gui.UmaRestartConfirm, choice)
@@ -117,15 +130,29 @@ def repatch(threader):
     choice = choice[0]
 
     if not choice:
+        RESTART_NOW = False
+        logger.debug("User cancelled restart.")
         return
     
+    RESTART_NOW = True
+    logger.debug("User chose to restart.")
+    threader.stop()
+    return
+
+def restart():
+    if not RESTART_NOW:
+        return
+    
+    if util.is_script:
+        logger.info("Repatching not supported in script mode.")
+        return
+
     # Perform the restart.
     path_to_exe = sys.argv[0]
-    exe_file = os.path.basename(path_to_exe)
+    # exe_file = os.path.basename(path_to_exe)
     logger.info("Restarting Uma Launcher to repatch.")
     logger.debug(path_to_exe)
-    threader.tray.stop()  # Stop the tray icon
-    subprocess.Popen(f"taskkill /F /IM umamusume.exe && taskkill /F /IM \"{exe_file}\" && \"{path_to_exe}\"", shell=True)
+    subprocess.Popen(f"taskkill /F /IM umamusume.exe & \"{path_to_exe}\"", shell=True)
 
     timeout = time.time() + 15
     while time.time() < timeout:
@@ -133,5 +160,4 @@ def repatch(threader):
     
     # We should never reach this point.
     util.show_error_box_no_report("Restart Failed.", "Failed to restart Uma Launcher.<br>Uma Launcher will now close. Please restart it manually.")
-    threader.stop()
     return

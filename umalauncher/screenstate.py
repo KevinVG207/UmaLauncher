@@ -307,7 +307,7 @@ class ScreenStateHandler():
                         self.carrotjuicer_closed = False
                         time.sleep(0.25)
 
-            self.sleep_time = 2.0
+            self.sleep_time = 1.0  # TODO: Maybe 2.0?
 
             # Game is open, DMM is closed. Do screen state stuff
 
@@ -365,6 +365,7 @@ class ScreenStateHandler():
 
     def update(self):
         new_state = self.determine_state()
+
         if new_state == self.screen_state:
             return
 
@@ -413,6 +414,10 @@ class ScreenStateHandler():
                             # All menu items found and one is enabled. This must be the home menu.
                             new_state.main = "Main Menu"
                             new_state.sub = tmp_subscr
+
+                            # Ask for restart if needed.
+                            umapatcher.ask_for_restart(self.threader)
+
                             return new_state
 
         return self.screen_state
