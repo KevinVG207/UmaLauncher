@@ -21,6 +21,7 @@ class Colors(enum.Enum):
     ALERT = "red"
     WARNING = "orange"
     GOOD = "lightgreen"
+    GREAT = "aqua"
 
 
 class Cell():
@@ -442,7 +443,9 @@ class Preset():
                     total_row += rank
                     
                     # Determine the color based on the rank
-                    if rank >= uaf_current_required_rank:
+                    if rank >= uaf_current_required_rank+10:
+                        style = f"color:{Colors.GREAT.value}; font-weight:600;"
+                    elif rank >= uaf_current_required_rank:
                         style = f"color:{Colors.GOOD.value}; font-weight:600;"
                     elif abs(uaf_current_required_rank - rank) <= 2:
                         style = f"color:{Colors.WARNING.value}; font-weight:600;"
