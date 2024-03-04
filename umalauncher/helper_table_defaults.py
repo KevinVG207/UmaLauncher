@@ -776,12 +776,16 @@ class UAFSportPointGainRow(hte.Row):
                 uaf_sport_gains[group] = uaf_sport_gains.get(group, 0) + gain
         
         # Find the sport group with the highest total gain
-        max_uaf_sport_gain = max(uaf_sport_gains, key=uaf_sport_gains.get)
+        max_gain = max(uaf_sport_gains.values())
 
+        # Identify all groups with the maximum total gain
+        max_gain_groups = [group for group, gain in uaf_sport_gains.items() if gain == max_gain]
+
+        # Highlight sports in groups with the maximum total gain
         uaf_sport_gain = command['uaf_sport_gain']
         for command_id, gain in uaf_sport_gain.items():
             group = (command_id // 100) % 10
-            if self.settings.s_highlight_max.value and group == max_uaf_sport_gain and uaf_sport_gains[group] > 0:
+            if self.settings.s_highlight_max.value and group in max_gain_groups and uaf_sport_gains[group] > 0:
                 cells.append(hte.Cell(gain, bold=True, color=self.settings.s_highlight_max_color.value, background=constants.UAF_COLOR_DICT[str(command_id)[1]]))
             else:
                 cells.append(hte.Cell(gain, background=constants.UAF_COLOR_DICT[str(command_id)[1]]))
