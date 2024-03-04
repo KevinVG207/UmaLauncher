@@ -164,7 +164,7 @@ class PresetSettings(se.Settings):
         )
         self.s_scenario_specific_enabled = se.Setting(
             "Show scenario specific elements",
-            "Show scenario specific elements in the event helper. \n(Grand Live tokens, Grand Masters fragments, Project L'Arc aptitude/supporter points & expectation gauge)",
+            "Show scenario specific elements in the event helper, above the main table.",
             True,
             se.SettingType.BOOL,
             priority=6
