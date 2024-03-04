@@ -21,6 +21,7 @@ class Colors(enum.Enum):
     ALERT = "red"
     WARNING = "orange"
     GOOD = "lightgreen"
+    GREAT = "aqua"
 
 
 class Cell():
@@ -163,7 +164,7 @@ class PresetSettings(se.Settings):
         )
         self.s_scenario_specific_enabled = se.Setting(
             "Show scenario specific elements",
-            "Show scenario specific elements in the event helper. \n(Grand Live tokens, Grand Masters fragments, Project L'Arc aptitude/supporter points & expectation gauge)",
+            "Show scenario specific elements in the event helper, above the main table.",
             True,
             se.SettingType.BOOL,
             priority=6
@@ -442,7 +443,9 @@ class Preset():
                     total_row += rank
                     
                     # Determine the color based on the rank
-                    if rank >= uaf_current_required_rank:
+                    if rank >= uaf_current_required_rank+10:
+                        style = f"color:{Colors.GREAT.value}; font-weight:600;"
+                    elif rank >= uaf_current_required_rank:
                         style = f"color:{Colors.GOOD.value}; font-weight:600;"
                     elif abs(uaf_current_required_rank - rank) <= 2:
                         style = f"color:{Colors.WARNING.value}; font-weight:600;"

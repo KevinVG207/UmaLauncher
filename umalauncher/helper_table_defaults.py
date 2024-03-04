@@ -776,18 +776,21 @@ class UAFSportPointGainRow(hte.Row):
                 uaf_sport_gains[group] = uaf_sport_gains.get(group, 0) + gain
         
         # Find the sport group with the highest total gain
-        max_uaf_sport_gain = max(uaf_sport_gains, key=uaf_sport_gains.get)
+        max_gain = max(uaf_sport_gains.values())
 
+        # Identify all groups with the maximum total gain
+        max_gain_groups = [group for group, gain in uaf_sport_gains.items() if gain == max_gain]
+
+        # Highlight sports in groups with the maximum total gain
         uaf_sport_gain = command['uaf_sport_gain']
         for command_id, gain in uaf_sport_gain.items():
             group = (command_id // 100) % 10
-            if self.settings.s_highlight_max.value and group == max_uaf_sport_gain and uaf_sport_gains[group] > 0:
+            if self.settings.s_highlight_max.value and group in max_gain_groups and uaf_sport_gains[group] > 0:
                 cells.append(hte.Cell(gain, bold=True, color=self.settings.s_highlight_max_color.value, background=constants.UAF_COLOR_DICT[str(command_id)[1]]))
             else:
                 cells.append(hte.Cell(gain, background=constants.UAF_COLOR_DICT[str(command_id)[1]]))
 
         return cells
-
 
 class UAFSportPointGainSettings(se.Settings):
     def __init__(self):
@@ -803,7 +806,80 @@ class UAFSportPointGainSettings(se.Settings):
             "#90EE90",
             se.SettingType.COLOR
         )
+        
+class EnergyRatio(hte.Row):
+    long_name = "Energy to Stat Ratio"
+    short_name = "Energy Ratio"
+    description = "Displays the ratio of Energy Spend compared to a specific stat."
 
+    def __init__(self):
+        super().__init__()
+        self.settings = EnergyRatioSettings()
+
+    def _generate_cells(self, game_state) -> list[hte.Cell]:
+
+        cells = [hte.Cell(self.short_name, title=self.description)]
+        
+        max_gain = 0
+        ratio_list = []
+        for command in game_state.values():
+            energy = command['gained_energy']
+            chosen_commands = command['gained_stats']
+        
+            if self.settings.s_comparison_choice.value == 0:
+                chosen_commands = sum(command['gained_stats'].values())
+            elif self.settings.s_comparison_choice.value == 1:
+                chosen_commands = command['useful_bond']
+            elif self.settings.s_comparison_choice.value == 2:
+                chosen_commands = command['total_bond']
+            elif self.settings.s_comparison_choice.value == 3:
+                chosen_commands = command['gained_skillpt']
+            
+            if energy >= 0:
+                ratio_list.append(-1)
+                continue
+            
+            current_ratio = round(chosen_commands / abs(energy), 2)
+            ratio_list.append(current_ratio)
+            
+            if current_ratio > max_gain:
+                max_gain = current_ratio
+                
+        for ratio in ratio_list: 
+            display_text = ""
+            
+            if ratio != -1:
+                display_text = ratio
+            
+            if ratio == max_gain:
+                cells.append(hte.Cell(display_text, bold=True, color=self.settings.s_highlight_max_color.value))
+            else:
+                cells.append(hte.Cell(display_text))
+                
+        return cells
+        
+class EnergyRatioSettings(se.Settings):
+    def __init__(self):
+        self.s_highlight_max = se.Setting(
+            "Highlight max",
+            "Highlights the facility with the highest Ratio.",
+            True,
+            se.SettingType.BOOL
+        )
+        self.s_highlight_max_color = se.Setting(
+            "Highlight max color",
+            "The color to use to highlight the facility with the highest Ratio.",
+            "#90EE90",
+            se.SettingType.COLOR
+        )
+        self.s_comparison_choice = se.Setting(
+            "Comparison",
+            "Value to calculate the Ratio for.",
+            0,
+            se.SettingType.COMBOBOX,
+            choices=["Stats Gained", "Useful Bond", "Total Bond", "Gained Skillpt"],
+            priority=9
+        )
 
 class RowTypes(Enum):
     CURRENT_STATS = CurrentStatsRow
@@ -824,6 +900,7 @@ class RowTypes(Enum):
     LARC_STAR_GAUGE_GAIN = LArcStarGaugeGainRow
     LARC_APTITUDE_POINTS = LArcAptitudePointsRow
     UAF_SPORT_POINT_GAIN = UAFSportPointGainRow
+    ENERGY_RATIO = EnergyRatio
 
 
 class DefaultPreset(hte.Preset):
