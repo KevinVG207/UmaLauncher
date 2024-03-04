@@ -230,7 +230,6 @@ class OpenVPNClient(VPNClient):
             os.remove(self.log_path)
 
     def _connect(self):
-
         if not self.profile_override:
             ovpn = self._determine_vpngate_server(cygames=self.cygames)
 
@@ -240,12 +239,16 @@ class OpenVPNClient(VPNClient):
             with open(self.ovpn_path, 'w', encoding='utf-8') as f:
                 f.write(ovpn)
 
+            cmd = [self.exe_path, '--config', self.ovpn_path]
+
         else:
             self.ovpn_path = self.profile_override
+            ovpn_dirname = os.path.dirname(self.ovpn_path)
+            ovpn_filename = os.path.basename(self.ovpn_path)
+
+            cmd = [self.exe_path, '--cd', ovpn_dirname, '--config', ovpn_filename]
         
         logger.info("Connecting to OpenVPN")
-
-        cmd = [self.exe_path, '--config', self.ovpn_path]
 
         if util.is_debug:
             cmd.append('--log-append')
