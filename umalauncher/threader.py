@@ -94,7 +94,7 @@ class Threader():
         THREADS.append(threading.Thread(target=self.tray.run_with_catch, name="UmaTray"))
 
         for thread in THREADS:
-            if not thread.is_alive():
+            if not thread.is_alive() and not thread.ident:
                 thread.start()
 
         win32api.SetConsoleCtrlHandler(self.stop_signal, True)
