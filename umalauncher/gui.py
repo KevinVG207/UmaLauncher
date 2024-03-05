@@ -340,6 +340,12 @@ class UmaPresetMenu(UmaMainDialog):
     def on_delete_preset(self):
         if self.cmb_select_preset.count() > 1:
             current_preset = self.cmb_select_preset.currentText()
+
+            # Ask the user if they are sure.
+            reply = qtw.QMessageBox.question(self, "Delete preset", f"Are you sure you want to delete preset '{current_preset}'?", qtw.QMessageBox.Yes | qtw.QMessageBox.No, qtw.QMessageBox.No)
+            if reply == qtw.QMessageBox.No:
+                return
+
             new_preset_list = []
             for preset in self.preset_list:
                 if preset.name != current_preset:
