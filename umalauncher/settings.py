@@ -360,7 +360,7 @@ class SettingsHandler():
         self.threader = threader
 
         # Load settings on import
-        if not os.path.exists(util.get_relative(self.settings_file)):
+        if not os.path.exists(util.get_appdata(self.settings_file)) and not os.path.exists(util.get_relative(self.settings_file)):
             self.save_settings()
 
         self.load_settings(first_load=True)
@@ -385,12 +385,17 @@ class SettingsHandler():
                 self.threader.stop()
     
     def save_settings(self):
-        with open(util.get_relative(self.settings_file), "w", encoding="utf-8") as f:
+        with open(util.get_appdata(self.settings_file), "w", encoding="utf-8") as f:
             json.dump(self.loaded_settings.to_dict(), f, ensure_ascii=False, indent=4)
     
     def load_settings(self, first_load=False):
         raw_settings = ""
-        with open(util.get_relative(self.settings_file), 'r', encoding='utf-8') as f:
+
+        settings_path = util.get_appdata(self.settings_file)
+        if not os.path.exists(settings_path):
+            settings_path = util.get_relative(self.settings_file)
+
+        with open(settings_path, 'r', encoding='utf-8') as f:
             try:
                 raw_settings = json.load(f)
             except (json.JSONDecodeError, TypeError) as _:

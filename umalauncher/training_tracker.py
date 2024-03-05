@@ -29,7 +29,7 @@ class TrainingTracker():
     def __init__(self, training_id: str, card_id: int=None, training_log_folder: str="training_logs", full_path: str=None):
         self.full_path=full_path
         if not training_log_folder:
-            training_log_folder = util.get_relative("training_logs")
+            training_log_folder = util.get_appdata("training_logs")
         self.training_log_folder = training_log_folder
         self.card_id = card_id
 
@@ -822,7 +822,7 @@ def training_csv_dialog(training_paths=None):
     if training_paths is None:
         try:
             training_paths, _, _ = win32gui.GetOpenFileNameW(
-                InitialDir=util.get_relative("training_logs"),
+                InitialDir=util.get_appdata("training_logs"),
                 Title="Select training log(s)",
                 Flags=win32con.OFN_ALLOWMULTISELECT | win32con.OFN_FILEMUSTEXIST | win32con.OFN_EXPLORER | win32con.OFN_NOCHANGEDIR,
                 DefExt="gz",
@@ -854,7 +854,7 @@ def training_csv_dialog(training_paths=None):
 
     try:
         output_file_path, _, _ = win32gui.GetSaveFileNameW(
-            InitialDir=util.get_relative("training_logs"),
+            InitialDir=util.get_appdata("training_logs"),
             Title="Select output file",
             Flags=win32con.OFN_EXPLORER | win32con.OFN_OVERWRITEPROMPT | win32con.OFN_PATHMUSTEXIST | win32con.OFN_NOCHANGEDIR,
             File="training",
