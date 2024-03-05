@@ -1073,17 +1073,16 @@ class UmaPreferences(UmaMainWidget):
         # Hack
         unique_tabs.append(unique_tabs.pop(unique_tabs.index("English Patch")))
 
-        self.command_dicts = {
-            "English Patch": {
-                "patch_customize": lambda: umasettings.patch_customization(),
-                "patch_unpatch": lambda: umasettings.patch_unpatch(),
-            }
+        self.command_dict = {
+            "patch_customize": lambda: umasettings.patch_customization(),
+            "patch_unpatch": lambda: umasettings.patch_unpatch(),
+            "open_training_logs": lambda: util.open_folder(util.TRAINING_LOGS_FOLDER)
         }
 
         self.settings_widgets = []
 
         for tab in unique_tabs:
-            tab_widget = UmaGeneralSettingsDialog(self, general_var, tab=tab, command_dict=self.command_dicts.get(tab, {}))
+            tab_widget = UmaGeneralSettingsDialog(self, general_var, tab=tab, command_dict=self.command_dict)
             tab_widget.setObjectName(f"tab_{tab}")
             self.settings_widgets.append(tab_widget)
             self.tabWidget.addTab(tab_widget, tab.lstrip(" "))

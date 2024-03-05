@@ -224,7 +224,7 @@ class OpenVPNClient(VPNClient):
         self.profile_override = profile_override
         self.cygames = cygames
         self.timeout = 30
-        self.log_path = util.get_relative('ovpn.log')
+        self.log_path = util.get_appdata('ovpn.log')
 
         if os.path.exists(self.log_path):
             os.remove(self.log_path)

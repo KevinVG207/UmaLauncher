@@ -63,7 +63,7 @@ class DefaultSettings(se.Settings):
             "Automatically close DMM Game Player when the game is launched.",
             True,
             se.SettingType.BOOL,
-            priority=94
+            priority=93
         )
         self.s_lock_game_window = se.Setting(
             "Lock game window",
@@ -95,11 +95,18 @@ class DefaultSettings(se.Settings):
             priority=99
         )
         self.s_track_trainings = se.Setting(
-            "Track trainings",
-            "Track training events in /training_logs as gzip files.",
+            "Log trainings",
+            "Log training events as gzip files.",
             True,
             se.SettingType.BOOL,
             priority=95
+        )
+        self.s_open_training_logs = se.Setting(
+            "Open training logs folder",
+            "Open the training logs folder in File Explorer.",
+            'open_training_logs',
+            se.SettingType.COMMANDBUTTON,
+            priority=94
         )
         # self.s_game_install_path = se.Setting(
         #     "Game install path",
@@ -360,7 +367,7 @@ class SettingsHandler():
         self.threader = threader
 
         # Load settings on import
-        if not os.path.exists(util.get_relative(self.settings_file)):
+        if not os.path.exists(util.get_appdata(self.settings_file)) and not os.path.exists(util.get_relative(self.settings_file)):
             self.save_settings()
 
         self.load_settings(first_load=True)
@@ -385,12 +392,17 @@ class SettingsHandler():
                 self.threader.stop()
     
     def save_settings(self):
-        with open(util.get_relative(self.settings_file), "w", encoding="utf-8") as f:
+        with open(util.get_appdata(self.settings_file), "w", encoding="utf-8") as f:
             json.dump(self.loaded_settings.to_dict(), f, ensure_ascii=False, indent=4)
     
     def load_settings(self, first_load=False):
         raw_settings = ""
-        with open(util.get_relative(self.settings_file), 'r', encoding='utf-8') as f:
+
+        settings_path = util.get_appdata(self.settings_file)
+        if not os.path.exists(settings_path):
+            settings_path = util.get_relative(self.settings_file)
+
+        with open(settings_path, 'r', encoding='utf-8') as f:
             try:
                 raw_settings = json.load(f)
             except (json.JSONDecodeError, TypeError) as _:

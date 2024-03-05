@@ -27,6 +27,10 @@ if hasattr(sys, "_MEIPASS"):
 is_debug = is_script
 
 appdata_dir = os.path.expandvars("%AppData%\\Uma-Launcher\\")
+
+if is_script:
+    appdata_dir = os.path.join(relative_dir, "appdata")
+
 os.makedirs(appdata_dir, exist_ok=True)
 
 def get_appdata(relative_path):
@@ -83,12 +87,12 @@ def log_reset():
 
 def log_set_info():
     log_reset()
-    logger.add(get_relative("log.log"), rotation="1 week", compression="zip", retention="1 month", encoding='utf-8', level="INFO")
+    logger.add(get_appdata("log.log"), rotation="1 week", compression="zip", retention="1 month", encoding='utf-8', level="INFO")
     return
 
 def log_set_trace():
     log_reset()
-    logger.add(get_relative("log.log"), rotation="1 week", compression="zip", retention="1 month", encoding='utf-8', level="TRACE")
+    logger.add(get_appdata("log.log"), rotation="1 week", compression="zip", retention="1 month", encoding='utf-8', level="TRACE")
     return
 
 if is_script:
@@ -111,6 +115,8 @@ from PIL import Image
 import numpy as np
 import mdb
 import gui
+
+TRAINING_LOGS_FOLDER = get_appdata("training_logs")
 
 last_failed_request = None
 has_failed_once = False
@@ -202,6 +208,9 @@ def download_file(url, path):
                 f.write(chunk)
     
     shutil.move(tmp_path, path)
+
+def open_folder(path):
+    os.startfile(path)
 
 
 

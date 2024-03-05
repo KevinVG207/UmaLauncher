@@ -9,6 +9,7 @@ from urllib.parse import urlparse
 from loguru import logger
 import util
 import gui
+import glob
 
 VERSION = "1.12.1"
 
@@ -70,6 +71,38 @@ def upgrade(umasettings, raw_settings):
         for key, value in pre_1_5_0_update_dict_2.items():
             if key[0] in raw_settings and key[1] in raw_settings[key[0]]:
                 umasettings[value] = raw_settings[key[0]][key[1]]
+    
+    if settings_version <= (1, 12, 1):
+        logger.info("Upgrading settings from <=1.12.1. Moving files to appdata folder.")
+        # Transfer relative files to appdata folder.
+        to_move = [
+            "umasettings.json",
+            "lock.pid",
+            "update.tmp",
+            "log.log",
+            "training_logs",
+            "ovpn.log",
+            "chr_profile",
+            "edg_profile"
+        ]
+        logzips = glob.glob("*.log.zip")
+        to_move += logzips
+
+        if not util.is_script:
+            # Add the old exe
+            to_move.append(sys.argv[0][:-3]+"old")
+
+        for path in to_move:
+            rel_path = util.get_relative(path)
+            if not os.path.exists(rel_path):
+                continue
+
+            if path == 'log.log':
+                path = 'pre-appdata.log'
+
+            shutil.move(rel_path, util.get_appdata(path))
+        
+        logger.info("Moving complete.")
 
     # If upgraded at all
     if script_version > settings_version:
@@ -150,7 +183,7 @@ def auto_update(umasettings, force=False):
 
     # Yes
     # Remove the lock file.
-    lock_path = util.get_relative("lock.pid")
+    lock_path = util.get_appdata("lock.pid")
     if os.path.exists(lock_path):
         os.remove(lock_path)
 
@@ -163,8 +196,8 @@ def auto_update(umasettings, force=False):
     gui.show_widget(gui.UmaUpdatePopup, update_object)
 
     logger.debug("Update window closed: Update failed.")
-    if os.path.exists(util.get_relative("update.tmp")):
-        os.remove(util.get_relative("update.tmp"))
+    if os.path.exists(util.get_appdata("update.tmp")):
+        os.remove(util.get_appdata("update.tmp"))
     util.show_warning_box("Update failed.", "Could not update. Please check your internet connection.<br>Uma Launcher will now close.")
     return False
 
@@ -191,13 +224,17 @@ class Updater():
                     path_to_exe = sys.argv[0]
                     exe_file = os.path.basename(path_to_exe)
                     without_ext = os.path.splitext(exe_file)[0]
+                    old_file = without_ext + ".old"
+                    old_path = util.get_appdata(old_file)
+                    tmp_file = without_ext + ".tmp"
+                    tmp_path = util.get_appdata(tmp_file)
 
                     logger.info(f"Attempting to download from {download_url}")
-                    urllib.request.urlretrieve(download_url, f"{exe_file}_")
+                    urllib.request.urlretrieve(download_url, tmp_path)
                     # Start a process that starts the new exe.
                     logger.info("Download complete, now trying to open the new launcher.")
-                    open(util.get_relative("update.tmp"), "wb").close()
-                    sub = subprocess.Popen(f"taskkill /F /IM \"{exe_file}\" && move /y \".\\{exe_file}\" \".\\{without_ext}.old\" && move /y \".\\{exe_file}_\" \".\\{exe_file}\" && \".\\{exe_file}\"", shell=True)
+                    open(util.get_appdata("update.tmp"), "wb").close()
+                    sub = subprocess.Popen(f"taskkill /F /IM \"{exe_file}\" && move /y \".\\{exe_file}\" \"{old_path}\" && move /y \"{tmp_path}\" \".\\{exe_file}\" && \".\\{exe_file}\"", shell=True)
                     while True:
                         # Check if subprocess is still running
                         if sub.poll() is not None:

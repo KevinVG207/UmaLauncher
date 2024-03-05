@@ -87,7 +87,7 @@ def chrome_setup(helper_url, settings):
         service=ChromeService(executable_path=driver_path) if driver_path else ChromeService(),
         options_class=webdriver.ChromeOptions,
         driver_class=webdriver.Chrome,
-        profile="chr_profile",
+        profile=util.get_appdata("chr_profile"),
         helper_url=helper_url,
         settings=settings,
         binary_path=binary_path
@@ -98,7 +98,7 @@ def edge_setup(helper_url, settings):
         service=EdgeService(),
         options_class=webdriver.EdgeOptions,
         driver_class=webdriver.Edge,
-        profile="edg_profile",
+        profile=util.get_appdata("edg_profile"),
         helper_url=helper_url,
         settings=settings
     )
