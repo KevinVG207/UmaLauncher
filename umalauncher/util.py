@@ -116,6 +116,8 @@ import numpy as np
 import mdb
 import gui
 
+TRAINING_LOGS_FOLDER = get_appdata("training_logs")
+
 last_failed_request = None
 has_failed_once = False
 def do_get_request(url, error_title=None, error_message=None, ignore_timeout=False):
@@ -206,6 +208,9 @@ def download_file(url, path):
                 f.write(chunk)
     
     shutil.move(tmp_path, path)
+
+def open_folder(path):
+    os.startfile(path)
 
 
 

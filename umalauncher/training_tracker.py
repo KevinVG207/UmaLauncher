@@ -29,7 +29,7 @@ class TrainingTracker():
     def __init__(self, training_id: str, card_id: int=None, training_log_folder: str="training_logs", full_path: str=None):
         self.full_path=full_path
         if not training_log_folder:
-            training_log_folder = util.get_appdata("training_logs")
+            training_log_folder = util.TRAINING_LOGS_FOLDER
         self.training_log_folder = training_log_folder
         self.card_id = card_id
 
@@ -822,7 +822,7 @@ def training_csv_dialog(training_paths=None):
     if training_paths is None:
         try:
             training_paths, _, _ = win32gui.GetOpenFileNameW(
-                InitialDir=util.get_appdata("training_logs"),
+                InitialDir=util.TRAINING_LOGS_FOLDER,
                 Title="Select training log(s)",
                 Flags=win32con.OFN_ALLOWMULTISELECT | win32con.OFN_FILEMUSTEXIST | win32con.OFN_EXPLORER | win32con.OFN_NOCHANGEDIR,
                 DefExt="gz",
@@ -854,7 +854,7 @@ def training_csv_dialog(training_paths=None):
 
     try:
         output_file_path, _, _ = win32gui.GetSaveFileNameW(
-            InitialDir=util.get_appdata("training_logs"),
+            InitialDir=util.TRAINING_LOGS_FOLDER,
             Title="Select output file",
             Flags=win32con.OFN_EXPLORER | win32con.OFN_OVERWRITEPROMPT | win32con.OFN_PATHMUSTEXIST | win32con.OFN_NOCHANGEDIR,
             File="training",
@@ -886,11 +886,11 @@ def training_csv_dialog(training_paths=None):
 
 
 def main():
-    # TrainingTracker('2023_03_17_03_58_38').analyze()
-    names = [
-        r".\training_logs\2023_03_21_05_26_30.gz",
-    ]
-    combine_trainings(names, "training_logs/combined.csv")
+    # # TrainingTracker('2023_03_17_03_58_38').analyze()
+    # names = [
+    #     r".\training_logs\2023_03_21_05_26_30.gz",
+    # ]
+    # combine_trainings(names, "training_logs/combined.csv")
     print("a")
 
 if __name__ == "__main__":

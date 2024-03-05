@@ -83,7 +83,7 @@ def customize(threader):
     exe_path = get_patcher_path(threader.settings)
     command = f"\"{exe_path}\" -c"
 
-    run_patcher_and_wait(command, threader.umaserver, no_popup=True)
+    run_patcher_and_wait(command, threader.umaserver, "Customizing English Patch", no_popup=True)
 
 def unpatch(threader):
     if threader.screenstate.game_seen and threader.screenstate.game_handle and win32gui.IsWindow(threader.screenstate.game_handle):
