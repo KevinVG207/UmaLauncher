@@ -51,7 +51,6 @@ class Threader():
     def __init__(self):
         gui.THREADER = self
 
-        # Set directory to find assets
         self.settings = settings.SettingsHandler(self)
         
         # Ensure only a single instance is running.

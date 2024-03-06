@@ -44,7 +44,7 @@ class GameWindow():
             return
         
         # Apply safezone from settings
-        safezone = self.threader.settings["s_maximize_safezone"]
+        safezone = self.threader.settings["maximize_safezone"]
         if not safezone:
             safezone = [0, 0, 0, 0]  # Left, Right, Top, Bottom
         
@@ -136,7 +136,7 @@ class WindowMover():
         self.threader = threader
         self.screenstate = threader.screenstate
         self.window = None
-        self.prev_auto_resize = self.threader.settings["s_lock_game_window"]
+        self.prev_auto_resize = self.threader.settings["lock_game_window"]
     
     def try_maximize(self):
         if self.window:
@@ -171,7 +171,7 @@ class WindowMover():
             # Keep maximize option in the tray.
             # Toggle to auto-resize
 
-            auto_resize = self.threader.settings["s_lock_game_window"]
+            auto_resize = self.threader.settings["lock_game_window"]
 
             if auto_resize:
 

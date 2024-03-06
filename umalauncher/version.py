@@ -27,7 +27,7 @@ def vstr(version_tuple: tuple):
 def upgrade(umasettings, raw_settings):
     """Upgrades old versions."""
     script_version = parse_version(VERSION)
-    settings_version = parse_version(umasettings["s_version"])
+    settings_version = parse_version(umasettings["version"])
     logger.info(f"Script version: {vstr(script_version)}, Settings version: {vstr(settings_version)}")
 
     # Update settings file
@@ -43,25 +43,25 @@ def upgrade(umasettings, raw_settings):
             shutil.copy("umasettings.json", "umasettings.json.bak")
 
         pre_1_5_0_update_dict = {
-            "_unique_id": "s_unique_id",
-            "save_packet": "s_save_packets",
-            "beta_optin": "s_beta_optin",
-            "debug_mode": "s_debug_mode",
-            "autoclose_dmm": "s_autoclose_dmm",
-            "browser_position": "s_browser_position",
-            "selected_browser": "s_selected_browser",
-            "game_install_path": "s_game_install_path",
-            "training_helper_table_preset": "s_training_helper_table_preset",
-            "training_helper_table_preset_list": "s_training_helper_table_preset_list",
+            "_unique_id": "unique_id",
+            "save_packet": "save_packets",
+            "beta_optin": "beta_optin",
+            "debug_mode": "debug_mode",
+            "autoclose_dmm": "autoclose_dmm",
+            "browser_position": "browser_position",
+            "selected_browser": "selected_browser",
+            "game_install_path": "game_install_path",
+            "training_helper_table_preset": "training_helper_table_preset",
+            "training_helper_table_preset_list": "training_helper_table_preset_list",
         }
 
         pre_1_5_0_update_dict_2 = {
-            ("tray_items", "Lock game window"): "s_lock_game_window",
-            ("tray_items", "Discord rich presence"): "s_discord_rich_presence",
-            ("tray_items", "Enable CarrotJuicer"): "s_enable_carrotjuicer",
-            ("tray_items", "Track trainings"): "s_track_trainings",
-            ("game_position", "portrait"): "s_game_position_portrait",
-            ("game_position", "landscape"): "s_game_position_landscape",
+            ("tray_items", "Lock game window"): "lock_game_window",
+            ("tray_items", "Discord rich presence"): "discord_rich_presence",
+            ("tray_items", "Enable CarrotJuicer"): "enable_carrotjuicer",
+            ("tray_items", "Track trainings"): "track_trainings",
+            ("game_position", "portrait"): "game_position_portrait",
+            ("game_position", "landscape"): "game_position_landscape",
         }
 
         for key, value in pre_1_5_0_update_dict.items():
@@ -106,10 +106,10 @@ def upgrade(umasettings, raw_settings):
 
     # If upgraded at all
     if script_version > settings_version:
-        umasettings['s_skip_update'] = None
+        umasettings['skip_update'] = None
 
     # Upgrade settings version no.
-    umasettings["s_version"] = vstr(script_version)
+    umasettings["version"] = vstr(script_version)
 
 def force_update(umasettings):
     result = auto_update(umasettings, force=True)
@@ -120,7 +120,7 @@ def auto_update(umasettings, force=False):
     logger.info("Checking for updates...")
 
     script_version = parse_version(VERSION)
-    skip_version = parse_version(umasettings["s_skip_update"])
+    skip_version = parse_version(umasettings["skip_update"])
 
     # Don't update if we're running from script.
     if util.is_script:
@@ -137,7 +137,7 @@ def auto_update(umasettings, force=False):
         return True
     response_json = response.json()
 
-    allow_prerelease = umasettings["s_beta_optin"]
+    allow_prerelease = umasettings["beta_optin"]
     latest_release = None
     for release in response_json:
         if release.get('draft', False):
@@ -178,7 +178,7 @@ def auto_update(umasettings, force=False):
 
     # Skip
     elif choice == 2:
-        umasettings['s_skip_update'] = vstr(release_version)
+        umasettings['skip_update'] = vstr(release_version)
         return True
 
     # Yes

@@ -242,7 +242,7 @@ def show_error_box(error, message, custom_traceback=None):
         error,
         message,
         traceback_str,
-        gui.THREADER.settings["s_unique_id"] if gui.THREADER is not None and gui.THREADER.settings is not None else None,
+        gui.THREADER.settings["unique_id"] if gui.THREADER is not None and gui.THREADER.settings is not None else None,
         gui.ICONS.Critical
     )
 
