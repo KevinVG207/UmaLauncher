@@ -458,6 +458,7 @@ def get_scouting_score_to_rank_dict(force=False):
 
 def get_card_inherent_skills(card_id, level=99):
     skills = []
+    rows = []
 
     with Connection() as (_, cursor):
         cursor.execute(
