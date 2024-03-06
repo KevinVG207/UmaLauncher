@@ -173,7 +173,7 @@ class HelperTable():
             'team_data_set',  # Aoharu
             'ura_data_set',  # URA
             'arc_data_set',  # Project L'Arc
-            'sport_data_set'  # UAF Ready Go!
+            'sport_data_set'  # UAF Ready GO!
         ]
         for key in scenario_keys:
             if key in data and 'command_info_array' in data[key]:
@@ -383,7 +383,7 @@ class HelperTable():
             gained_energy = min(gained_energy, max_energy - energy)
 
 
-            # UAF Ready Go!
+            # UAF Ready GO!
             uaf_sport_rank = {}
             uaf_sport_gain = {}
             uaf_current_active_effects = {}

@@ -5,7 +5,7 @@ SCENARIO_DICT = {
     4: "Make a New Track",
     5: "Grand Masters",
     6: "Project L'Arc",
-    7: "U.A.F. Ready Go!"
+    7: "U.A.F. Ready GO!"
 }
 
 MOTIVATION_DICT = {
