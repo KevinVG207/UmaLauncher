@@ -217,7 +217,7 @@ class Preset():
             html_elements.append(self.generate_schedule(main_info))
         
         if self.settings.support_bonds.value:
-            html_elements.append(self.generate_bonds(main_info, display_type=self.settings.s_support_bonds.value))
+            html_elements.append(self.generate_bonds(main_info, display_type=self.settings.support_bonds.value))
 
         if self.settings.scenario_specific_enabled.value:
             html_elements.append(self.generate_gm_table(main_info))
@@ -276,7 +276,7 @@ class Preset():
         eval_dict = main_info['eval_dict']
         ids = []
         for key in eval_dict.keys():
-            if self.settings.s_hide_support_bonds.value and eval_dict[key].starting_bond == 100:
+            if self.settings.hide_support_bonds.value and eval_dict[key].starting_bond == 100:
                 continue
 
             if key < 100:

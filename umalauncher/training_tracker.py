@@ -26,7 +26,7 @@ from external import race_data_parser
 
 class TrainingTracker():
 
-    def __init__(self, training_id: str, card_id: int=None, training_log_folder: str="training_logs", full_path: str=None):
+    def __init__(self, training_id: str, card_id: int=None, training_log_folder: str=util.TRAINING_LOGS_FOLDER, full_path: str=None):
         self.full_path=full_path
         if not training_log_folder:
             training_log_folder = util.TRAINING_LOGS_FOLDER

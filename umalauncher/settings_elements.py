@@ -25,7 +25,7 @@ class Settings():
         return sorted([attr for attr in dir(self) if attr.startswith("s_")], key=lambda x: getattr(self, x).priority, reverse=True)
 
     def to_dict(self):
-        settings = self.get_settings_keys()
+        settings = self.keys()
         return {setting: getattr(self, setting).value for setting in settings if getattr(self, setting).type not in (SettingType.MESSAGE, SettingType.DIVIDER, SettingType.COMMANDBUTTON)} if settings else {}
 
     def import_dict(self, settings_dict, keep_undefined=False):
@@ -70,7 +70,7 @@ class NewSettings():
             self.__setattr__(key, value)
 
     def keys(self):
-        return self._settings.keys()
+        return list(self._settings.keys())
 
     def to_dict(self):
         ret_dict = {}
