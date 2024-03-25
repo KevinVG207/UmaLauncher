@@ -489,7 +489,7 @@ class Preset():
         # Loop through the IDs
         for base in [2100, 2200, 2300]:
             total_row = 0
-            row = f"<tr><td style='display: flex; align-items: center; justify-content: center; flex-direction: row; gap: 5px'><img src=\"{util.get_uaf_genre_image_dict()[str(base)]}\" width=\"32\" height=\"32\" style=\"display:inline-block; width: auto; height: 1.5rem; margin-top: 1px;\"/><div>{uaf_sport_rank_total[base]}</div></td>"
+            row = f"""<tr><td><div style="display: flex; align-items: center; justify-content: center; flex-direction: row; gap: 5px"><img src=\"{util.get_uaf_genre_image_dict()[str(base)]}\" width=\"32\" height=\"32\" style=\"display:inline-block; width: auto; height: 1.5rem; margin-top: 1px;\"/><div>{uaf_sport_rank_total[base]}</div></div></td>"""
             for i in range(1, 6):
                 id = base + i
                 if id in uaf_sport_rank:
