@@ -244,7 +244,10 @@ class Preset():
 
         sections = constants.DEFAULT_TRAINING_SECTIONS
 
-        tot_turns = sections[-1][0]
+        if main_info['scenario_id'] == 6:
+            sections = constants.DEFAULT_ARC_SECTIONS
+
+        tot_turns = sections[-1][0] - 1
         turn_len = 100. / tot_turns
         start_dist = 0.
         rects = []
@@ -253,7 +256,7 @@ class Preset():
             if sections[i][2] == "END":
                 break
             
-            end_dist = sections[i+1][0] * turn_len
+            end_dist = (sections[i+1][0] - 1) * turn_len
 
             cur_rect = f"""<rect x="{start_dist}" y="0" width="{end_dist - start_dist}" height="2" fill="{sections[i][1]}" mask="url(#mask)"/>"""
             rects.append(cur_rect)
@@ -262,8 +265,7 @@ class Preset():
         
         rects = ''.join(rects)
 
-
-        dark_start = (main_info['turn'] + 1) * turn_len
+        dark_start = main_info['turn'] * turn_len
         dark_rect = f"""<rect x="{dark_start}" y="0" width="{100 - dark_start}" height="2" fill="rgba(0, 0, 0, 0.6)" mask="url(#mask)" />"""
 
 

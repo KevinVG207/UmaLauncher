@@ -215,5 +215,16 @@ DEFAULT_TRAINING_SECTIONS = (
     (61, "yellow", "Senior Summer"),
     (65, "plum", "Senior"),
     (73, "gold", "URA Finals"),
-    (80, "black", "END")
+    (79, "black", "END")
+)
+
+DEFAULT_ARC_SECTIONS = (
+    (1, "cyan", "Pre-Debut"),
+    (13, "lightgreen", "Junior"),
+    (25, "salmon", "Classic"),
+    (37, "yellow", "Overseas Expedition"),
+    (44, "salmon", "Classic"),
+    (49, "plum", "Senior"),
+    (61, "yellow", "Overseas Expedition"),
+    (68, "black", "END")
 )
