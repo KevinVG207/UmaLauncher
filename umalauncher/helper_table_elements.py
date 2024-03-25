@@ -408,13 +408,21 @@ class Preset():
         uaf_current_active_effects = main_info['uaf_current_active_effects']
         uaf_current_active_bonus = main_info['uaf_current_active_bonus']
         uaf_sport_competition = main_info['uaf_sport_competition']
+        uaf_consultations_left = main_info['uaf_consultations_left']
 
-        html_output = "<div id='uaf'><div style='display:flex; flex-flow: row; justify-content:center; gap: 5px;'>"
+        html_output = "<div id='uaf'><div style='display:flex; flex-flow: row; justify-content:center; gap: 0.5rem;'>"
+
+        flex_divs = []
         
         if uaf_current_required_rank >= 0:
-            html_output += f"""<b>Training Target:</b>{uaf_current_required_rank}"""
-            
-        html_output += f"""<b>Total Bonus:</b>{uaf_current_active_bonus}%<b>Wins:</b>{uaf_sport_competition}</div>"""
+            flex_divs.append(f"""<b>Training Target:</b> {uaf_current_required_rank}""")
+        flex_divs.append(f"""<b>Total Bonus:</b> {uaf_current_active_bonus}%""")
+        flex_divs.append(f"""<b>Wins:</b> {uaf_sport_competition}""")
+        flex_divs.append(f"""<b>Calls left:</b> {uaf_consultations_left}""")
+        
+        flex_divs = [f"""<p style="margin: 0 0 0.1rem 0">{div}</p>""" for div in flex_divs]
+        html_output += ''.join(flex_divs)
+        html_output += "</div>"
             
         html_output += "<table style='margin-left: 52px;'><thead><tr><th style='position: relative; text-overflow: clip;white-space: nowrap;overflow: hidden; z-index: 0; font-size: 0.8rem; min-width:101px'>Genres</th>"
         
