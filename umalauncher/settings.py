@@ -544,6 +544,7 @@ class SettingsHandler():
         if self.threader.carrotjuicer.helper_table:
             self.threader.carrotjuicer.helper_table.update_presets(*self.get_helper_table_data())
 
+        self.threader.carrotjuicer.restart_time()
         self.save_settings()
         self.load_settings()
         self.threader.tray.icon_thread.update_menu()
