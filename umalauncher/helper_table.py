@@ -392,6 +392,7 @@ class HelperTable():
             uaf_sport_rank_total = {2100: 0, 2200: 0, 2300: 0}
             uaf_required_rank_for_turn = {}
             uaf_current_required_rank = -1
+            uaf_consultations_left = 0
             
             if 'sport_data_set' in data:
                 sport_levels = data['sport_data_set'].get('training_array', [])
@@ -419,6 +420,8 @@ class HelperTable():
                                 group_counts[group] += 1
                 
                 uaf_sport_competition = f"{group_counts['1']}/{group_counts['2']}/{group_counts['3']}"
+
+                uaf_consultations_left = len(data['sport_data_set'].get('item_id_array', []))
                 
                 uaf_required_rank_for_turn = mdb.get_uaf_required_rank_for_turn()
                 uaf_required_rank_for_turn.sort(key=lambda x: x[0], reverse=1)
@@ -548,6 +551,7 @@ class HelperTable():
             "uaf_current_active_effects": uaf_current_active_effects,
             "uaf_current_active_bonus": uaf_current_active_bonus,
             "uaf_sport_competition": uaf_sport_competition,
+            "uaf_consultations_left": uaf_consultations_left,
             "eval_dict": eval_dict,
             "all_commands": all_commands
         }
