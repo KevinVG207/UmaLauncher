@@ -111,6 +111,12 @@ class Row():
 
 class PresetSettings(se.NewSettings):
     _settings = {
+        "progress_bar": se.Setting(
+            "Show progress bar",
+            "Displays the training run progress.",
+            True,
+            se.SettingType.BOOL,
+        ),
         "energy_enabled": se.Setting(
             "Show energy",
             "Displays energy in the event helper.",
@@ -204,6 +210,9 @@ class Preset():
     def generate_overlay(self, main_info, command_info):
         html_elements = []
 
+        if self.settings.progress_bar.value:
+            html_elements.append(self.generate_progress_bar(main_info))
+
         if self.settings.energy_enabled.value:
             html_elements.append(self.generate_energy(main_info))
 
@@ -230,6 +239,50 @@ class Preset():
         # html_elements.append("""<button id="btn-skill-window" onclick="window.await_skill_window();">Open Skills Window</button>""")
 
         return ''.join(html_elements)
+
+    def generate_progress_bar(self, main_info):
+
+        sections = constants.DEFAULT_TRAINING_SECTIONS
+
+        if main_info['scenario_id'] == 6:
+            sections = constants.DEFAULT_ARC_SECTIONS
+
+        tot_turns = sections[-1][0] - 1
+        turn_len = 100. / tot_turns
+        start_dist = 0.
+        rects = []
+
+        for i in range(len(sections)):
+            if sections[i][2] == "END":
+                break
+            
+            end_dist = (sections[i+1][0] - 1) * turn_len
+
+            cur_rect = f"""<rect x="{start_dist}" y="0" width="{end_dist - start_dist}" height="2" fill="{sections[i][1]}" mask="url(#mask)"/>"""
+            rects.append(cur_rect)
+
+            start_dist = end_dist
+        
+        rects = ''.join(rects)
+
+        dark_start = main_info['turn'] * turn_len
+        dark_rect = f"""<rect x="{dark_start}" y="0" width="{100 - dark_start}" height="2" fill="rgba(0, 0, 0, 0.6)" mask="url(#mask)" />"""
+
+
+        bar_svg = f"""
+        <svg width="100" height="2" viewBox="0 0 100 2" style="width: 100%; height: auto;">
+            <mask id="mask" x="0" y="0" width="100" height="2">
+                <rect x="0" y="0" width="100" height="2" fill="black" />
+                <rect x="0" y="0" width="100" height="2" fill="white" rx="1" ry="1" />
+            </mask>
+            {rects}
+            {dark_rect}
+        </svg>
+        """
+
+        bar_div = f"<div id=\"progress-bar-container\" style=\"width: 100%; padding: 0 1rem; display:flex; align-items: center; gap: 0.5rem;\"><p style=\"white-space: nowrap; margin: 0;\">Progress: </p>{bar_svg}</div>"
+
+        return bar_div
     
     def generate_energy(self, main_info):
         return f"<div id=\"energy\"><b>Energy:</b> {main_info['energy']}/{main_info['max_energy']}</div>"

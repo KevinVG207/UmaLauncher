@@ -204,3 +204,27 @@ UAF_COLOR_DICT = {
     "2": "rgba(255, 0, 0, 0.1)",
     "3": "rgba(255, 255, 0, 0.1)",
 }
+
+DEFAULT_TRAINING_SECTIONS = (
+    (1, "cyan", "Pre-Debut"),
+    (13, "lightgreen", "Junior"),
+    (25, "salmon", "Classic"),
+    (37, "yellow", "Classic Summer"),
+    (41, "salmon", "Classic"),
+    (49, "plum", "Senior"),
+    (61, "yellow", "Senior Summer"),
+    (65, "plum", "Senior"),
+    (73, "gold", "URA Finals"),
+    (79, "black", "END")
+)
+
+DEFAULT_ARC_SECTIONS = (
+    (1, "cyan", "Pre-Debut"),
+    (13, "lightgreen", "Junior"),
+    (25, "salmon", "Classic"),
+    (37, "yellow", "Overseas Expedition"),
+    (44, "salmon", "Classic"),
+    (49, "plum", "Senior"),
+    (61, "yellow", "Overseas Expedition"),
+    (68, "black", "END")
+)
