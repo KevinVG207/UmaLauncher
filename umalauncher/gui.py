@@ -624,7 +624,7 @@ class UmaSettingsDialog(UmaMainDialog):
         settings_keys = self.settings_var[0].keys()
         last_setting = settings_keys[-1]
         for setting_key in settings_keys:
-            setting = getattr(self.settings_var[0], setting_key)
+            setting = self.settings_var[0][setting_key]
 
             # Filter tab and priority
             if setting.hidden or setting.tab != self.tab:
@@ -672,7 +672,7 @@ class UmaSettingsDialog(UmaMainDialog):
         
         for key, value in new_settings_dict.items():
             logger.debug(f"Setting {key} to {value}")
-            getattr(self.settings_var[0], key).value = value
+            self.settings_var[0][key].value = value
         return True
 
     def add_group_box(self, setting):
