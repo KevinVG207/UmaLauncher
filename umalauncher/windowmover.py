@@ -31,17 +31,16 @@ class GameWindow():
     def get_workspace_rect(self):
         monitor = util.monitor_from_window(self.handle)
         if not monitor:
-            return None
+            raise Exception("Cannot determine monitor used by game window.")
         monitor_info = util.get_monitor_info(monitor)
         if not monitor_info:
-            return None
+            raise Exception("Cannot get monitor info.")
         return monitor_info.get("Work")
 
     def calc_max_and_center_pos(self):
         workspace_rect = self.get_workspace_rect()
         if not workspace_rect:
-            logger.error("Cannot find workspace of game window")
-            return
+            raise Exception("Cannot find workspace of game window")
         
         # Apply safezone from settings
         safezone = self.threader.settings["maximize_safezone"]

@@ -17,7 +17,6 @@ import horsium
 import umapatcher
 
 class CarrotJuicer():
-    start_time = None
     browser: horsium.BrowserWindow = None
     previous_element = None
     threader = None
@@ -42,6 +41,8 @@ class CarrotJuicer():
 
     def __init__(self, threader):
         self.threader = threader
+
+        self.start_time = 0
 
         self.skill_id_dict = mdb.get_skill_id_dict()
 
