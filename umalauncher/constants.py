@@ -118,10 +118,10 @@ GL_TOKEN_LIST = [
 ]
 
 ORIENTATION_DICT = {
-    True: 's_game_position_portrait',
-    False: 's_game_position_landscape',
-    's_game_position_portrait': True,
-    's_game_position_landscape': False,
+    True: 'game_position_portrait',
+    False: 'game_position_landscape',
+    'game_position_portrait': True,
+    'game_position_landscape': False,
 }
 
 # Request packets contain keys that should not be kept for privacy reasons.

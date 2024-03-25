@@ -621,13 +621,13 @@ class UmaSettingsDialog(UmaMainDialog):
                 self.verticalLayout.removeItem(self.verticalLayout.itemAt(i))
 
         # Adding group boxes to the scroll area
-        settings_keys = self.settings_var[0].get_settings_keys()
+        settings_keys = self.settings_var[0].keys()
         last_setting = settings_keys[-1]
         for setting_key in settings_keys:
             setting = getattr(self.settings_var[0], setting_key)
 
             # Filter tab and priority
-            if setting.priority < 0 or setting.tab != self.tab:
+            if setting.hidden or setting.tab != self.tab:
                 continue
 
             group_box, value_func = self.add_group_box(setting)
@@ -650,7 +650,7 @@ class UmaSettingsDialog(UmaMainDialog):
     
     def restore_defaults(self):
         default_settings_var = type(self.settings_var[0])()
-        for setting_key in default_settings_var.get_settings_keys():
+        for setting_key in default_settings_var.keys():
             setting = getattr(default_settings_var, setting_key)
             if setting.priority < 0 or setting.tab != self.tab:
                 continue
@@ -1068,7 +1068,7 @@ class UmaPreferences(UmaMainWidget):
         self.tabWidget.setSizePolicy(qtw.QSizePolicy.Preferred, qtw.QSizePolicy.Preferred)
         self.tabWidget.currentChanged.connect(self.tab_changed)
 
-        unique_tabs = sorted(list({getattr(general_var[0], key).tab for key in general_var[0].get_settings_keys()}))
+        unique_tabs = sorted(list({getattr(general_var[0], key).tab for key in general_var[0].keys()}))
 
         # Hack
         unique_tabs.append(unique_tabs.pop(unique_tabs.index("English Patch")))
@@ -1100,7 +1100,7 @@ class UmaPreferences(UmaMainWidget):
             default_preset=default_preset,
             new_preset_class=new_preset_class,
             preset_list=list(preset_dict.values()),
-            scenario_preset_dict=getattr(general_var[0], 's_training_helper_table_scenario_presets').value,
+            scenario_preset_dict=getattr(general_var[0], 'training_helper_table_scenario_presets').value,
             row_types_enum=row_types_enum,
             output_list=new_preset_list,
             output_dict=new_scenario_preset_dict
@@ -1466,7 +1466,7 @@ class AboutDialog(UmaMainDialog):
 
         self.lbl_unique = qtw.QLabel(self.verticalLayoutWidget)
         self.lbl_unique.setObjectName(u"lbl_unique")
-        self.lbl_unique.setText(self.settings['s_unique_id'])
+        self.lbl_unique.setText(self.settings['unique_id'])
         self.lbl_unique.setAlignment(qtc.Qt.AlignCenter)
 
         self.verticalLayout.addWidget(self.lbl_unique)
@@ -1497,7 +1497,7 @@ class AboutDialog(UmaMainDialog):
     
     def on_refresh_id(self):
         self.settings.regenerate_unique_id()
-        self.lbl_unique.setText(self.settings['s_unique_id'])
+        self.lbl_unique.setText(self.settings['unique_id'])
 
 
 class UmaScenarioPresetDialog(UmaMainDialog):

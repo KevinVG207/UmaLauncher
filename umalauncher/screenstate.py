@@ -228,7 +228,7 @@ class ScreenStateHandler():
 
     def run(self):
         # Enable VPN if needed
-        if self.threader.settings["s_vpn_enabled"] and not self.threader.settings["s_vpn_dmm_only"]:
+        if self.threader.settings["vpn_enabled"] and not self.threader.settings["vpn_dmm_only"]:
             self.vpn = vpn.create_client(self.threader, cygames=True)
             self.vpn.connect()
 
@@ -253,7 +253,7 @@ class ScreenStateHandler():
                         umapatcher.patch(self.threader)
                         
                         # Enable DMM-only VPN
-                        if self.threader.settings["s_vpn_enabled"] and self.threader.settings["s_vpn_dmm_only"]:
+                        if self.threader.settings["vpn_enabled"] and self.threader.settings["vpn_dmm_only"]:
                             self.vpn = vpn.create_client(self.threader)
                             self.vpn.connect()
 
@@ -268,7 +268,7 @@ class ScreenStateHandler():
                 continue
 
             # Close DMM
-            if not self.dmm_closed and self.threader.settings["s_autoclose_dmm"]:
+            if not self.dmm_closed and self.threader.settings["autoclose_dmm"]:
                 # Attempt to close DMM, even if it doesn't exist
                 new_dmm_handle = dmm.get_dmm_handle()
                 if new_dmm_handle:
@@ -277,11 +277,11 @@ class ScreenStateHandler():
                 self.dmm_closed = True
 
                 # Disconnect VPN
-                if self.vpn and self.threader.settings["s_vpn_dmm_only"]:
+                if self.vpn and self.threader.settings["vpn_dmm_only"]:
                     self.vpn.disconnect()
                     self.vpn = None
 
-            if not self.carrotjuicer_closed and self.threader.settings["s_hide_carrotjuicer"]:
+            if not self.carrotjuicer_closed and self.threader.settings["hide_carrotjuicer"]:
                 self.carrotjuicer_handle = util.get_window_handle("Umapyoi", type=util.EXACT)
                 if self.carrotjuicer_handle:
                     logger.info("Attempting to minimize CarrotJuicer.")
@@ -294,7 +294,7 @@ class ScreenStateHandler():
                         self.carrotjuicer_closed = True
                         time.sleep(0.25)
             
-            if self.carrotjuicer_closed and not self.threader.settings["s_hide_carrotjuicer"]:
+            if self.carrotjuicer_closed and not self.threader.settings["hide_carrotjuicer"]:
                 logger.debug(f"CarrotJuicer handle: {self.carrotjuicer_handle}")
                 if self.carrotjuicer_handle:
                     logger.info("Attempting to restore CarrotJuicer.")
@@ -314,7 +314,7 @@ class ScreenStateHandler():
             self.update()
             cur_update = time.time()
 
-            if self.threader.settings["s_discord_rich_presence"]:
+            if self.threader.settings["discord_rich_presence"]:
                 if not self.rpc:
                     try:
                         self.rpc_latest_state = None

@@ -21,7 +21,7 @@ def get_patcher_path(settings):
     if not os.path.exists(exe_path):
         logger.debug("Downloading patcher")
 
-        latest_release = util.fetch_latest_github_release("KevinVG207", "Uma-Carotene-English-Patch", prerelease=settings['s_beta_optin'])
+        latest_release = util.fetch_latest_github_release("KevinVG207", "Uma-Carotene-English-Patch", prerelease=settings['beta_optin'])
 
         # Find the asset
         dl_asset = None
@@ -58,14 +58,14 @@ def patch(threader):
     umaserver = threader.umaserver
 
     logger.debug("In English Patch code")
-    if not settings["s_enable_english_patch"]:
+    if not settings["enable_english_patch"]:
         return
     
     exe_path = get_patcher_path(settings)
     
     # Run the patcher
     dll_name = "version.dll"
-    for dll, selected in settings['s_english_patch_dll'].items():
+    for dll, selected in settings['english_patch_dll'].items():
         if selected:
             dll_name = dll
             break
@@ -104,7 +104,7 @@ def check_repatch(threader):
     #     logger.info("Repatching not supported in script mode.")
     #     return
 
-    if not threader.settings["s_enable_english_patch"]:
+    if not threader.settings["enable_english_patch"]:
         return
     
     # Detect if Carotene is active in MDB.

@@ -109,66 +109,59 @@ class Row():
         }
 
 
-class PresetSettings(se.Settings):
-    def __init__(self):
-        self.s_energy_enabled = se.Setting(
+class PresetSettings(se.NewSettings):
+    _settings = {
+        "energy_enabled": se.Setting(
             "Show energy",
             "Displays energy in the event helper.",
             True,
             se.SettingType.BOOL,
-            priority=13
-        )
-        self.s_support_bonds = se.Setting(
+        ),
+        "support_bonds": se.Setting(
             "Show support bonds",
             "Choose how to display support bonds.",
             2,
             se.SettingType.COMBOBOX,
             choices=["Off", "Number", "Bar", "Both"],
-            priority=12
-        )
-        self.s_hide_support_bonds = se.Setting(
+        ),
+        "hide_support_bonds": se.Setting(
             "Auto-hide maxed supports",
             "When support bonds are enabled, automatically hide characters when they reach 100.",
             True,
             se.SettingType.BOOL,
-            priority=11
-        )
-        self.s_displayed_value = se.Setting(
+        ),
+        "displayed_value": se.Setting(
             "Displayed value(s) for stats",
             "Which value(s) to display for stats rows.",
             0,
             se.SettingType.COMBOBOX,
             choices=["Raw gained stats", "Overcap-compensated gained stats", "Both"],
-            priority=10
-        )
-        self.s_skillpt_enabled = se.Setting(
+        ),
+        "skillpt_enabled": se.Setting(
             "Show skill points",
             "Displays skill points in the event helper.",
             False,
             se.SettingType.BOOL,
-            priority=9
-        )
-        self.s_fans_enabled = se.Setting(
+        ),
+        "fans_enabled": se.Setting(
             "Show fans",
             "Displays fans in the event helper.",
             False,
             se.SettingType.BOOL,
-            priority=8
-        )
-        self.s_schedule_enabled = se.Setting(
+        ),
+        "schedule_enabled": se.Setting(
             "Show schedule countdown",
             "Displays the amount of turns until your next scheduled race. (If there is one.)",
             True,
             se.SettingType.BOOL,
-            priority=7
-        )
-        self.s_scenario_specific_enabled = se.Setting(
+        ),
+        "scenario_specific_enabled": se.Setting(
             "Show scenario specific elements",
             "Show scenario specific elements in the event helper, above the main table.",
             True,
             se.SettingType.BOOL,
-            priority=6
-        )
+        ),
+    }
 
 
 class Preset():
@@ -211,22 +204,22 @@ class Preset():
     def generate_overlay(self, main_info, command_info):
         html_elements = []
 
-        if self.settings.s_energy_enabled.value:
+        if self.settings.energy_enabled.value:
             html_elements.append(self.generate_energy(main_info))
 
-        if self.settings.s_skillpt_enabled.value:
+        if self.settings.skillpt_enabled.value:
             html_elements.append(self.generate_skillpt(main_info))
 
-        if self.settings.s_fans_enabled.value:
+        if self.settings.fans_enabled.value:
             html_elements.append(self.generate_fans(main_info))
         
-        if self.settings.s_schedule_enabled.value:
+        if self.settings.schedule_enabled.value:
             html_elements.append(self.generate_schedule(main_info))
         
-        if self.settings.s_support_bonds.value:
-            html_elements.append(self.generate_bonds(main_info, display_type=self.settings.s_support_bonds.value))
+        if self.settings.support_bonds.value:
+            html_elements.append(self.generate_bonds(main_info, display_type=self.settings.support_bonds.value))
 
-        if self.settings.s_scenario_specific_enabled.value:
+        if self.settings.scenario_specific_enabled.value:
             html_elements.append(self.generate_gm_table(main_info))
             html_elements.append(self.generate_gl_table(main_info))
             html_elements.append(self.generate_arc(main_info))
@@ -283,7 +276,7 @@ class Preset():
         eval_dict = main_info['eval_dict']
         ids = []
         for key in eval_dict.keys():
-            if self.settings.s_hide_support_bonds.value and eval_dict[key].starting_bond == 100:
+            if self.settings.hide_support_bonds.value and eval_dict[key].starting_bond == 100:
                 continue
 
             if key < 100:
@@ -486,15 +479,15 @@ class Preset():
             "rows": [row.to_dict(self.row_types) for row in self.initialized_rows] if self.initialized_rows else []
         }
     
-    def import_dict(self, preset_dict):
+    def from_dict(self, preset_dict):
         if "name" in preset_dict:
             self.name = preset_dict["name"]
         if "settings" in preset_dict:
-            self.settings.import_dict(preset_dict["settings"])
+            self.settings.from_dict(preset_dict["settings"])
         if "rows" in preset_dict:
             self.initialized_rows = []
             for row_dict in preset_dict["rows"]:
                 row_object = self.row_types[row_dict["type"]].value()
                 if row_object.settings:
-                    row_object.settings.import_dict(row_dict["settings"])
+                    row_object.settings.from_dict(row_dict["settings"])
                 self.initialized_rows.append(row_object)

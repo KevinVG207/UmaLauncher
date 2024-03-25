@@ -110,7 +110,7 @@ class CarrotJuicer():
     def open_helper(self):
         self.close_browser()
 
-        start_pos = self.threader.settings["s_browser_position"]
+        start_pos = self.threader.settings["browser_position"]
         if not start_pos:
             start_pos = self.get_browser_reset_position()
         
@@ -153,12 +153,12 @@ class CarrotJuicer():
             rect_var = None
 
     def save_last_browser_rect(self):
-        self.save_rect(self.last_browser_rect, "s_browser_position")
+        self.save_rect(self.last_browser_rect, "browser_position")
     
     def save_skill_window_rect(self):
         if self.skill_browser:
             self.skill_browser.last_window_rect = self.last_skills_rect
-        self.save_rect(self.last_skills_rect, "s_skills_position")
+        self.save_rect(self.last_skills_rect, "skills_position")
 
     def end_training(self):
         if self.training_tracker:
@@ -169,7 +169,7 @@ class CarrotJuicer():
         return
     
     def add_response_to_tracker(self, data):
-        should_track = self.threader.settings["s_track_trainings"]
+        should_track = self.threader.settings["track_trainings"]
         if self.previous_request:
             if should_track:
                 self.training_tracker.add_request(self.previous_request)
@@ -213,7 +213,7 @@ class CarrotJuicer():
         if not data:
             return
 
-        if self.threader.settings["s_save_packets"]:
+        if self.threader.settings["save_packets"]:
             logger.debug("Response:")
             logger.debug(json.dumps(data))
             self.to_json(data, "packet_in.json")
@@ -452,7 +452,7 @@ class CarrotJuicer():
         if not data:
             return
 
-        if self.threader.settings["s_save_packets"]:
+        if self.threader.settings["save_packets"]:
             logger.debug("Request:")
             logger.debug(json.dumps(data))
             self.to_json(data, "packet_out.json")
@@ -561,7 +561,7 @@ class CarrotJuicer():
 
     def update_skill_window(self):
         if not self.skill_browser:
-            self.skill_browser = horsium.BrowserWindow("https://gametora.com/umamusume/skills", self.threader, rect=self.threader.settings['s_skills_position'], run_at_launch=setup_skill_window)
+            self.skill_browser = horsium.BrowserWindow("https://gametora.com/umamusume/skills", self.threader, rect=self.threader.settings['skills_position'], run_at_launch=setup_skill_window)
         else:
             self.skill_browser.ensure_tab_open()
         if self.browser and self.browser.alive():
@@ -660,7 +660,7 @@ class CarrotJuicer():
 
                 msg_path = os.path.join(base_path, "CarrotJuicer")
 
-                if not self.threader.settings["s_enable_carrotjuicer"] or not self.threader.settings['s_enable_browser']:
+                if not self.threader.settings["enable_carrotjuicer"] or not self.threader.settings['enable_browser']:
                     if self.browser and self.browser.alive():
                         self.browser.quit()
                     if self.skill_browser and self.skill_browser.alive():
@@ -928,7 +928,7 @@ def gametora_dark_mode(browser: horsium.BrowserWindow):
         time.sleep(0.25)
     
     dark_enabled = browser.execute_script("""return document.querySelector("[class^='tooltips_tooltip_']").querySelector("[class^='filters_toggle_button_']").childNodes[0].querySelector("input").checked;""")
-    if dark_enabled != browser.threader.settings["s_gametora_dark_mode"]:
+    if dark_enabled != browser.threader.settings["gametora_dark_mode"]:
         browser.execute_script("""document.querySelector("[class^='tooltips_tooltip_']").querySelector("[class^='filters_toggle_button_']").childNodes[0].querySelector("input").click()""")
     browser.execute_script("""document.querySelector("[class^='styles_header_settings_']").click()""")
 
