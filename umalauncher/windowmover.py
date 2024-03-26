@@ -1,6 +1,7 @@
 import time
 from loguru import logger
 import util
+import win32gui
 
 
 class GameWindow():
@@ -24,7 +25,7 @@ class GameWindow():
             logger.error("Resetting to defaults.")
             self.threader.settings.save_game_position(None, is_portrait)
             return False
-        
+
         prev_rect = util.get_window_rect(self.handle)
         success = util.move_window(self.handle, pos[0], pos[1], pos[2], pos[3], True)
         if not success:
@@ -32,6 +33,9 @@ class GameWindow():
 
         workspace = self.get_workspace_rect()
         if not workspace:
+            if not win32gui.IsWindow(self.handle):
+                return False
+
             logger.error("Could not get workspace rect after setting position.")
             logger.error("Resetting to defaults.")
             util.move_window(self.handle, prev_rect[0], prev_rect[1], prev_rect[2], prev_rect[3], True)

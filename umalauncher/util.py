@@ -328,6 +328,9 @@ def get_window_handle(query: str, type=LAZY) -> str:
     win32gui.EnumWindows(type, query)
     return window_handle
 
+def get_game_handle():
+    return get_window_handle("umamusume", type=EXACT)
+
 
 def get_position_rgb(image: Image.Image, position: tuple[float,float]) -> tuple[int,int,int]:
     pixel_color = None

@@ -211,7 +211,7 @@ class ScreenStateHandler():
         win32clipboard.CloseClipboard()
 
     def check_game(self):
-        game_handle = util.get_window_handle("umamusume", type=util.EXACT)
+        game_handle = util.get_game_handle()
         if game_handle:
             self.game_handle = game_handle
             self.game_seen = True
