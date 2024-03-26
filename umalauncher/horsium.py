@@ -23,8 +23,8 @@ OLD_DRIVERS = []
 
 def firefox_setup(helper_url, settings):
     driver_path = None
-    if settings['s_enable_browser_override']:
-        new_path = settings['s_browser_custom_driver']
+    if settings['enable_browser_override']:
+        new_path = settings['browser_custom_driver']
         if new_path:
             driver_path = new_path
 
@@ -36,8 +36,8 @@ def firefox_setup(helper_url, settings):
 
     binary_path = None
 
-    if settings['s_enable_browser_override']:
-        binary_path = settings['s_browser_custom_binary']
+    if settings['enable_browser_override']:
+        binary_path = settings['browser_custom_binary']
         if binary_path:
             options.binary_location = binary_path
     
@@ -59,26 +59,26 @@ def chromium_setup(service, options_class, driver_class, profile, helper_url, se
     options.add_argument("--remote-debugging-port=9222")
     options.add_argument("--new-window")
     
-    if not settings['s_enable_browser_override']:
+    if not settings['enable_browser_override']:
         options.add_argument("--app=" + helper_url)
 
     browser = driver_class(service=service, options=options)
     
-    if settings['s_enable_browser_override']:
+    if settings['enable_browser_override']:
         browser.get(helper_url)
 
     return browser
 
 def chrome_setup(helper_url, settings):
     driver_path = None
-    if settings['s_enable_browser_override']:
-        new_path = settings['s_browser_custom_driver']
+    if settings['enable_browser_override']:
+        new_path = settings['browser_custom_driver']
         if new_path:
             driver_path = new_path
     
     binary_path = None
-    if settings['s_enable_browser_override']:
-        binary_path = settings['s_browser_custom_binary']
+    if settings['enable_browser_override']:
+        binary_path = settings['browser_custom_binary']
 
     logger.debug(f"Chrome driver path: {driver_path}")
     logger.debug(f"Chrome binary path: {binary_path}")
@@ -87,7 +87,7 @@ def chrome_setup(helper_url, settings):
         service=ChromeService(executable_path=driver_path) if driver_path else ChromeService(),
         options_class=webdriver.ChromeOptions,
         driver_class=webdriver.Chrome,
-        profile="chr_profile",
+        profile=util.get_appdata("chr_profile"),
         helper_url=helper_url,
         settings=settings,
         binary_path=binary_path
@@ -98,7 +98,7 @@ def edge_setup(helper_url, settings):
         service=EdgeService(),
         options_class=webdriver.EdgeOptions,
         driver_class=webdriver.Edge,
-        profile="edg_profile",
+        profile=util.get_appdata("edg_profile"),
         helper_url=helper_url,
         settings=settings
     )
@@ -135,10 +135,10 @@ class BrowserWindow:
     def init_browser(self) -> RemoteWebDriver:
         driver = None
 
-        if self.settings['s_enable_browser_override']:
-            selection = self.settings['s_custom_browser_type']
+        if self.settings['enable_browser_override']:
+            selection = self.settings['custom_browser_type']
         else:
-            selection = self.settings['s_selected_browser']
+            selection = self.settings['selected_browser']
         browser_name = [
                     browser
                     for browser, selected in selection.items()

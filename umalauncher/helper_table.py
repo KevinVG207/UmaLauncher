@@ -173,7 +173,7 @@ class HelperTable():
             'team_data_set',  # Aoharu
             'ura_data_set',  # URA
             'arc_data_set',  # Project L'Arc
-            'sport_data_set'  # UAF Ready Go!
+            'sport_data_set'  # UAF Ready GO!
         ]
         for key in scenario_keys:
             if key in data and 'command_info_array' in data[key]:
@@ -383,7 +383,7 @@ class HelperTable():
             gained_energy = min(gained_energy, max_energy - energy)
 
 
-            # UAF Ready Go!
+            # UAF Ready GO!
             uaf_sport_rank = {}
             uaf_sport_gain = {}
             uaf_current_active_effects = {}
@@ -392,6 +392,7 @@ class HelperTable():
             uaf_sport_rank_total = {2100: 0, 2200: 0, 2300: 0}
             uaf_required_rank_for_turn = {}
             uaf_current_required_rank = -1
+            uaf_consultations_left = 0
             
             if 'sport_data_set' in data:
                 sport_levels = data['sport_data_set'].get('training_array', [])
@@ -419,6 +420,8 @@ class HelperTable():
                                 group_counts[group] += 1
                 
                 uaf_sport_competition = f"{group_counts['1']}/{group_counts['2']}/{group_counts['3']}"
+
+                uaf_consultations_left = len(data['sport_data_set'].get('item_id_array', []))
                 
                 uaf_required_rank_for_turn = mdb.get_uaf_required_rank_for_turn()
                 uaf_required_rank_for_turn.sort(key=lambda x: x[0], reverse=1)
@@ -548,17 +551,18 @@ class HelperTable():
             "uaf_current_active_effects": uaf_current_active_effects,
             "uaf_current_active_bonus": uaf_current_active_bonus,
             "uaf_sport_competition": uaf_sport_competition,
+            "uaf_consultations_left": uaf_consultations_left,
             "eval_dict": eval_dict,
             "all_commands": all_commands
         }
 
         # Update preset if needed.
-        if self.carrotjuicer.threader.settings['s_training_helper_table_scenario_presets_enabled']:
-            scenario_preset = self.carrotjuicer.threader.settings['s_training_helper_table_scenario_presets'].get(str(scenario_id), None)
+        if self.carrotjuicer.threader.settings['training_helper_table_scenario_presets_enabled']:
+            scenario_preset = self.carrotjuicer.threader.settings['training_helper_table_scenario_presets'].get(str(scenario_id), None)
             if scenario_preset and self.selected_preset.name != scenario_preset:
                 self.selected_preset = self.carrotjuicer.threader.settings.get_preset_with_name(scenario_preset)
         else:
-            general_preset = self.carrotjuicer.threader.settings['s_training_helper_table_preset']
+            general_preset = self.carrotjuicer.threader.settings['training_helper_table_preset']
             if self.selected_preset.name != general_preset:
                 self.selected_preset = self.carrotjuicer.threader.settings.get_preset_with_name(general_preset)
 

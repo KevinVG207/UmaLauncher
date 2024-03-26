@@ -51,7 +51,6 @@ class Threader():
     def __init__(self):
         gui.THREADER = self
 
-        # Set directory to find assets
         self.settings = settings.SettingsHandler(self)
         
         # Ensure only a single instance is running.
@@ -94,7 +93,7 @@ class Threader():
         THREADS.append(threading.Thread(target=self.tray.run_with_catch, name="UmaTray"))
 
         for thread in THREADS:
-            if not thread.is_alive():
+            if not thread.is_alive() and not thread.ident:
                 thread.start()
 
         win32api.SetConsoleCtrlHandler(self.stop_signal, True)
@@ -132,7 +131,7 @@ class Threader():
         current_pid = os.getpid()
 
         # Check if a pid file exists.
-        pid_file = util.get_relative("lock.pid")
+        pid_file = util.get_appdata("lock.pid")
         if os.path.exists(pid_file):
             try:
                 with open(pid_file, "r", encoding='utf-8') as f:
@@ -192,7 +191,7 @@ def main():
     logger.debug("Browsers closed")
 
     # Remove the pid file
-    lock_path = util.get_relative("lock.pid")
+    lock_path = util.get_appdata("lock.pid")
     if os.path.exists(lock_path):
         os.remove(lock_path)
     

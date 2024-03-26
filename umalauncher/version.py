@@ -9,8 +9,9 @@ from urllib.parse import urlparse
 from loguru import logger
 import util
 import gui
+import glob
 
-VERSION = "1.12.1"
+VERSION = "1.13.0"
 
 def parse_version(version_string: str):
     """Convert version string to tuple."""
@@ -26,7 +27,7 @@ def vstr(version_tuple: tuple):
 def upgrade(umasettings, raw_settings):
     """Upgrades old versions."""
     script_version = parse_version(VERSION)
-    settings_version = parse_version(umasettings["s_version"])
+    settings_version = parse_version(umasettings["version"])
     logger.info(f"Script version: {vstr(script_version)}, Settings version: {vstr(settings_version)}")
 
     # Update settings file
@@ -42,25 +43,25 @@ def upgrade(umasettings, raw_settings):
             shutil.copy("umasettings.json", "umasettings.json.bak")
 
         pre_1_5_0_update_dict = {
-            "_unique_id": "s_unique_id",
-            "save_packet": "s_save_packets",
-            "beta_optin": "s_beta_optin",
-            "debug_mode": "s_debug_mode",
-            "autoclose_dmm": "s_autoclose_dmm",
-            "browser_position": "s_browser_position",
-            "selected_browser": "s_selected_browser",
-            "game_install_path": "s_game_install_path",
-            "training_helper_table_preset": "s_training_helper_table_preset",
-            "training_helper_table_preset_list": "s_training_helper_table_preset_list",
+            "_unique_id": "unique_id",
+            "save_packet": "save_packets",
+            "beta_optin": "beta_optin",
+            "debug_mode": "debug_mode",
+            "autoclose_dmm": "autoclose_dmm",
+            "browser_position": "browser_position",
+            "selected_browser": "selected_browser",
+            "game_install_path": "game_install_path",
+            "training_helper_table_preset": "training_helper_table_preset",
+            "training_helper_table_preset_list": "training_helper_table_preset_list",
         }
 
         pre_1_5_0_update_dict_2 = {
-            ("tray_items", "Lock game window"): "s_lock_game_window",
-            ("tray_items", "Discord rich presence"): "s_discord_rich_presence",
-            ("tray_items", "Enable CarrotJuicer"): "s_enable_carrotjuicer",
-            ("tray_items", "Track trainings"): "s_track_trainings",
-            ("game_position", "portrait"): "s_game_position_portrait",
-            ("game_position", "landscape"): "s_game_position_landscape",
+            ("tray_items", "Lock game window"): "lock_game_window",
+            ("tray_items", "Discord rich presence"): "discord_rich_presence",
+            ("tray_items", "Enable CarrotJuicer"): "enable_carrotjuicer",
+            ("tray_items", "Track trainings"): "track_trainings",
+            ("game_position", "portrait"): "game_position_portrait",
+            ("game_position", "landscape"): "game_position_landscape",
         }
 
         for key, value in pre_1_5_0_update_dict.items():
@@ -70,13 +71,45 @@ def upgrade(umasettings, raw_settings):
         for key, value in pre_1_5_0_update_dict_2.items():
             if key[0] in raw_settings and key[1] in raw_settings[key[0]]:
                 umasettings[value] = raw_settings[key[0]][key[1]]
+    
+    if settings_version <= (1, 12, 1):
+        logger.info("Upgrading settings from <=1.12.1. Moving files to appdata folder.")
+        # Transfer relative files to appdata folder.
+        to_move = [
+            "umasettings.json",
+            "lock.pid",
+            "update.tmp",
+            "log.log",
+            "training_logs",
+            "ovpn.log",
+            "chr_profile",
+            "edg_profile"
+        ]
+        logzips = glob.glob("*.log.zip")
+        to_move += logzips
+
+        if not util.is_script:
+            # Add the old exe
+            to_move.append(sys.argv[0][:-3]+"old")
+
+        for path in to_move:
+            rel_path = util.get_relative(path)
+            if not os.path.exists(rel_path):
+                continue
+
+            if path == 'log.log':
+                path = 'pre-appdata.log'
+
+            shutil.move(rel_path, util.get_appdata(path))
+        
+        logger.info("Moving complete.")
 
     # If upgraded at all
     if script_version > settings_version:
-        umasettings['s_skip_update'] = None
+        umasettings['skip_update'] = None
 
     # Upgrade settings version no.
-    umasettings["s_version"] = vstr(script_version)
+    umasettings["version"] = vstr(script_version)
 
 def force_update(umasettings):
     result = auto_update(umasettings, force=True)
@@ -87,7 +120,7 @@ def auto_update(umasettings, force=False):
     logger.info("Checking for updates...")
 
     script_version = parse_version(VERSION)
-    skip_version = parse_version(umasettings["s_skip_update"])
+    skip_version = parse_version(umasettings["skip_update"])
 
     # Don't update if we're running from script.
     if util.is_script:
@@ -104,7 +137,7 @@ def auto_update(umasettings, force=False):
         return True
     response_json = response.json()
 
-    allow_prerelease = umasettings["s_beta_optin"]
+    allow_prerelease = umasettings["beta_optin"]
     latest_release = None
     for release in response_json:
         if release.get('draft', False):
@@ -145,12 +178,12 @@ def auto_update(umasettings, force=False):
 
     # Skip
     elif choice == 2:
-        umasettings['s_skip_update'] = vstr(release_version)
+        umasettings['skip_update'] = vstr(release_version)
         return True
 
     # Yes
     # Remove the lock file.
-    lock_path = util.get_relative("lock.pid")
+    lock_path = util.get_appdata("lock.pid")
     if os.path.exists(lock_path):
         os.remove(lock_path)
 
@@ -163,8 +196,8 @@ def auto_update(umasettings, force=False):
     gui.show_widget(gui.UmaUpdatePopup, update_object)
 
     logger.debug("Update window closed: Update failed.")
-    if os.path.exists(util.get_relative("update.tmp")):
-        os.remove(util.get_relative("update.tmp"))
+    if os.path.exists(util.get_appdata("update.tmp")):
+        os.remove(util.get_appdata("update.tmp"))
     util.show_warning_box("Update failed.", "Could not update. Please check your internet connection.<br>Uma Launcher will now close.")
     return False
 
@@ -191,13 +224,17 @@ class Updater():
                     path_to_exe = sys.argv[0]
                     exe_file = os.path.basename(path_to_exe)
                     without_ext = os.path.splitext(exe_file)[0]
+                    old_file = without_ext + ".old"
+                    old_path = util.get_appdata(old_file)
+                    tmp_file = without_ext + ".tmp"
+                    tmp_path = util.get_appdata(tmp_file)
 
                     logger.info(f"Attempting to download from {download_url}")
-                    urllib.request.urlretrieve(download_url, f"{exe_file}_")
+                    urllib.request.urlretrieve(download_url, tmp_path)
                     # Start a process that starts the new exe.
                     logger.info("Download complete, now trying to open the new launcher.")
-                    open(util.get_relative("update.tmp"), "wb").close()
-                    sub = subprocess.Popen(f"taskkill /F /IM \"{exe_file}\" && move /y \".\\{exe_file}\" \".\\{without_ext}.old\" && move /y \".\\{exe_file}_\" \".\\{exe_file}\" && \".\\{exe_file}\"", shell=True)
+                    open(util.get_appdata("update.tmp"), "wb").close()
+                    sub = subprocess.Popen(f"taskkill /F /IM \"{exe_file}\" && move /y \".\\{exe_file}\" \"{old_path}\" && move /y \"{tmp_path}\" \".\\{exe_file}\" && \".\\{exe_file}\"", shell=True)
                     while True:
                         # Check if subprocess is still running
                         if sub.poll() is not None:

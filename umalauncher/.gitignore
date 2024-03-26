@@ -7,6 +7,7 @@ chr_profile/*
 edg_profile/*
 node_modules/*
 training_logs/*
+appdata/
 screenshot.png
 umasettings*.json
 log.log

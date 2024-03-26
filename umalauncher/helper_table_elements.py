@@ -109,66 +109,65 @@ class Row():
         }
 
 
-class PresetSettings(se.Settings):
-    def __init__(self):
-        self.s_energy_enabled = se.Setting(
+class PresetSettings(se.NewSettings):
+    _settings = {
+        "progress_bar": se.Setting(
+            "Show progress bar",
+            "Displays the training run progress.",
+            True,
+            se.SettingType.BOOL,
+        ),
+        "energy_enabled": se.Setting(
             "Show energy",
             "Displays energy in the event helper.",
             True,
             se.SettingType.BOOL,
-            priority=13
-        )
-        self.s_support_bonds = se.Setting(
+        ),
+        "support_bonds": se.Setting(
             "Show support bonds",
             "Choose how to display support bonds.",
             2,
             se.SettingType.COMBOBOX,
             choices=["Off", "Number", "Bar", "Both"],
-            priority=12
-        )
-        self.s_hide_support_bonds = se.Setting(
+        ),
+        "hide_support_bonds": se.Setting(
             "Auto-hide maxed supports",
             "When support bonds are enabled, automatically hide characters when they reach 100.",
             True,
             se.SettingType.BOOL,
-            priority=11
-        )
-        self.s_displayed_value = se.Setting(
+        ),
+        "displayed_value": se.Setting(
             "Displayed value(s) for stats",
             "Which value(s) to display for stats rows.",
             0,
             se.SettingType.COMBOBOX,
             choices=["Raw gained stats", "Overcap-compensated gained stats", "Both"],
-            priority=10
-        )
-        self.s_skillpt_enabled = se.Setting(
+        ),
+        "skillpt_enabled": se.Setting(
             "Show skill points",
             "Displays skill points in the event helper.",
             False,
             se.SettingType.BOOL,
-            priority=9
-        )
-        self.s_fans_enabled = se.Setting(
+        ),
+        "fans_enabled": se.Setting(
             "Show fans",
             "Displays fans in the event helper.",
             False,
             se.SettingType.BOOL,
-            priority=8
-        )
-        self.s_schedule_enabled = se.Setting(
+        ),
+        "schedule_enabled": se.Setting(
             "Show schedule countdown",
             "Displays the amount of turns until your next scheduled race. (If there is one.)",
             True,
             se.SettingType.BOOL,
-            priority=7
-        )
-        self.s_scenario_specific_enabled = se.Setting(
+        ),
+        "scenario_specific_enabled": se.Setting(
             "Show scenario specific elements",
             "Show scenario specific elements in the event helper, above the main table.",
             True,
             se.SettingType.BOOL,
-            priority=6
-        )
+        ),
+    }
 
 
 class Preset():
@@ -211,22 +210,25 @@ class Preset():
     def generate_overlay(self, main_info, command_info):
         html_elements = []
 
-        if self.settings.s_energy_enabled.value:
+        if self.settings.progress_bar.value:
+            html_elements.append(self.generate_progress_bar(main_info))
+
+        if self.settings.energy_enabled.value:
             html_elements.append(self.generate_energy(main_info))
 
-        if self.settings.s_skillpt_enabled.value:
+        if self.settings.skillpt_enabled.value:
             html_elements.append(self.generate_skillpt(main_info))
 
-        if self.settings.s_fans_enabled.value:
+        if self.settings.fans_enabled.value:
             html_elements.append(self.generate_fans(main_info))
         
-        if self.settings.s_schedule_enabled.value:
+        if self.settings.schedule_enabled.value:
             html_elements.append(self.generate_schedule(main_info))
         
-        if self.settings.s_support_bonds.value:
-            html_elements.append(self.generate_bonds(main_info, display_type=self.settings.s_support_bonds.value))
+        if self.settings.support_bonds.value:
+            html_elements.append(self.generate_bonds(main_info, display_type=self.settings.support_bonds.value))
 
-        if self.settings.s_scenario_specific_enabled.value:
+        if self.settings.scenario_specific_enabled.value:
             html_elements.append(self.generate_gm_table(main_info))
             html_elements.append(self.generate_gl_table(main_info))
             html_elements.append(self.generate_arc(main_info))
@@ -237,6 +239,50 @@ class Preset():
         # html_elements.append("""<button id="btn-skill-window" onclick="window.await_skill_window();">Open Skills Window</button>""")
 
         return ''.join(html_elements)
+
+    def generate_progress_bar(self, main_info):
+
+        sections = constants.DEFAULT_TRAINING_SECTIONS
+
+        if main_info['scenario_id'] == 6:
+            sections = constants.DEFAULT_ARC_SECTIONS
+
+        tot_turns = sections[-1][0] - 1
+        turn_len = 100. / tot_turns
+        start_dist = 0.
+        rects = []
+
+        for i in range(len(sections)):
+            if sections[i][2] == "END":
+                break
+            
+            end_dist = (sections[i+1][0] - 1) * turn_len
+
+            cur_rect = f"""<rect x="{start_dist}" y="0" width="{end_dist - start_dist}" height="2" fill="{sections[i][1]}" mask="url(#mask)"/>"""
+            rects.append(cur_rect)
+
+            start_dist = end_dist
+        
+        rects = ''.join(rects)
+
+        dark_start = main_info['turn'] * turn_len
+        dark_rect = f"""<rect x="{dark_start}" y="0" width="{100 - dark_start}" height="2" fill="rgba(0, 0, 0, 0.6)" mask="url(#mask)" />"""
+
+
+        bar_svg = f"""
+        <svg width="100" height="2" viewBox="0 0 100 2" style="width: 100%; height: auto;">
+            <mask id="mask" x="0" y="0" width="100" height="2">
+                <rect x="0" y="0" width="100" height="2" fill="black" />
+                <rect x="0" y="0" width="100" height="2" fill="white" rx="1" ry="1" />
+            </mask>
+            {rects}
+            {dark_rect}
+        </svg>
+        """
+
+        bar_div = f"<div id=\"progress-bar-container\" style=\"width: 100%; padding: 0 1rem; display:flex; align-items: center; gap: 0.5rem;\"><p style=\"white-space: nowrap; margin: 0;\">Progress: </p>{bar_svg}</div>"
+
+        return bar_div
     
     def generate_energy(self, main_info):
         return f"<div id=\"energy\"><b>Energy:</b> {main_info['energy']}/{main_info['max_energy']}</div>"
@@ -283,7 +329,7 @@ class Preset():
         eval_dict = main_info['eval_dict']
         ids = []
         for key in eval_dict.keys():
-            if self.settings.s_hide_support_bonds.value and eval_dict[key].starting_bond == 100:
+            if self.settings.hide_support_bonds.value and eval_dict[key].starting_bond == 100:
                 continue
 
             if key < 100:
@@ -415,13 +461,21 @@ class Preset():
         uaf_current_active_effects = main_info['uaf_current_active_effects']
         uaf_current_active_bonus = main_info['uaf_current_active_bonus']
         uaf_sport_competition = main_info['uaf_sport_competition']
+        uaf_consultations_left = main_info['uaf_consultations_left']
 
-        html_output = "<div id='uaf'><div style='display:flex; flex-flow: row; justify-content:center; gap: 5px;'>"
+        html_output = "<div id='uaf'><div style='display:flex; flex-flow: row; justify-content:center; gap: 0.5rem;'>"
+
+        flex_divs = []
         
         if uaf_current_required_rank >= 0:
-            html_output += f"""<b>Training Target:</b>{uaf_current_required_rank}"""
-            
-        html_output += f"""<b>Total Bonus:</b>{uaf_current_active_bonus}%<b>Wins:</b>{uaf_sport_competition}</div>"""
+            flex_divs.append(f"""<b>Training Target:</b> {uaf_current_required_rank}""")
+        flex_divs.append(f"""<b>Total Bonus:</b> {uaf_current_active_bonus}%""")
+        flex_divs.append(f"""<b>Wins:</b> {uaf_sport_competition}""")
+        flex_divs.append(f"""<b>Calls left:</b> {uaf_consultations_left}""")
+        
+        flex_divs = [f"""<p style="margin: 0 0 0.1rem 0">{div}</p>""" for div in flex_divs]
+        html_output += ''.join(flex_divs)
+        html_output += "</div>"
             
         html_output += "<table style='margin-left: 52px;'><thead><tr><th style='position: relative; text-overflow: clip;white-space: nowrap;overflow: hidden; z-index: 0; font-size: 0.8rem; min-width:101px'>Genres</th>"
         
@@ -435,7 +489,7 @@ class Preset():
         # Loop through the IDs
         for base in [2100, 2200, 2300]:
             total_row = 0
-            row = f"<tr><td style='display: flex; align-items: center; justify-content: center; flex-direction: row; gap: 5px'><img src=\"{util.get_uaf_genre_image_dict()[str(base)]}\" width=\"32\" height=\"32\" style=\"display:inline-block; width: auto; height: 1.5rem; margin-top: 1px;\"/><div>{uaf_sport_rank_total[base]}</div></td>"
+            row = f"""<tr><td><div style="display: flex; align-items: center; justify-content: center; flex-direction: row; gap: 5px"><img src=\"{util.get_uaf_genre_image_dict()[str(base)]}\" width=\"32\" height=\"32\" style=\"display:inline-block; width: auto; height: 1.5rem; margin-top: 1px;\"/><div>{uaf_sport_rank_total[base]}</div></div></td>"""
             for i in range(1, 6):
                 id = base + i
                 if id in uaf_sport_rank:
@@ -486,15 +540,15 @@ class Preset():
             "rows": [row.to_dict(self.row_types) for row in self.initialized_rows] if self.initialized_rows else []
         }
     
-    def import_dict(self, preset_dict):
+    def from_dict(self, preset_dict):
         if "name" in preset_dict:
             self.name = preset_dict["name"]
         if "settings" in preset_dict:
-            self.settings.import_dict(preset_dict["settings"])
+            self.settings.from_dict(preset_dict["settings"])
         if "rows" in preset_dict:
             self.initialized_rows = []
             for row_dict in preset_dict["rows"]:
                 row_object = self.row_types[row_dict["type"]].value()
                 if row_object.settings:
-                    row_object.settings.import_dict(row_dict["settings"])
+                    row_object.settings.from_dict(row_dict["settings"])
                 self.initialized_rows.append(row_object)

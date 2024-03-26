@@ -13,8 +13,6 @@ def update_mdb_cache():
     for func in all_update_funcs:
         func(force=True)
 
-CONNECTION_ERRORS = 5
-
 class Connection():
     def __init__(self):
         try:
@@ -29,14 +27,8 @@ class Connection():
         self.conn.close()
         
         if type is not None:
-            global CONNECTION_ERRORS
-            CONNECTION_ERRORS += 1
             logger.error(f"Error: {type} {value}")
-            logger.error(f"{traceback}")
-
-            if CONNECTION_ERRORS > 5:
-                util.show_error_box("Connection Error", "Could not connect to the game database.", custom_traceback=traceback)
-
+            util.show_error_box("Connection Error", "Could not connect to the game database.")
             return True
 
 def create_support_card_string(rarity, command_id, support_card_type, chara_id):
@@ -458,6 +450,7 @@ def get_scouting_score_to_rank_dict(force=False):
 
 def get_card_inherent_skills(card_id, level=99):
     skills = []
+    rows = []
 
     with Connection() as (_, cursor):
         cursor.execute(

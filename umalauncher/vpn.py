@@ -8,14 +8,14 @@ import traceback
 import random
 
 def create_client(threader, cygames=False):
-    vpn_radiobutton_status = threader.settings['s_vpn_client']
+    vpn_radiobutton_status = threader.settings['vpn_client']
 
     if vpn_radiobutton_status['OpenVPN']:
-        return OpenVPNClient(threader, threader.settings['s_vpn_client_path'], threader.settings['s_vpn_ip_override'], cygames)
+        return OpenVPNClient(threader, threader.settings['vpn_client_path'], threader.settings['vpn_ip_override'], cygames)
     elif vpn_radiobutton_status['NordVPN']:
-        return NordVPNClient(threader, threader.settings['s_vpn_client_path'])
+        return NordVPNClient(threader, threader.settings['vpn_client_path'])
     elif vpn_radiobutton_status['SoftEther']:
-        return SoftEtherClient(threader, threader.settings['s_vpn_ip_override'], cygames)
+        return SoftEtherClient(threader, threader.settings['vpn_ip_override'], cygames)
 
 class VPNClient:
     def __init__(self, threader, exe_path=""):
@@ -224,7 +224,7 @@ class OpenVPNClient(VPNClient):
         self.profile_override = profile_override
         self.cygames = cygames
         self.timeout = 30
-        self.log_path = util.get_relative('ovpn.log')
+        self.log_path = util.get_appdata('ovpn.log')
 
         if os.path.exists(self.log_path):
             os.remove(self.log_path)
