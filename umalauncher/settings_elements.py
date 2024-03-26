@@ -1,4 +1,5 @@
 import enum
+import copy
 from loguru import logger
 
 class SettingType(enum.Enum):
@@ -67,7 +68,7 @@ class NewSettings():
 
     def __init__(self):
         for key, value in self._settings.items():
-            self.__setattr__(key, value)
+            self.__setattr__(key, copy.deepcopy(value))
 
     def keys(self):
         return list(self._settings.keys())
@@ -77,7 +78,8 @@ class NewSettings():
         for key, value in self._settings.items():
             if value.type in (SettingType.MESSAGE, SettingType.DIVIDER, SettingType.COMMANDBUTTON):
                 continue
-            ret_dict[key] = value.value
+            attr = getattr(self, key)
+            ret_dict[key] = attr.value
         return ret_dict
 
     def from_dict(self, settings_dict, keep_undefined=False):
@@ -116,12 +118,12 @@ class NewSettings():
     def __getitem__(self, key):
         if not key in self._settings:
             raise KeyError(f"Setting {key} not found in settings.")
-        return self._settings[key]
+        return getattr(self, key)
     
     def __setitem__(self, key, value):
         if not key in self._settings:
             raise KeyError(f"Setting {key} not found in settings.")
-        self._settings[key].value = value
+        getattr(self, key).value = value
 
     def __repr__(self):
         return str(self.to_dict())
