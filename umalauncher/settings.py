@@ -436,8 +436,10 @@ class SettingsHandler():
         if util.is_minimized(self.threader.screenstate.game_handle):
             # logger.warning(f"Game minimized, cannot save {constants.ORIENTATION_DICT[portrait]}: {pos}")
             return
+        
+        orientation_key = constants.ORIENTATION_DICT[portrait]
 
-        if (pos[0] == -32000 and pos[1] == -32000):
+        if pos is not None and pos[0] == -32000 and pos[1] == -32000:
             # logger.warning(f"Game minimized, cannot save {constants.ORIENTATION_DICT[portrait]}: {pos}")
             return
 

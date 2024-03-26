@@ -1,6 +1,7 @@
 import time
 from loguru import logger
 import util
+import win32gui
 
 
 class GameWindow():
@@ -18,23 +19,40 @@ class GameWindow():
             return None, None
         return rect, rect_is_portrait(rect)
 
-    def set_pos(self, pos):
+    def set_pos(self, pos, is_portrait):
         if pos[2] < 1 or pos[3] < 1:
             logger.error(f"Trying to set window to invalid size: {pos}")
-            logger.error("Skipping")
+            logger.error("Resetting to defaults.")
+            self.threader.settings.save_game_position(None, is_portrait)
             return False
+
+        prev_rect = util.get_window_rect(self.handle)
         success = util.move_window(self.handle, pos[0], pos[1], pos[2], pos[3], True)
         if not success:
             logger.error(f"Could not move window. {self.handle}")
+
+        workspace = self.get_workspace_rect()
+        if not workspace:
+            if not win32gui.IsWindow(self.handle):
+                return False
+
+            logger.error("Could not get workspace rect after setting position.")
+            logger.error("Resetting to defaults.")
+            util.move_window(self.handle, prev_rect[0], prev_rect[1], prev_rect[2], prev_rect[3], True)
+            self.threader.settings.save_game_position(None, is_portrait)
+            return False
+
         return success
 
     def get_workspace_rect(self):
         monitor = util.monitor_from_window(self.handle)
         if not monitor:
-            raise Exception("Cannot determine monitor used by game window.")
+            # raise Exception("Cannot determine monitor used by game window.")
+            return None
         monitor_info = util.get_monitor_info(monitor)
         if not monitor_info:
-            raise Exception("Cannot get monitor info.")
+            # raise Exception("Cannot get monitor info.")
+            return None
         return monitor_info.get("Work")
 
     def calc_max_and_center_pos(self):
@@ -95,7 +113,8 @@ class GameWindow():
         return new_game_pos, is_portrait
 
     def maximize_and_center(self):
-        self.set_pos(self.calc_max_and_center_pos()[0])
+        new_game_pos, is_portrait = self.calc_max_and_center_pos()
+        self.set_pos(new_game_pos, is_portrait)
         return
 
 
@@ -141,7 +160,7 @@ class WindowMover():
         if self.window:
             new_pos, is_portrait = self.window.calc_max_and_center_pos()
             self.threader.settings.save_game_position(new_pos, is_portrait)
-            self.window.set_pos(new_pos)
+            self.window.set_pos(new_pos, is_portrait)
             # self.threader.carrotjuicer.reset_browser = True
 
     def stop(self):
@@ -187,11 +206,11 @@ class WindowMover():
                 # If None: maximize.
                 new_pos = self.threader.settings.load_game_position(portrait=is_portrait)
                 if new_pos:
-                    self.window.set_pos(new_pos)
+                    self.window.set_pos(new_pos, is_portrait)
                 else:
                     new_pos, is_portrait = self.window.calc_max_and_center_pos()
                     self.threader.settings.save_game_position(new_pos, is_portrait)
-                    self.window.set_pos(new_pos)
+                    self.window.set_pos(new_pos, is_portrait)
 
                 # Position may have changed: update variables.
                 game_rect, is_portrait = self.window.get_rect()
