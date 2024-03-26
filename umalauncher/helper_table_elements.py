@@ -270,7 +270,7 @@ class Preset():
 
 
         bar_svg = f"""
-        <svg width="100" height="2" viewBox="0 0 100 2" style="width: 100%; height: auto;">
+        <svg width="100" height="2" viewBox="0 0 100 2" style="width: 100%; max-width: 700px; height: auto;">
             <mask id="mask" x="0" y="0" width="100" height="2">
                 <rect x="0" y="0" width="100" height="2" fill="black" />
                 <rect x="0" y="0" width="100" height="2" fill="white" rx="1" ry="1" />
@@ -280,7 +280,7 @@ class Preset():
         </svg>
         """
 
-        bar_div = f"<div id=\"progress-bar-container\" style=\"width: 100%; padding: 0 1rem; display:flex; align-items: center; gap: 0.5rem;\"><p style=\"white-space: nowrap; margin: 0;\">Progress: </p>{bar_svg}</div>"
+        bar_div = f"<div id=\"progress-bar-container\" style=\"width: 100%; padding: 0 1rem; display:flex; align-items: center; justify-content: center; gap: 0.5rem;\"><p style=\"white-space: nowrap; margin: 0;\">Progress: </p>{bar_svg}</div>"
 
         return bar_div
     
