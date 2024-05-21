@@ -228,3 +228,8 @@ DEFAULT_ARC_SECTIONS = (
     (61, "yellow", "Overseas Expedition"),
     (68, "black", "END")
 )
+
+GT_LANGUAGE_URL_DICT = {
+    "English": "",
+    "Japanese": "ja/",
+}
