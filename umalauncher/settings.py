@@ -167,6 +167,16 @@ class DefaultSettings(se.NewSettings):
             se.SettingType.BOOL,
             tab="Event Helper"
         ),
+        "gametora_language": se.Setting(
+            "GameTora language",
+            "Choose language for GameTora.<br>You may need to restart Uma Launcher for this to take effect.",
+            {
+                "English": True,
+                "Japanese": False
+            },
+            se.SettingType.RADIOBUTTONS,
+            tab="Event Helper"
+        ),
         "custom_browser_divider": se.Setting(
             "Custom browser divider",
             None,
