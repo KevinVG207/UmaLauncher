@@ -151,6 +151,7 @@ def do_get_request(url, error_title=None, error_message=None, ignore_timeout=Fal
 
 
 def get_game_folder():
+    game_data = None
     with open(os.path.expandvars("%AppData%\dmmgameplayer5\dmmgame.cnf"), "r", encoding='utf-8') as f:
         game_data = json.loads(f.read())
     
@@ -483,9 +484,10 @@ def get_race_name_dict(force=False):
         downloaded_race_name_dict.update(race_name_dict)
     return downloaded_race_name_dict
 
-def create_gametora_helper_url(card_id, scenario_id, support_ids):
+def create_gametora_helper_url(card_id, scenario_id, support_ids, language="English"):
     support_ids = list(map(str, support_ids))
-    return f"https://gametora.com/umamusume/training-event-helper?deck={np.base_repr(int(str(card_id) + str(scenario_id)), 36)}-{np.base_repr(int(support_ids[0] + support_ids[1] + support_ids[2]), 36)}-{np.base_repr(int(support_ids[3] + support_ids[4] + support_ids[5]), 36)}".lower()
+    language_segment = constants.GT_LANGUAGE_URL_DICT.get(language, "")
+    return f"https://gametora.com/{language_segment}umamusume/training-event-helper?deck={np.base_repr(int(str(card_id) + str(scenario_id)), 36)}-{np.base_repr(int(support_ids[0] + support_ids[1] + support_ids[2]), 36)}-{np.base_repr(int(support_ids[3] + support_ids[4] + support_ids[5]), 36)}".lower()
 
 gm_fragment_dict = {}
 def get_gm_fragment_dict(force=False):

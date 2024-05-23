@@ -94,15 +94,21 @@ class CarrotJuicer():
             logger.warning(f"Could not find response file: {msg_path}")
             return None
 
-
     def create_gametora_helper_url_from_start(self, packet_data):
         if 'start_chara' not in packet_data:
             return None
         d = packet_data['start_chara']
         supports = d['support_card_ids'] + [d['friend_support_card_info']['support_card_id']]
 
-        return util.create_gametora_helper_url(d['card_id'], d['scenario_id'], supports)
+        return util.create_gametora_helper_url(d['card_id'], d['scenario_id'], supports, self.get_gt_language())
 
+    def get_gt_language(self):
+        lang = "English"
+        for key, value in self.threader.settings['gametora_language'].items():
+            if value:
+                lang = key
+                break
+        return lang
 
     def to_json(self, packet, out_name="packet.json"):
         with open(util.get_relative(out_name), 'w', encoding='utf-8') as f:
@@ -363,9 +369,9 @@ class CarrotJuicer():
                     else:
                         self.screen_state_handler.carrotjuicer_state = screenstate_utils.make_training_state(data, self.threader.screenstate)
 
-                if not self.browser or not self.browser.current_url().startswith("https://gametora.com/umamusume/training-event-helper"):
+                if not self.browser or not self.browser.current_url().startswith(self.browser.url.split("?",1)[0]):
                     logger.info("GT tab not open, opening tab")
-                    self.helper_url = util.create_gametora_helper_url(outfit_id, scenario_id, supports)
+                    self.helper_url = util.create_gametora_helper_url(outfit_id, scenario_id, supports, self.get_gt_language())
                     logger.debug(f"Helper URL: {self.helper_url}")
                     self.open_helper()
                 
