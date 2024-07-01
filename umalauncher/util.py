@@ -577,6 +577,15 @@ def get_gl_token_dict(force=False):
 
     return gl_token_dict
 
+gff_veg_image_dict = {}
+def get_gff_veg_image_dict(force=False):
+    global gff_veg_image_dict
+
+    if force or not gff_veg_image_dict:
+        logger.debug("Loading Vegetable images...")
+        gff_veg_image_dict.update(assets_folder_images_to_dict("_assets/gff/vegetables"))
+    return gff_veg_image_dict
+
 GROUP_SUPPORT_ID_TO_PASSION_ZONE_EFFECT_ID_DICT = {}
 def get_group_support_id_to_passion_zone_effect_id_dict(force=False):
     global GROUP_SUPPORT_ID_TO_PASSION_ZONE_EFFECT_ID_DICT
@@ -611,6 +620,8 @@ UPDATE_FUNCS = [
     get_race_name_dict,
     get_gm_fragment_dict,
     get_uaf_sport_image_dict,
+    get_uaf_genre_image_dict,
+    get_gff_veg_image_dict,
     get_gl_token_dict,
     get_group_support_id_to_passion_zone_effect_id_dict,
 ]

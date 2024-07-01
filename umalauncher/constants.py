@@ -5,7 +5,8 @@ SCENARIO_DICT = {
     4: "Make a New Track",
     5: "Grand Masters",
     6: "Project L'Arc",
-    7: "U.A.F. Ready GO!"
+    7: "U.A.F. Ready GO!",
+    8: "Great Food Festival",
 }
 
 MOTIVATION_DICT = {
@@ -232,4 +233,12 @@ DEFAULT_ARC_SECTIONS = (
 GT_LANGUAGE_URL_DICT = {
     "English": "",
     "Japanese": "ja/",
+}
+
+GFF_VEG_ID_TO_IMG_ID = {
+    100: "00",
+    200: "01",
+    300: "02",
+    400: "03",
+    500: "04"
 }

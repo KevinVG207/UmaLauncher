@@ -534,6 +534,51 @@ class HelperTable():
             arc_aptitude_points = data['arc_data_set']['arc_info']['global_exp']
             arc_expectation_gauge = data['arc_data_set']['arc_info']['approval_rate']
             arc_supporter_points = arc_charas[chara_id]['approval_point']
+        
+        # Great Food Festival
+        gff_great_success = 0
+        gff_success_point = 0
+        gff_cooking_point = 0
+        gff_tasting_thres = 0
+        gff_tasting_great_thres = 0
+        gff_vegetables = {}
+        gff_field_point = [0, 0]
+        if 'cook_data_set' in data:
+            cook_data = data['cook_data_set']
+            gff_cooking_point = cook_data['cook_info']['cooking_friends_power']
+            gff_great_success = mdb.get_cooking_success_rate(gff_cooking_point)
+            gff_success_point = cook_data['cook_info']['cooking_success_point']
+            if gff_success_point >= 1500:
+                gff_great_success = 100
+            gff_tasting_thres, gff_tasting_great_thres = mdb.get_cooking_tasting_success_thresholds(data['chara_info']['turn'])
+            gff_field_point[0] = cook_data['cook_info']['care_point']
+            gff_field_point[1] = cook_data['care_point_gain_num']
+
+            # Vegetables
+            for veg_data in cook_data['material_info_array']:
+                veg_dict = {
+                    "id": veg_data['material_id'],
+                    "count": veg_data['num'],
+                    "max": 0,
+                    "level": 0,
+                    "harvest": 0,
+                    "img": constants.GFF_VEG_ID_TO_IMG_ID[veg_data['material_id']],
+                    "commands": {}
+                }
+                gff_vegetables[veg_data['material_id']] = veg_dict
+            
+            for fac_data in cook_data['facility_info_array']:
+                fac_id = fac_data['facility_id']
+                veg_dict = gff_vegetables[fac_id]
+                veg_dict['level'] = fac_data['facility_level']
+                veg_dict['max'] = mdb.get_cooking_vegetable_max_count(veg_dict['id'], veg_dict['level'])
+            
+            for harvest_data in cook_data['material_harvest_info_array']:
+                veg_id = harvest_data['material_id']
+                veg_dict = gff_vegetables[veg_id]
+                veg_dict['harvest'] = harvest_data['harvest_num']
+        print(f"{gff_vegetables}")
+            
 
         main_info = {
             "turn": turn,
@@ -555,6 +600,13 @@ class HelperTable():
             "uaf_current_active_bonus": uaf_current_active_bonus,
             "uaf_sport_competition": uaf_sport_competition,
             "uaf_consultations_left": uaf_consultations_left,
+            "gff_great_success": gff_great_success,
+            "gff_success_point": gff_success_point,
+            "gff_cooking_point": gff_cooking_point,
+            "gff_tasting_thres": gff_tasting_thres,
+            "gff_tasting_great_thres": gff_tasting_great_thres,
+            "gff_vegetables": gff_vegetables,
+            "gff_field_point": gff_field_point,
             "eval_dict": eval_dict,
             "all_commands": all_commands
         }
