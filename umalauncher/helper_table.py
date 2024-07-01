@@ -577,6 +577,20 @@ class HelperTable():
                 veg_id = harvest_data['material_id']
                 veg_dict = gff_vegetables[veg_id]
                 veg_dict['harvest'] = harvest_data['harvest_num']
+            
+            for command_data in cook_data.get('command_material_care_info_array', []):
+                if not command_data['command_type'] == 1:
+                    continue
+                
+                command_id = command_data['command_id']
+                cur_harvest_info = copy.deepcopy(command_data['material_harvest_info_array'])
+                for harvest_info in cur_harvest_info:
+                    veg_id = harvest_info['material_id']
+                    veg_dict = gff_vegetables[veg_id]
+                    harvest_info['harvest_num'] -= veg_dict['harvest']
+                    harvest_info['img'] = veg_dict['img']
+                command_info[constants.COMMAND_ID_TO_KEY[command_id]]['material_harvest_info_array'] = cur_harvest_info
+
         print(f"{gff_vegetables}")
             
 
