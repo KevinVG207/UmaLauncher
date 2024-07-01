@@ -166,6 +166,7 @@ class HelperTable():
             all_commands[command['command_id']] = copy.deepcopy(command)
         
         # Scenario specific commands
+        # Obsolete, but works as reference for devs
         scenario_keys = [
             'venus_data_set',  # Grand Masters
             'live_data_set',  # Grand Live
@@ -173,10 +174,12 @@ class HelperTable():
             'team_data_set',  # Aoharu
             'ura_data_set',  # URA
             'arc_data_set',  # Project L'Arc
-            'sport_data_set'  # UAF Ready GO!
+            'sport_data_set',  # UAF Ready GO!,
+            'cook_data_set',  # Great Food Festival
         ]
-        for key in scenario_keys:
-            if key in data and 'command_info_array' in data[key]:
+
+        for key in data:
+            if key.endswith("_data_set") and 'command_info_array' in data[key]:
                 for command in data[key]['command_info_array']:
                     if 'params_inc_dec_info_array' in command:
                         all_commands[command['command_id']]['params_inc_dec_info_array'] += command['params_inc_dec_info_array']
