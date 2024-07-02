@@ -901,9 +901,9 @@ class GFFVegetablesSettings(se.NewSettings):
     }
 
 class GFFVegetablesRow(hte.Row):
-    long_name = "GFF Vegetables"
+    long_name = "GFF Vegetable Gain"
     short_name = "Veggies"
-    description = "[Scenario-specific] Displays the vegetables planted for each training facility."
+    description = "[Scenario-specific] Displays the number of vegetables planted for each training facility."
 
     def __init__(self):
         super().__init__()

@@ -575,8 +575,9 @@ class Preset():
             veg_cur_count = veg_dict['count']
             veg_max_count = veg_dict['max']
             veg_harvest_count = veg_dict['harvest']
+            veg_level = veg_dict['level']
 
-            header_lines.append(f"<th>{veg_img}</th>")
+            header_lines.append(f"<th style=\"position:relative;\">{veg_img}<div style=\"font-size:0.75rem;font-weight:normal;position:absolute;top:-2px;right:2px;\">Lv{veg_level}</div></th>")
             data_lines.append(f"<td><p style=\"margin:0;\"><b>{veg_cur_count}</b>/{veg_max_count}</p><p style=\"margin:0;color:lightgreen;\">+{veg_harvest_count}</p></td>")
         
         # Field points
