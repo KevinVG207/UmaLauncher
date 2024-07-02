@@ -609,7 +609,12 @@ class Preset():
         if "rows" in preset_dict:
             self.initialized_rows = []
             for row_dict in preset_dict["rows"]:
-                row_object = self.row_types[row_dict["type"]].value()
+                try:
+                    # TODO: Make this proper.
+                    row_object = self.row_types[row_dict["type"]].value()
+                except KeyError:
+                    logger.error(f"Unknown row type: {row_dict['type']}")
+                    continue
                 if row_object.settings:
                     row_object.settings.from_dict(row_dict["settings"])
                 self.initialized_rows.append(row_object)
