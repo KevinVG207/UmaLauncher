@@ -233,6 +233,7 @@ class Preset():
             html_elements.append(self.generate_gl_table(main_info))
             html_elements.append(self.generate_arc(main_info))
             html_elements.append(self.generate_uaf(main_info))
+            html_elements.append(self.generate_gff(main_info))
 
         html_elements.append(self.generate_table(command_info, main_info))
 
@@ -532,6 +533,66 @@ class Preset():
         html_output += "</tbody></table></div>"
 
         return html_output
+
+    def generate_gff(self, main_info):
+        # Great Food Festival
+        if main_info['scenario_id'] != 8:
+            return ""
+    
+        internal = ""
+
+        # Great success chance.
+        if main_info['gff_great_success'] is not None:
+            style_text = " style=\"color:orange\""
+            if main_info['gff_great_success'] == 100:
+                style_text = " style=\"color:lightgreen\""
+            internal += f"<div><b>Great Success chance: <span{style_text}>{main_info['gff_great_success']}%</span></b> ({main_info['gff_success_point']}/1500)</div>"
+
+        cooking_point = main_info['gff_cooking_point']
+        tasting_thres = main_info['gff_tasting_thres']
+        tasting_great_thres = main_info['gff_tasting_great_thres']
+
+        def pts_left_text(pts, thres):
+            txt = ""
+            pts_left = thres - pts
+            if pts_left <= 0:
+                txt = "<span style=\"color:lightgreen\">Reached!</span>"
+            else:
+                txt = f"<span style=\"color:orange\">{pts_left} left</span>"
+            return txt
+
+        tasting_text = "Great Satisfaction: " + pts_left_text(cooking_point, tasting_thres)
+        if tasting_great_thres:
+            tasting_text += " — Super: " + pts_left_text(cooking_point, tasting_great_thres)
+        internal += f"<div><b>{tasting_text}</b></div>"
+
+        
+        # Vegetable table
+        header_lines = []
+        data_lines = []
+        for veg_dict in main_info['gff_vegetables'].values():
+            veg_img = f"""<img src="{util.get_gff_veg_image_dict()[veg_dict['img']]}" width="32" height="32" style="display:inline-block; width: auto; height: 1.25rem; margin: 0;"/>"""
+            veg_cur_count = veg_dict['count']
+            veg_max_count = veg_dict['max']
+            veg_harvest_count = veg_dict['harvest']
+            veg_level = veg_dict['level']
+
+            header_lines.append(f"<th style=\"position:relative;\">{veg_img}<div style=\"font-size:0.75rem;font-weight:normal;position:absolute;top:-2px;right:2px;\">Lv{veg_level}</div></th>")
+            data_lines.append(f"<td><p style=\"margin:0;\"><b>{veg_cur_count}</b>/{veg_max_count}</p><p style=\"margin:0;color:lightgreen;\">+{veg_harvest_count}</p></td>")
+        
+        # Field points
+        fp_cur = main_info['gff_field_point'][0]
+        fp_gain = main_info['gff_field_point'][1]
+        header_lines.append(f"""<th><img src="{util.get_gff_veg_image_dict()['pt']}" width="32" height="32" style="display:inline-block; width: auto; height: 1.25rem; margin: 0;"/></th>""")
+        data_lines.append(f"<td><p style=\"margin:0;\"><b>{fp_cur}</b></p><p style=\"margin:0;color:lightgreen;\">+{fp_gain}</p></td>")
+        
+        header = f"<tr>{''.join(header_lines)}</tr>"
+        data = f"<tr>{''.join(data_lines)}</tr>"
+        internal += f"<table id='gff-veg'><thead>{header}</thead><tbody>{data}</tbody></table>"
+
+        
+        return f"<div id='gff' style='display:flex; flex-flow: column; justify-content:center; align-items:center; gap: 0.5rem;'>{internal}</div>"
+
         
     def to_dict(self):
         return {
@@ -548,7 +609,12 @@ class Preset():
         if "rows" in preset_dict:
             self.initialized_rows = []
             for row_dict in preset_dict["rows"]:
-                row_object = self.row_types[row_dict["type"]].value()
+                try:
+                    # TODO: Make this proper.
+                    row_object = self.row_types[row_dict["type"]].value()
+                except KeyError:
+                    logger.error(f"Unknown row type: {row_dict['type']}")
+                    continue
                 if row_object.settings:
                     row_object.settings.from_dict(row_dict["settings"])
                 self.initialized_rows.append(row_object)

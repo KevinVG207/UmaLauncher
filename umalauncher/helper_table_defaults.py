@@ -884,6 +884,88 @@ class EnergyRatioSettings(se.NewSettings):
         ),
     }
 
+class GFFVegetablesSettings(se.NewSettings):
+    _settings = {
+        "highlight_max": se.Setting(
+            "Highlight max",
+            "Highlights the facility with the most vegetables planted.",
+            True,
+            se.SettingType.BOOL
+        ),
+        "highlight_max_color": se.Setting(
+            "Highlight max color",
+            "The color to use to highlight the facility with the most vegetables planted.",
+            "#90EE90",
+            se.SettingType.COLOR
+        ),
+    }
+
+class GFFVegetablesRow(hte.Row):
+    long_name = "GFF Vegetable Gain"
+    short_name = "Veggies"
+    description = "[Scenario-specific] Displays the number of vegetables planted for each training facility."
+
+    def __init__(self):
+        super().__init__()
+        self.settings = GFFVegetablesSettings()
+
+    def _generate_cells(self, game_state) -> list[hte.Cell]:
+        if list(game_state.values())[0]['scenario_id'] != 8:
+            return []
+
+        cells = [hte.Cell(self.short_name, title=self.description)]
+
+        harvest_sums = {}
+
+        if not list(game_state.values())[0].get('material_harvest_info_array'):
+            return []
+
+        for command_key, command_data in game_state.items():
+            harvest_sum = sum([data['harvest_num'] for data in command_data['material_harvest_info_array']])
+            harvest_sums[command_key] = harvest_sum
+        
+        max_harvest = max(harvest_sums.values())
+
+        for command_key, harvest in harvest_sums.items():
+            if self.settings.highlight_max.value and harvest == max_harvest:
+                cells.append(hte.Cell(harvest, bold=True, color=self.settings.highlight_max_color.value))
+            else:
+                cells.append(hte.Cell(harvest))
+        
+        return cells
+
+
+class GFFVegetablesDistributionRow(hte.Row):
+    long_name = "GFF Vegetables Distribution"
+    short_name = "Veggies <br>Distribution"
+    description = "[Scenario-specific] Displays the distribution of vegetables planted for each training facility."
+
+    def _generate_cells(self, game_state) -> list[hte.Cell]:
+        if list(game_state.values())[0]['scenario_id'] != 8:
+            return []
+
+        cells = [hte.Cell(self.short_name, title=self.description)]
+
+        if not list(game_state.values())[0].get('material_harvest_info_array'):
+            return []
+
+        for command in game_state.values():
+            harvest_info = command['material_harvest_info_array']
+
+            text = ""
+
+            for veg_data in harvest_info:
+                img = veg_data['img']
+                count = veg_data['harvest_num']
+                if count <= 0:
+                    continue
+                text += f"""<div style="display: flex; align-items: center; justify-content: center; gap: 0.2rem;"><img src="{util.get_gff_veg_image_dict()[img]}" height="16" width="16" style="height:16px;width:auto;" />{count}</div>"""
+
+            cells.append(hte.Cell(text))
+        
+        return cells
+
+
 class RowTypes(Enum):
     CURRENT_STATS = CurrentStatsRow
     GAINED_STATS = GainedStatsRow
@@ -904,6 +986,8 @@ class RowTypes(Enum):
     LARC_APTITUDE_POINTS = LArcAptitudePointsRow
     UAF_SPORT_POINT_GAIN = UAFSportPointGainRow
     ENERGY_RATIO = EnergyRatio
+    GFF_VEGETABLES = GFFVegetablesRow
+    GFF_VEGETABLES_DIST = GFFVegetablesDistributionRow
 
 
 class DefaultPreset(hte.Preset):
@@ -914,6 +998,7 @@ class DefaultPreset(hte.Preset):
         RowTypes.LARC_APTITUDE_POINTS,
         RowTypes.LARC_STAR_GAUGE_GAIN,
         RowTypes.UAF_SPORT_POINT_GAIN,
+        RowTypes.GFF_VEGETABLES,
         RowTypes.CURRENT_STATS,
         RowTypes.GAINED_STATS,
         RowTypes.USEFUL_BOND,
