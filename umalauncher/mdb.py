@@ -542,6 +542,54 @@ def get_uaf_training_effects(force=False):
     effects_map = {row[0]: row[1] for row in rows}
     return effects_map
 
+def get_cooking_success_rate(power: int) -> int:
+    with Connection() as (_, cursor):
+        cursor.execute(
+            "SELECT success_rate FROM single_mode_cook_success_odds WHERE ? BETWEEN power_min AND power_max",
+            (power,)
+        )
+        row = cursor.fetchone()
+
+    if not row:
+        return 0
+    
+    return row[0]
+
+def get_cooking_tasting_success_thresholds(turn_num: int) -> list[int]:
+    with Connection() as (_, cursor):
+        cursor.execute(
+            "SELECT success_num, great_success_num FROM single_mode_cook_power_data WHERE ? < turn_num",
+            (turn_num,)
+        )
+    
+        row = cursor.fetchone()
+
+    if not row:
+        return [0, 0]
+    
+    return [row[0], row[1]]
+
+def get_cooking_vegetable_max_count(veg_id: int, veg_lv: int) -> int:
+    # Get the max count of a vegetable at specified level.
+
+    with Connection() as (_, cursor):
+        cursor.execute(
+            """
+            SELECT e.effect_value_2
+            FROM single_mode_cook_garden_effect e
+            JOIN single_mode_cook_garden_level l on l.effect_group_id = e.effect_group_id
+            WHERE l.facility_id = ? AND l.facility_lv = ? AND e.effect_type == 110
+            """,
+            (veg_id, veg_lv)
+        )
+        row = cursor.fetchone()
+    
+    if not row:
+        return 0
+    
+    return row[0]
+
+
 SINGLE_MODE_UNIQUE_CHARA_DICT = {}
 def get_single_mode_unique_chara_dict(force=False):
     global SINGLE_MODE_UNIQUE_CHARA_DICT
