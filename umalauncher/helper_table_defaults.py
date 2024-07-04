@@ -921,8 +921,11 @@ class GFFVegetablesRow(hte.Row):
             return []
 
         for command_key, command_data in game_state.items():
-            harvest_sum = sum([data['harvest_num'] for data in command_data['material_harvest_info_array']])
-            harvest_sums[command_key] = harvest_sum
+            try:
+                harvest_sum = sum([data['harvest_num'] for data in command_data['material_harvest_info_array']])
+                harvest_sums[command_key] = harvest_sum
+            except KeyError:
+                raise KeyError(f"material_harvest_info_array not found in command: {command_key} {command_data}")
         
         max_harvest = max(harvest_sums.values())
 
