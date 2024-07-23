@@ -917,20 +917,16 @@ class GFFVegetablesRow(hte.Row):
 
         harvest_sums = {}
 
-        if not list(game_state.values())[0].get('material_harvest_info_array'):
-            return []
-
         for command_key, command_data in game_state.items():
-            try:
+            harvest_sum = 0
+            if 'material_harvest_info_array' in command_data:
                 harvest_sum = sum([data['harvest_num'] for data in command_data['material_harvest_info_array']])
-                harvest_sums[command_key] = harvest_sum
-            except KeyError:
-                raise KeyError(f"material_harvest_info_array not found in command: {command_key} {command_data}")
+            harvest_sums[command_key] = harvest_sum
         
         max_harvest = max(harvest_sums.values())
 
         for command_key, harvest in harvest_sums.items():
-            if self.settings.highlight_max.value and harvest == max_harvest:
+            if self.settings.highlight_max.value and harvest == max_harvest and max_harvest > 0:
                 cells.append(hte.Cell(harvest, bold=True, color=self.settings.highlight_max_color.value))
             else:
                 cells.append(hte.Cell(harvest))
@@ -949,11 +945,9 @@ class GFFVegetablesDistributionRow(hte.Row):
 
         cells = [hte.Cell(self.short_name, title=self.description)]
 
-        if not list(game_state.values())[0].get('material_harvest_info_array'):
-            return []
 
         for command in game_state.values():
-            harvest_info = command['material_harvest_info_array']
+            harvest_info = command.get('material_harvest_info_array', [])
 
             text = ""
 
