@@ -11,7 +11,7 @@ import util
 import gui
 import glob
 
-VERSION = "1.14.3"
+VERSION = "1.14.4"
 
 def parse_version(version_string: str):
     """Convert version string to tuple."""
@@ -103,6 +103,11 @@ def upgrade(umasettings, raw_settings):
             shutil.move(rel_path, util.get_appdata(path))
         
         logger.info("Moving complete.")
+    
+    if settings_version <= (1, 14, 3):
+        patcher_exe = util.get_appdata("CarotenePatcher.exe")
+        if os.path.exists(patcher_exe):
+            os.remove(patcher_exe)
 
     # If upgraded at all
     if script_version > settings_version:
