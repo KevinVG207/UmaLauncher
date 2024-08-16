@@ -64,12 +64,7 @@ def patch(threader):
     exe_path = get_patcher_path(settings)
     
     # Run the patcher
-    dll_name = "version.dll"
-    for dll, selected in settings['english_patch_dll'].items():
-        if selected:
-            dll_name = dll
-            break
-    command = f"\"{exe_path}\" -U -p {dll_name}"
+    command = f"\"{exe_path}\" -U -p"
 
     run_patcher_and_wait(command, umaserver, "Applying English Patch.")
 

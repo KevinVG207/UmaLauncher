@@ -310,17 +310,6 @@ class DefaultSettings(se.NewSettings):
             se.SettingType.BOOL,
             tab="English Patch"
         ),
-        "english_patch_dll": se.Setting(
-            "Mod DLL Name",
-            "Change if you encounter issues.",
-            {
-                "version.dll": True,
-                "umpdc.dll": False,
-                "xinput1_3.dll": False
-            },
-            se.SettingType.RADIOBUTTONS,
-            tab="English Patch"
-        ),
         "english_patch_customize_btn": se.Setting(
             "Customize Patch",
             "Choose what parts of the game should be translated.",
