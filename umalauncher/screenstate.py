@@ -227,6 +227,13 @@ class ScreenStateHandler():
             self.threader.stop()
 
     def run(self):
+        # If Carotene was enabled in the past, run the deprecation procedure.
+        if "enable_english_patch" in self.threader.settings and self.threader.settings["enable_english_patch"]:
+            logger.info("Disabling Carotene as it has been deprecated.")
+            util.show_warning_box("Carotene end of life", """<h2>Support for Carotene English Patch has ended</h2><p>Carotene English Patch will no longer receive updates. Thank you for using my mod!</p><p>Carotene has merged with <b><a href="https://hachimi.leadrdrk.com/">Hachimi</a></b> and translation updates will continue there.<br>Because Hachimi updates itself while the game is running, patching using Uma Launcher is no longer needed and Carotene is automatically being uninstalled.</p><p><b>Installation instructions</b> for Hachimi together with CarrotJuicer can be found <a href="https://umapyoi.net/uma-launcher">on the Uma Launcher website</a>.<p>""")
+            self.threader.settings["enable_english_patch"] = False
+            umapatcher.unpatch(self.threader)
+
         # Enable VPN if needed
         if self.threader.settings["vpn_enabled"] and not self.threader.settings["vpn_dmm_only"]:
             self.vpn = vpn.create_client(self.threader, cygames=True)

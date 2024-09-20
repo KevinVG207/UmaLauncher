@@ -10,6 +10,7 @@ from loguru import logger
 import util
 import gui
 import glob
+import umapatcher
 
 VERSION = "1.14.4"
 
