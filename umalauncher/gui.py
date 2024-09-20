@@ -1070,8 +1070,8 @@ class UmaPreferences(UmaMainWidget):
 
         unique_tabs = sorted(list({getattr(general_var[0], key).tab for key in general_var[0].keys()}))
 
-        # Hack
-        unique_tabs.append(unique_tabs.pop(unique_tabs.index("English Patch")))
+        # # Hack
+        # unique_tabs.append(unique_tabs.pop(unique_tabs.index("English Patch")))
 
         self.command_dict = {
             "open_training_logs": lambda: util.open_folder(util.TRAINING_LOGS_FOLDER)

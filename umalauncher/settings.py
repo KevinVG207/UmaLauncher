@@ -300,7 +300,6 @@ class DefaultSettings(se.NewSettings):
             """<a href=\"https://umapyoi.net/carotene-english-patch\">Carotene English Patch</a> is a community-driven translation project for Umamusume (DMM Version).<br>Like CarrotJuicer, using it is against the Terms of Service of the game, so use at your own risk.<br><br>Carotene will automatically install the <a href="https://github.com/Hachimi-Hachimi/Cellar">Cellar modloader</a>. Cellar is not affiliated with Carotene or its developer.<br><br>This feature is currently experimental, so please reach out on the <a href="https://discord.gg/wvGHW65C6A">Uma Launcher Discord Server</a> if you encounter any issues!""",
             None,
             se.SettingType.MESSAGE,
-            tab="English Patch",
             hidden=True
         ),
         "enable_english_patch": se.Setting(
@@ -308,7 +307,6 @@ class DefaultSettings(se.NewSettings):
             "Applies the latest version of the patch before the game is launched.",
             False,
             se.SettingType.BOOL,
-            tab="English Patch",
             hidden=True
         ),
         "english_patch_customize_btn": se.Setting(
@@ -316,7 +314,6 @@ class DefaultSettings(se.NewSettings):
             "Choose what parts of the game should be translated.",
             "patch_customize",
             se.SettingType.COMMANDBUTTON,
-            tab="English Patch",
             hidden=True
         ),
         "english_patch_unpatch_btn": se.Setting(
@@ -324,7 +321,6 @@ class DefaultSettings(se.NewSettings):
             "Undo the English patch.",
             "patch_unpatch",
             se.SettingType.COMMANDBUTTON,
-            tab="English Patch",
             hidden=True
         ),
     }
