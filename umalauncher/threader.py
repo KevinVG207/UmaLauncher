@@ -28,7 +28,6 @@ import training_tracker
 import gui
 import umaserver
 import horsium
-import umapatcher
 
 THREAD_OBJECTS = []
 THREADS = []
@@ -194,8 +193,6 @@ def main():
     lock_path = util.get_appdata("lock.pid")
     if os.path.exists(lock_path):
         os.remove(lock_path)
-    
-    umapatcher.restart()
 
     logger.info("=== Launcher closed ===")
 

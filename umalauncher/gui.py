@@ -1074,8 +1074,6 @@ class UmaPreferences(UmaMainWidget):
         unique_tabs.append(unique_tabs.pop(unique_tabs.index("English Patch")))
 
         self.command_dict = {
-            "patch_customize": lambda: umasettings.patch_customization(),
-            "patch_unpatch": lambda: umasettings.patch_unpatch(),
             "open_training_logs": lambda: util.open_folder(util.TRAINING_LOGS_FOLDER)
         }
 

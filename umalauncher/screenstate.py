@@ -256,9 +256,6 @@ class ScreenStateHandler():
                     onetime = False
                     # If DMM is not seen AND Game is not seen: Start DMM
                     if not self.game_seen:
-                        # Handle English patch.
-                        umapatcher.patch(self.threader)
-                        
                         # Enable DMM-only VPN
                         if self.threader.settings["vpn_enabled"] and self.threader.settings["vpn_dmm_only"]:
                             self.vpn = vpn.create_client(self.threader)
@@ -421,9 +418,6 @@ class ScreenStateHandler():
                             # All menu items found and one is enabled. This must be the home menu.
                             new_state.main = "Main Menu"
                             new_state.sub = tmp_subscr
-
-                            # Ask for restart if needed.
-                            umapatcher.ask_for_restart(self.threader)
 
                             return new_state
 

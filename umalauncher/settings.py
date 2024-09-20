@@ -11,7 +11,6 @@ import gui
 import settings_elements as se
 import helper_table_defaults as htd
 import helper_table_elements as hte
-import umapatcher
 
 
 class DefaultSettings(se.NewSettings):
@@ -553,9 +552,3 @@ class SettingsHandler():
         self.save_settings()
         self.load_settings()
         self.threader.tray.icon_thread.update_menu()
-
-    def patch_customization(self, *args, **kwargs):
-        umapatcher.customize(self.threader)
-
-    def patch_unpatch(self, *args, **kwargs):
-        umapatcher.unpatch(self.threader)
