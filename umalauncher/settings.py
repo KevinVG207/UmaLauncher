@@ -11,7 +11,6 @@ import gui
 import settings_elements as se
 import helper_table_defaults as htd
 import helper_table_elements as hte
-import umapatcher
 
 
 class DefaultSettings(se.NewSettings):
@@ -301,28 +300,28 @@ class DefaultSettings(se.NewSettings):
             """<a href=\"https://umapyoi.net/carotene-english-patch\">Carotene English Patch</a> is a community-driven translation project for Umamusume (DMM Version).<br>Like CarrotJuicer, using it is against the Terms of Service of the game, so use at your own risk.<br><br>Carotene will automatically install the <a href="https://github.com/Hachimi-Hachimi/Cellar">Cellar modloader</a>. Cellar is not affiliated with Carotene or its developer.<br><br>This feature is currently experimental, so please reach out on the <a href="https://discord.gg/wvGHW65C6A">Uma Launcher Discord Server</a> if you encounter any issues!""",
             None,
             se.SettingType.MESSAGE,
-            tab="English Patch"
+            hidden=True
         ),
         "enable_english_patch": se.Setting(
             "Enable Carotene English patch on startup",
             "Applies the latest version of the patch before the game is launched.",
             False,
             se.SettingType.BOOL,
-            tab="English Patch"
+            hidden=True
         ),
         "english_patch_customize_btn": se.Setting(
             "Customize Patch",
             "Choose what parts of the game should be translated.",
             "patch_customize",
             se.SettingType.COMMANDBUTTON,
-            tab="English Patch"
+            hidden=True
         ),
         "english_patch_unpatch_btn": se.Setting(
             "Unpatch",
             "Undo the English patch.",
             "patch_unpatch",
             se.SettingType.COMMANDBUTTON,
-            tab="English Patch"
+            hidden=True
         ),
     }
 
@@ -549,9 +548,3 @@ class SettingsHandler():
         self.save_settings()
         self.load_settings()
         self.threader.tray.icon_thread.update_menu()
-
-    def patch_customization(self, *args, **kwargs):
-        umapatcher.customize(self.threader)
-
-    def patch_unpatch(self, *args, **kwargs):
-        umapatcher.unpatch(self.threader)
