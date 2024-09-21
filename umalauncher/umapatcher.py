@@ -54,6 +54,6 @@ def unpatch(threader):
         return
 
     exe_path = get_patcher_path(threader.settings)
-    command = f"\"{exe_path}\" -u"
+    command = f"\"{exe_path}\" -u -U"
     
     run_patcher_and_wait(command, threader.umaserver, "Removing English Patch.")
