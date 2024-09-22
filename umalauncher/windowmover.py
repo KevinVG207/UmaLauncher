@@ -47,10 +47,12 @@ class GameWindow():
     def get_workspace_rect(self):
         monitor = util.monitor_from_window(self.handle)
         if not monitor:
+            logger.error("Cannot determine monitor used by game window.")
             # raise Exception("Cannot determine monitor used by game window.")
             return None
         monitor_info = util.get_monitor_info(monitor)
         if not monitor_info:
+            logger.error("Cannot get monitor info.")
             # raise Exception("Cannot get monitor info.")
             return None
         return monitor_info.get("Work")
@@ -179,8 +181,13 @@ class WindowMover():
 
         self.window = GameWindow(self.screenstate.game_handle, self.threader)
 
-        while not self.should_stop and self.screenstate.game_handle:
+        while not self.should_stop:
             time.sleep(0.25)
+            self.window.handle = self.screenstate.game_handle
+
+            if not self.window.handle:
+                continue
+            
             game_rect, is_portrait = self.window.get_rect()
 
             if not game_rect:
