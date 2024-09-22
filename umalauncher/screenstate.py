@@ -112,6 +112,8 @@ class ScreenStateHandler():
 
     game_seen = False
     game_handle = None
+    last_seen = 0.0
+    game_closed = False
 
     carrotjuicer_closed = False
     carrotjuicer_handle = None
@@ -143,6 +145,8 @@ class ScreenStateHandler():
         self.chara_names_dict = util.get_character_name_dict()
         self.outfit_names_dict = util.get_outfit_name_dict()
         self.screen_state = ScreenState(self)
+
+        self.last_seen = time.perf_counter()
         
         self.vpn = None
 
@@ -247,6 +251,9 @@ class ScreenStateHandler():
             # Check if game exists
             if self.game_handle and not win32gui.IsWindow(self.game_handle):
                 self.game_handle = None
+            if self.game_handle:
+                onetime = False
+                self.last_seen = time.perf_counter()
 
             # Game was never seen before
             if not self.game_seen:
@@ -262,11 +269,19 @@ class ScreenStateHandler():
                             self.vpn.connect()
 
                         dmm.start()
-                continue
+                
+                if not self.game_closed:
+                    continue
             # After this, the game was open at some point.
 
             # Game closed
             if not self.game_handle:
+                time_since_seen = time.perf_counter() - self.last_seen
+                if time_since_seen < 10.0:
+                    self.game_seen = False
+                    self.game_closed = True
+                    continue
+
                 self.threader.stop()
                 self.stop()
                 continue
