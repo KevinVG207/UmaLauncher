@@ -277,7 +277,7 @@ class ScreenStateHandler():
             # Game closed
             if not self.game_handle:
                 time_since_seen = time.perf_counter() - self.last_seen
-                if time_since_seen < 10.0:
+                if time_since_seen < 15.0:
                     self.game_seen = False
                     self.game_closed = True
                     continue
