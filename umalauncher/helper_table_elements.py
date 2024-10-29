@@ -320,7 +320,11 @@ class Preset():
 
         for row in self.initialized_rows:
             if not row.disabled:
-                table.append(row.to_tr(command_info))
+                try:
+                    table.append(row.to_tr(command_info))
+                except KeyError as e:
+                    logger.error(f"Error generating table row: {e}")
+                    continue
 
         thead = f"<thead>{table[0]}</thead>"
         tbody = f"<tbody>{''.join(table[1:])}</tbody>"
