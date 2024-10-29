@@ -176,6 +176,7 @@ class HelperTable():
             'arc_data_set',  # Project L'Arc
             'sport_data_set',  # UAF Ready GO!,
             'cook_data_set',  # Great Food Festival
+            'mecha_data_set',  # Run! Mecha Umamusume
         ]
 
         for key in data:
