@@ -7,6 +7,7 @@ SCENARIO_DICT = {
     6: "Project L'Arc",
     7: "U.A.F. Ready GO!",
     8: "Great Food Festival",
+    9: "Run! Mecha Umamusume"
 }
 
 MOTIVATION_DICT = {
@@ -44,11 +45,11 @@ SUPPORT_CARD_TYPE_DISPLAY_DICT = {
 }
 
 SUPPORT_TYPE_TO_COMMAND_IDS = {
-    "speed": [101, 601, 1101, 2101, 2201, 2301],
-    "stamina": [105, 602, 1102, 2102, 2202, 2302],
-    "power": [102, 603, 1103, 2103, 2203, 2303],
-    "guts": [103, 604, 1104, 2104, 2204, 2304],
-    "wiz": [106, 605, 1105, 2105, 2205, 2305],
+    "speed": [101, 601, 901, 1101, 2101, 2201, 2301],
+    "stamina": [105, 602, 905, 1102, 2102, 2202, 2302],
+    "power": [102, 603, 902, 1103, 2103, 2203, 2303],
+    "guts": [103, 604, 903, 1104, 2104, 2204, 2304],
+    "wiz": [106, 605, 906, 1105, 2105, 2205, 2305],
     "friend": [],
     "group": []
 }
@@ -64,6 +65,11 @@ COMMAND_ID_TO_KEY = {
     603: "power",
     604: "guts",
     605: "wiz",
+    901: "speed",
+    902: "power",
+    903: "guts",
+    905: "stamina",
+    906: "wiz",
     1101: "speed",
     1102: "stamina",
     1103: "power",
