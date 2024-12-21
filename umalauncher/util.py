@@ -586,6 +586,15 @@ def get_gff_veg_image_dict(force=False):
         gff_veg_image_dict.update(assets_folder_images_to_dict("_assets/gff/vegetables"))
     return gff_veg_image_dict
 
+rmu_image_dict = {}
+def get_rmu_image_dict(force=False):
+    global rmu_image_dict
+
+    if force or not rmu_image_dict:
+        logger.debug("Loading RMU images...")
+        rmu_image_dict.update(assets_folder_images_to_dict("_assets/rmu"))
+    return rmu_image_dict
+
 GROUP_SUPPORT_ID_TO_PASSION_ZONE_EFFECT_ID_DICT = {}
 def get_group_support_id_to_passion_zone_effect_id_dict(force=False):
     global GROUP_SUPPORT_ID_TO_PASSION_ZONE_EFFECT_ID_DICT
@@ -623,5 +632,6 @@ UPDATE_FUNCS = [
     get_uaf_genre_image_dict,
     get_gff_veg_image_dict,
     get_gl_token_dict,
+    get_rmu_image_dict,
     get_group_support_id_to_passion_zone_effect_id_dict,
 ]

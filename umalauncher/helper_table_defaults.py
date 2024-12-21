@@ -648,6 +648,7 @@ class UsefulPartnerCountSettings(se.NewSettings):
         ),
     }
 
+
 class UsefulPartnerCountRow(hte.Row):
     long_name = "Useful training partner count"
     short_name = "Useful<br>Partners"
@@ -686,6 +687,7 @@ class LArcStarGaugeGainSettings(se.NewSettings):
             se.SettingType.COLOR
         ),
     }
+
 
 class LArcStarGaugeGainRow(hte.Row):
     long_name = "L'Arc star gauge gain"
@@ -729,7 +731,8 @@ class LArcAptitudePointsSettings(se.NewSettings):
             se.SettingType.COLOR
         ),
     }
-    
+
+
 class LArcAptitudePointsRow(hte.Row):
     long_name = "L'Arc aptitude points gained"
     short_name = "Aptitude<br>Points"
@@ -755,7 +758,8 @@ class LArcAptitudePointsRow(hte.Row):
                 cells.append(hte.Cell(aptitude_gain))
 
         return cells
-    
+
+
 class UAFSportPointGainRow(hte.Row):
     long_name = "UAF Sports point gain"
     short_name = "Sport Gain"
@@ -809,7 +813,8 @@ class UAFSportPointGainSettings(se.NewSettings):
             se.SettingType.COLOR
         ),
     }
-        
+
+
 class EnergyRatio(hte.Row):
     long_name = "Energy to Stat Ratio"
     short_name = "Energy Ratio"
@@ -860,7 +865,8 @@ class EnergyRatio(hte.Row):
                 cells.append(hte.Cell(display_text))
                 
         return cells
-        
+
+
 class EnergyRatioSettings(se.NewSettings):
     _settings = {
         "comparison_choice": se.Setting(
@@ -884,6 +890,7 @@ class EnergyRatioSettings(se.NewSettings):
         ),
     }
 
+
 class GFFVegetablesSettings(se.NewSettings):
     _settings = {
         "highlight_max": se.Setting(
@@ -899,6 +906,7 @@ class GFFVegetablesSettings(se.NewSettings):
             se.SettingType.COLOR
         ),
     }
+
 
 class GFFVegetablesRow(hte.Row):
     long_name = "GFF Vegetable Gain"
@@ -963,6 +971,88 @@ class GFFVegetablesDistributionRow(hte.Row):
         return cells
 
 
+class RMUTotalResearchLevelSettings(se.NewSettings):
+    _settings = {
+        "highlight_max": se.Setting(
+            "Highlight max",
+            "Highlights the facility with the highest research level gain.",
+            True,
+            se.SettingType.BOOL
+        ),
+        "highlight_max_color": se.Setting(
+            "Highlight max color",
+            "The color to use to highlight the facility with the highest research level gain.",
+            "#90EE90",
+            se.SettingType.COLOR
+        ),
+    }
+
+
+class RMUTotalResearchLevelRow(hte.Row):
+    long_name = "Run! Mecha Umamusume research level total"
+    short_name = "Research Gain"
+    description = "[Scenario-specific] Shows the total research level gained on each facility. Hidden in other scenarios."
+
+    def __init__(self):
+        super().__init__()
+        self.settings = RMUTotalResearchLevelSettings()
+
+    def _generate_cells(self, game_state) -> list[hte.Cell]:
+        if list(game_state.values())[0]['scenario_id'] != 9:
+            return []
+
+        cells = [hte.Cell(self.short_name, title=self.description)]
+
+        max_research_lvl = max(sum([data['value'] for data in command['point_up_info_array']]) for command in game_state.values())
+
+        for command in game_state.values():
+            research_lvl = sum([data['value'] for data in command['point_up_info_array']])
+            if self.settings.highlight_max.value and max_research_lvl > 0 and research_lvl == max_research_lvl:
+                cells.append(hte.Cell(research_lvl, bold=True, color=self.settings.highlight_max_color.value))
+            else:
+                cells.append(hte.Cell(research_lvl))
+
+        return cells
+
+
+class RMUResearchDistributionRow(hte.Row):
+    long_name = "Run! Mecha Umamusume research level distribution"
+    short_name = "Research Lvl <br>Distribution"
+    description = "[Scenario-specific] Shows the distribution of research level gained on each facility. Hidden in other scenarios."
+
+    def _generate_cells(self, game_state) -> list[hte.Cell]:
+        if list(game_state.values())[0]['scenario_id'] != 9:
+            return []
+
+        cells = [hte.Cell(self.short_name, title=self.description)]
+
+        for command in game_state.values():
+            research_list = command['point_up_info_array']
+            research_list = sorted(research_list, key=lambda x: constants.RMU_KEY_TO_ORDER[x['status_type']])
+            
+            cell_text = f"<div style=\"display: flex; align-items: center; justify-content: center; gap: 0.2rem;\">"
+            for data_dict in research_list:
+                value = data_dict['value']
+                id = data_dict['status_type']
+                if value <= 0:
+                    continue
+                cell_text += f"<div style=\"display: flex; flex-direction: column; align-items: center; justify-content: center;\"><img src=\"{util.get_rmu_image_dict()[str(id)]}\" height=\"29\" width=\"24\" style=\"margin-bottom: -2px\" />"
+                cell_text += f"<div>{value}</div>"
+                cell_text += "</div>"
+
+            cell_text += "</div>"
+
+            cells.append(hte.Cell(cell_text))
+
+        return cells
+    
+    def to_tr(self, command_info):
+        if list(command_info.values())[0]['scenario_id'] != 9:
+            return ""
+
+        return super().to_tr(command_info)
+
+
 class RowTypes(Enum):
     CURRENT_STATS = CurrentStatsRow
     GAINED_STATS = GainedStatsRow
@@ -985,6 +1075,8 @@ class RowTypes(Enum):
     ENERGY_RATIO = EnergyRatio
     GFF_VEGETABLES = GFFVegetablesRow
     GFF_VEGETABLES_DIST = GFFVegetablesDistributionRow
+    RMU_RESEARCH = RMUTotalResearchLevelRow
+    RMU_RESEARCH_DIST = RMUResearchDistributionRow
 
 
 class DefaultPreset(hte.Preset):
@@ -996,6 +1088,7 @@ class DefaultPreset(hte.Preset):
         RowTypes.LARC_STAR_GAUGE_GAIN,
         RowTypes.UAF_SPORT_POINT_GAIN,
         RowTypes.GFF_VEGETABLES,
+        RowTypes.RMU_RESEARCH,
         RowTypes.CURRENT_STATS,
         RowTypes.GAINED_STATS,
         RowTypes.USEFUL_BOND,
