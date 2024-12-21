@@ -27,7 +27,7 @@ class GameWindow():
             return False
 
         prev_rect = util.get_window_rect(self.handle)
-        success = util.move_window(self.handle, pos[0], pos[1], pos[2], pos[3], True)
+        success = util.move_window(self.handle, pos[0], pos[1], pos[2], pos[3], False)
         if not success:
             logger.error(f"Could not move window. {self.handle}")
 
@@ -38,7 +38,7 @@ class GameWindow():
 
             logger.error("Could not get workspace rect after setting position.")
             logger.error("Resetting to defaults.")
-            util.move_window(self.handle, prev_rect[0], prev_rect[1], prev_rect[2], prev_rect[3], True)
+            util.move_window(self.handle, prev_rect[0], prev_rect[1], prev_rect[2], prev_rect[3], False)
             self.threader.settings.save_game_position(None, is_portrait)
             return False
 
@@ -151,6 +151,7 @@ class WindowMover():
     last_rect = None
     window = None
     prev_auto_resize = None
+    wait_time = None
 
     def __init__(self, threader):
         self.threader = threader
@@ -191,6 +192,13 @@ class WindowMover():
             game_rect, is_portrait = self.window.get_rect()
 
             if not game_rect:
+                continue
+
+            if not self.wait_time:
+                self.wait_time = time.perf_counter() + self.threader.settings["maximize_delay"]
+                continue
+
+            if time.perf_counter() < self.wait_time:
                 continue
 
             # Keep maximize option in the tray.

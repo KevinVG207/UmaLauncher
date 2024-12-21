@@ -36,6 +36,13 @@ class DefaultSettings(se.NewSettings):
             se.SettingType.STRING,
             hidden=True
         ),
+        "maximize_delay": se.Setting(
+            "Maximize delay",
+            "Delay in seconds before maximizing the game window on startup.",
+            5,
+            se.SettingType.INT,
+            min_value=0,
+        ),
         "save_packets": se.Setting(
             "Save packets.",
             "Save incoming/outgoing packets to json. (For debugging purposes)",
