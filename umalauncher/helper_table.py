@@ -595,6 +595,16 @@ class HelperTable():
         print(f"{gff_vegetables}")
             
 
+        # Run! Mecha Umamusume
+        if 'mecha_data_set' in data:
+            mecha_data = data['mecha_data_set']
+            for command_data in mecha_data.get('command_info_array', []):
+                command_id = command_data['command_id']
+                command_key = constants.COMMAND_ID_TO_KEY.get(command_id, None)
+                if command_key and command_key in command_info and 'point_up_info_array' in command_data:
+                    command_info[command_key]['point_up_info_array'] = command_data['point_up_info_array']
+
+
         main_info = {
             "turn": turn,
             "scenario_id": scenario_id,
