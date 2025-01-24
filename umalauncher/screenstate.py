@@ -9,6 +9,7 @@ import pypresence
 from PIL import ImageGrab
 from loguru import logger
 import win32clipboard
+from requests import JSONDecodeError
 import presence_screens as scr
 import util
 import dmm
@@ -170,15 +171,20 @@ class ScreenStateHandler():
             self.available_music_icons = music_icons
             return
 
-        assets = response.json()
-        for asset in assets:
-            name = asset['name']
-            if name.startswith("chara_"):
-                chara_icons.append(name)
-            elif name.startswith("music_"):
-                music_icons.append(name)
-        self.available_chara_icons = chara_icons
-        self.available_music_icons = music_icons
+        try:
+            assets = response.json()
+            for asset in assets:
+                name = asset['name']
+                if name.startswith("chara_"):
+                    chara_icons.append(name)
+                elif name.startswith("music_"):
+                    music_icons.append(name)
+            self.available_chara_icons = chara_icons
+            self.available_music_icons = music_icons
+        except (TypeError, JSONDecodeError) as ex:
+            logger.warning(f"Rich Presence assets response was invalid. Response: {response.content}, Exception: {ex}")
+            self.available_chara_icons = chara_icons
+            self.available_music_icons = music_icons
 
 
     def get_screenshot(self):
