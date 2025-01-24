@@ -3,7 +3,6 @@ import asyncio
 from enum import Enum
 from io import BytesIO
 import os
-
 import win32gui
 import win32con
 import pypresence
@@ -11,7 +10,6 @@ from PIL import ImageGrab
 from loguru import logger
 import win32clipboard
 from requests import JSONDecodeError
-
 import presence_screens as scr
 import util
 import dmm
