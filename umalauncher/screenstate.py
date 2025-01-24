@@ -1,3 +1,4 @@
+import collections.abc
 import time
 import asyncio
 from enum import Enum
@@ -171,6 +172,10 @@ class ScreenStateHandler():
             return
 
         assets = response.json()
+        if not isinstance(assets, collections.abc.Sequence):
+            logger.warning(f"Rich Presence assets response was invalid: {assets}")
+            return
+
         for asset in assets:
             name = asset['name']
             if name.startswith("chara_"):
