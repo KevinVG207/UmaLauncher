@@ -183,6 +183,9 @@ class HelperTable():
             if key.endswith("_data_set") and 'command_info_array' in data[key]:
                 for command in data[key]['command_info_array']:
                     if 'params_inc_dec_info_array' in command:
+                        # FIXME: make a proper fix for this. Maybe deepcopy the command if it's missing?
+                        if command['command_id'] not in all_commands:
+                            continue
                         all_commands[command['command_id']]['params_inc_dec_info_array'] += command['params_inc_dec_info_array']
 
 
