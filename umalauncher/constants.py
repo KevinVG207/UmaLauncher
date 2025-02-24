@@ -7,7 +7,8 @@ SCENARIO_DICT = {
     6: "Project L'Arc",
     7: "U.A.F. Ready GO!",
     8: "Great Food Festival",
-    9: "Run! Mecha Umamusume"
+    9: "Run! Mecha Umamusume",
+    10: "The Twinkle Legends"
 }
 
 MOTIVATION_DICT = {
